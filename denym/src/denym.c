@@ -98,8 +98,6 @@ int createSwapchain(vulkanContext* context);
 
 int createImageViews(vulkanContext* context);
 
-void destroyImageViews(vulkanContext* context);
-
 int loadShader(vulkanContext* context, const char* name, VkShaderModule *outShaderr);
 
 int createRenderPass(vulkanContext* context);
@@ -110,6 +108,8 @@ uint32_t clamp(uint32_t n, uint32_t min, uint32_t max);
 
 VkExtent2D clampExtent2D(VkExtent2D e, VkExtent2D min, VkExtent2D max);
 
+void destroyVulkanContext(vulkanContext* context);
+
 
 int main(void)
 {
@@ -118,73 +118,32 @@ int main(void)
 	int result = EXIT_FAILURE;
 
 	GLFWwindow* window;
+	vulkanContext context = { 0 };
 
-	if ((window = createCreateGlfwindow(width, height)) == NULL)
-		goto err_glfw;
-
-	vulkanContext context;
-
-	if (createVulkanInstance(&context))
-		goto err_instance;
-
-	if (glfwCreateWindowSurface(context.instance, window, NULL, &context.surface))
-		goto err_surface;
-
-	if (getPhysicalDevice(&context))
-		goto err_physical_device;
-
-	if (getDevice(&context))
-		goto err_device;
-
-	vkGetDeviceQueue(context.device, context.graphicsQueueFamilyIndex, 0, &context.graphicQueue);
-	vkGetDeviceQueue(context.device, context.presentQueueFamilyIndex, 0, &context.presentQueue);
-
-	// TODO: check return value
-	getDeviceExtensionsAddr(&context);
-
-	if (getSwapchainCapabilities(&context))
-		goto err_swapchain;
-
-	if (createSwapchain(&context))
-		goto err_swapchain;
-
-	if (createImageViews(&context))
-		goto err_images;
-
-	if (createRenderPass(&context))
-		goto err_renderpass;
-
-	if (createPipeline(&context))
-		goto err_pipeline;
-
-	while (!glfwWindowShouldClose(window) && !glfwGetKey(window, GLFW_KEY_ESCAPE))
+	if ((window = createCreateGlfwindow(width, height)) != NULL &&
+		!createVulkanInstance(&context) &&
+		!glfwCreateWindowSurface(context.instance, window, NULL, &context.surface) &&
+		!getPhysicalDevice(&context) &&
+		!getDevice(&context) &&
+		!getDeviceExtensionsAddr(&context) &&
+		!getSwapchainCapabilities(&context) &&
+		!createSwapchain(&context) &&
+		!createImageViews(&context) &&
+		!createRenderPass(&context) &&
+		!createPipeline(&context))
 	{
-		usleep(2000);
-		glfwPollEvents();
+		result = EXIT_SUCCESS;
+
+		while (!glfwWindowShouldClose(window) && !glfwGetKey(window, GLFW_KEY_ESCAPE))
+		{
+			usleep(2000);
+			glfwPollEvents();
+		}
 	}
 
-	result = EXIT_SUCCESS;
-
-	vkDestroyPipeline(context.device, context.pipeline, NULL);
-	vkDestroyPipelineLayout(context.device, context.pipelineLayout, NULL);
-err_pipeline:
-	vkDestroyRenderPass(context.device, context.renderPass, NULL);
-err_renderpass:
-	destroyImageViews(&context);
-err_images:
-	context.DestroySwapchainKHR(context.device, context.swapchain, NULL);
-err_swapchain:
-	vkDestroyDevice(context.device, NULL);
-err_device:
-	context.DestroySurfaceKHR(context.instance, context.surface, NULL);
-err_surface:
-	context.DestroyDebugUtilsMessengerEXT(context.instance, context.messenger, NULL);
-	vkDestroyInstance(context.instance, NULL);
-err_physical_device:
+	destroyVulkanContext(&context);
 	glfwDestroyWindow(window);
-err_instance:
 	glfwTerminate();
-err_glfw:
 
 	return result;
 }
@@ -490,11 +449,16 @@ int getDevice(vulkanContext *context)
 
 	VkResult result = vkCreateDevice(context->physicalDevice, &deviceInfo, NULL, &context->device);
 
-	if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
+	if(result == VK_SUCCESS)
+	{
+		vkGetDeviceQueue(context->device, context->graphicsQueueFamilyIndex, 0, &context->graphicQueue);
+		vkGetDeviceQueue(context->device, context->presentQueueFamilyIndex, 0, &context->presentQueue);
+	}
+	else if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
 		fprintf(stderr, "Could not create device : missing requested extension(s).\n");
 	else if( result == VK_ERROR_FEATURE_NOT_PRESENT)
 		fprintf(stderr, "Could not create device : missing requested feature(s).\n");
-	else if(result)
+	else
 		fprintf(stderr, "Could not create device : unknow error.\n");
 
 	return result;
@@ -695,16 +659,6 @@ int createImageViews(vulkanContext* context)
 	}
 
 	return 0;
-}
-
-
-void destroyImageViews(vulkanContext* context)
-{
-	for (uint32_t i = 0; i < context->imageCount; i++)
-		vkDestroyImageView(context->device, context->imageViews[i], NULL);
-
-	free(context->images);
-	free(context->imageViews);
 }
 
 
@@ -978,6 +932,33 @@ VkExtent2D clampExtent2D(VkExtent2D e, VkExtent2D min, VkExtent2D max)
 	res.width = clamp(e.width, min.width, max.width);
 
 	return res;
+}
+
+
+void destroyVulkanContext(vulkanContext* context)
+{
+	if (context->device)
+	{
+		vkDestroyPipeline(context->device, context->pipeline, NULL);
+		vkDestroyPipelineLayout(context->device, context->pipelineLayout, NULL);
+		vkDestroyRenderPass(context->device, context->renderPass, NULL);
+
+		for (uint32_t i = 0; i < context->imageCount; i++)
+			vkDestroyImageView(context->device, context->imageViews[i], NULL);
+
+		free(context->images);
+		free(context->imageViews);
+
+		context->DestroySwapchainKHR(context->device, context->swapchain, NULL);
+		vkDestroyDevice(context->device, NULL);
+	}
+
+	if (context->instance)
+	{
+		context->DestroySurfaceKHR(context->instance, context->surface, NULL);
+		context->DestroyDebugUtilsMessengerEXT(context->instance, context->messenger, NULL);
+		vkDestroyInstance(context->instance, NULL);
+	}
 }
 
 
