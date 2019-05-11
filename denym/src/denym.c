@@ -19,6 +19,8 @@ static const int APP_VERSION = VK_MAKE_VERSION(0, 1, 0);
 static const char* ENGINE_NAME = "Denym";
 static const int ENGINE_VERSION = VK_MAKE_VERSION(0, 1, 0);
 
+#define MAX_FRAMES_IN_FLIGHT 2
+
 #define DECL_VK_PFN(name) PFN_vk##name name
 
 
@@ -47,10 +49,19 @@ typedef struct vulkanContext
 	VkImage* images;
 	VkImageView* imageViews;
 	uint32_t imageCount;
+	VkFramebuffer *swapChainFramebuffers;
 
 	VkRenderPass renderPass;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline pipeline;
+
+	VkCommandPool commandPool;
+	VkCommandBuffer* commandBuffers;
+
+	VkSemaphore imageAvailableSemaphore[MAX_FRAMES_IN_FLIGHT];
+	VkSemaphore renderFinishedSemaphore[MAX_FRAMES_IN_FLIGHT];
+    VkFence inFlightFences[MAX_FRAMES_IN_FLIGHT];
+    int currentFrame;
 
 	// instance extension functions
 	DECL_VK_PFN(GetDeviceProcAddr);
@@ -68,6 +79,7 @@ typedef struct vulkanContext
 	DECL_VK_PFN(GetSwapchainImagesKHR);
 	DECL_VK_PFN(AcquireNextImageKHR);
 	DECL_VK_PFN(QueuePresentKHR);
+	DECL_VK_PFN(SetDebugUtilsObjectNameEXT);
 } vulkanContext;
 
 void glfwErrorCallback(int error, const char* description);
@@ -104,6 +116,16 @@ int createRenderPass(vulkanContext* context);
 
 int createPipeline(vulkanContext* context);
 
+int createFramebuffer(vulkanContext* context);
+
+int createCommandPool(vulkanContext* context);
+
+int createCommandBuffers(vulkanContext* context);
+
+int createSynchronizationObjects(vulkanContext* context);
+
+void render(vulkanContext* context);
+
 uint32_t clamp(uint32_t n, uint32_t min, uint32_t max);
 
 VkExtent2D clampExtent2D(VkExtent2D e, VkExtent2D min, VkExtent2D max);
@@ -117,7 +139,7 @@ int main(void)
 	const int height = 480;
 	int result = EXIT_FAILURE;
 
-	GLFWwindow* window;
+	GLFWwindow* window = NULL;
 	vulkanContext context = { 0 };
 
 	if ((window = createCreateGlfwindow(width, height)) != NULL &&
@@ -130,17 +152,25 @@ int main(void)
 		!createSwapchain(&context) &&
 		!createImageViews(&context) &&
 		!createRenderPass(&context) &&
-		!createPipeline(&context))
+		!createPipeline(&context) &&
+		!createFramebuffer(&context) &&
+		!createCommandPool(&context) &&
+		!createCommandBuffers(&context) &&
+		!createSynchronizationObjects(&context))
 	{
 		result = EXIT_SUCCESS;
+        context.currentFrame = 0;
 
 		while (!glfwWindowShouldClose(window) && !glfwGetKey(window, GLFW_KEY_ESCAPE))
 		{
+			render(&context);
+            context.currentFrame = (context.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 			usleep(2000);
 			glfwPollEvents();
 		}
 	}
 
+	vkDeviceWaitIdle(context.device);
 	destroyVulkanContext(&context);
 	glfwDestroyWindow(window);
 	glfwTerminate();
@@ -507,6 +537,7 @@ int getDeviceExtensionsAddr(vulkanContext* context)
 	getDeviceProcAddr(context, GetSwapchainImagesKHR);
 	getDeviceProcAddr(context, AcquireNextImageKHR);
 	getDeviceProcAddr(context, QueuePresentKHR);
+	getDeviceProcAddr(context, SetDebugUtilsObjectNameEXT);
 
 	return 0;
 }
@@ -730,14 +761,22 @@ int createRenderPass(vulkanContext* context)
 	// index matching our fragment shader output: layout(location = 0) out vec4 outColor
 	subpass.pColorAttachments = &colorAttachmentRef;
 
+	// Implicit dependency
+	VkSubpassDependency dependency = { 0 };
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.srcAccessMask = 0;
+	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
 	VkRenderPassCreateInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
 	renderPassInfo.attachmentCount = 1;
 	renderPassInfo.pAttachments = &colorAttachment;
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
 	// list dependancies in case of multiple passes
-	renderPassInfo.dependencyCount = 0;
-	renderPassInfo.pDependencies = NULL;
+	renderPassInfo.dependencyCount = 1;
+	renderPassInfo.pDependencies = &dependency;
 
 	VkResult result = vkCreateRenderPass(context->device, &renderPassInfo, NULL, &context->renderPass);
 
@@ -912,6 +951,198 @@ err_vert:
 }
 
 
+int createFramebuffer(vulkanContext* context)
+{
+	context->swapChainFramebuffers = malloc(sizeof * context->swapChainFramebuffers * context->imageCount);
+
+	VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
+	framebufferInfo.renderPass = context->renderPass;
+	framebufferInfo.attachmentCount = 1;
+	framebufferInfo.width = context->swapchainExtent.width;
+	framebufferInfo.height = context->swapchainExtent.height;
+	framebufferInfo.layers = 1;
+
+	for (uint32_t i = 0; i < context->imageCount; i++)
+	{
+		framebufferInfo.pAttachments = &context->imageViews[i];
+		VkResult result = vkCreateFramebuffer(context->device, &framebufferInfo, NULL, &context->swapChainFramebuffers[i]);
+
+		if (result != VK_SUCCESS)
+		{
+			fprintf(stderr, "Failed to create framebuffer %d/%d.\n", i + 1, context->imageCount);
+
+			return result;
+		}
+	}
+
+	return VK_SUCCESS;
+}
+
+
+int createCommandPool(vulkanContext* context)
+{
+	VkCommandPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
+	poolInfo.queueFamilyIndex = context->graphicsQueueFamilyIndex;
+	poolInfo.flags = 0; // we don't care for this small example, with a fully static scene
+
+	VkResult result = vkCreateCommandPool(context->device, &poolInfo, NULL, &context->commandPool);
+
+	if (result != VK_SUCCESS)
+		fprintf(stderr, "Error while creating the command pool.\n");
+
+	return result;
+}
+
+
+int createCommandBuffers(vulkanContext* context)
+{
+	context->commandBuffers = malloc(sizeof * context->commandBuffers * context->imageCount);
+
+	VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+	allocInfo.commandPool = context->commandPool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = context->imageCount;
+
+	VkResult result = vkAllocateCommandBuffers(context->device, &allocInfo, context->commandBuffers);
+	
+	if (result != VK_SUCCESS)
+	{
+		fprintf(stderr, "Failed to allocate command buffers.\n");
+
+		return result;
+	}
+
+	for (uint32_t i = 0; i < context->imageCount; i++) 
+	{
+		VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+		beginInfo.pInheritanceInfo = NULL; // NULL in case of primary
+
+		result = vkBeginCommandBuffer(context->commandBuffers[i], &beginInfo);
+
+		if (result != VK_SUCCESS)
+		{
+			fprintf(stderr, "Failed to begin recording command buffer %d/%d.\n", i + 1, context->imageCount);
+
+			return result;
+		}
+
+		VkRenderPassBeginInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+		renderPassInfo.renderPass = context->renderPass;
+		renderPassInfo.framebuffer = context->swapChainFramebuffers[i];
+		// render area : pixels outside have undefined values
+		renderPassInfo.renderArea.offset.x = 0;
+		renderPassInfo.renderArea.offset.y = 0;
+		renderPassInfo.renderArea.extent = context->swapchainExtent;
+		// clear color (see VK_ATTACHMENT_LOAD_OP_CLEAR)
+		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+		renderPassInfo.clearValueCount = 1;
+		renderPassInfo.pClearValues = &clearColor;
+
+		vkCmdBeginRenderPass(context->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // VK_SUBPASS_CONTENTS_INLINE for primary
+		vkCmdBindPipeline(context->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, context->pipeline);
+		vkCmdDraw(context->commandBuffers[i], 3, 1, 0, 0);
+		vkCmdEndRenderPass(context->commandBuffers[i]);
+
+		result = vkEndCommandBuffer(context->commandBuffers[i]);
+
+		if (result != VK_SUCCESS) 
+		{
+			fprintf(stderr, "Failed to end recording command buffer %d/%d.\n", i + 1, context->imageCount);
+
+			return result;
+		}
+	}
+
+	return result;
+}
+
+
+int createSynchronizationObjects(vulkanContext* context)
+{
+	VkSemaphoreCreateInfo semaphoreInfo = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+    VkFenceCreateInfo fenceInfo = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // fence is not blocking when created
+
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        if (vkCreateSemaphore(context->device, &semaphoreInfo, NULL, &context->imageAvailableSemaphore[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(context->device, &semaphoreInfo, NULL, &context->renderFinishedSemaphore[i]) != VK_SUCCESS ||
+            vkCreateFence(context->device, &fenceInfo, NULL, &context->inFlightFences[i]))
+        {
+            fprintf(stderr, "Failed to create sync objets.\n");
+
+            return -1;
+        }
+
+        /*
+        VkDebugUtilsObjectNameInfoEXT objectNameInfo = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+        objectNameInfo.objectType = VK_OBJECT_TYPE_SEMAPHORE;
+
+        objectNameInfo.pObjectName = "Image available semaphore";
+        objectNameInfo.objectHandle = (uint64_t)context->imageAvailableSemaphore;
+        context->SetDebugUtilsObjectNameEXT(context->device, &objectNameInfo);
+
+        objectNameInfo.pObjectName = "Render finished semaphore";
+        objectNameInfo.objectHandle = (uint64_t)context->renderFinishedSemaphore;
+        context->SetDebugUtilsObjectNameEXT(context->device, &objectNameInfo);
+        */
+    }
+
+	return 0;
+}
+
+
+void render(vulkanContext *context)
+{
+	uint32_t imageIndex;
+
+    // Wait for fence, so we limit the number of in flight frames
+    vkWaitForFences(context->device, 1, &context->inFlightFences[context->currentFrame], VK_TRUE, UINT64_MAX);
+    vkResetFences(context->device, 1, &context->inFlightFences[context->currentFrame]);
+
+    VkResult result = context->AcquireNextImageKHR(context->device, context->swapchain, UINT64_MAX, context->imageAvailableSemaphore[context->currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+    if (result)
+        result = 0;
+
+	VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+
+	// one wait stage (color writing, and it's associated semaphore). Could be more stages here
+	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = &context->imageAvailableSemaphore[context->currentFrame];
+	submitInfo.pWaitDstStageMask = waitStages;
+	// command buffer associated with the image available
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &context->commandBuffers[imageIndex];
+	// semaphore to signal when the command buffer's execution is finished
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &context->renderFinishedSemaphore[context->currentFrame];
+
+	result = vkQueueSubmit(context->graphicQueue, 1, &submitInfo, context->inFlightFences[context->currentFrame]);
+
+	if (result != VK_SUCCESS) 
+	{
+		fprintf(stderr, "Failed to submit draw command buffer.\n");
+	}
+
+	VkPresentInfoKHR presentInfo = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = &context->renderFinishedSemaphore[context->currentFrame];
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = &context->swapchain;
+	presentInfo.pImageIndices = &imageIndex;
+	presentInfo.pResults = &result; // Optional when only one swapchain, provide an array in case of multiple swapchains
+	
+    
+    result = context->QueuePresentKHR(context->presentQueue, &presentInfo);
+
+    if (result)
+        result = 0;
+}
+
+
 uint32_t clamp(uint32_t n, uint32_t min, uint32_t max)
 {
 	if (n < min)
@@ -944,12 +1175,26 @@ void destroyVulkanContext(vulkanContext* context)
 		vkDestroyRenderPass(context->device, context->renderPass, NULL);
 
 		for (uint32_t i = 0; i < context->imageCount; i++)
+		{
 			vkDestroyImageView(context->device, context->imageViews[i], NULL);
+			vkDestroyFramebuffer(context->device, context->swapChainFramebuffers[i], NULL);
+		}
 
 		free(context->images);
 		free(context->imageViews);
+		free(context->swapChainFramebuffers);
+		free(context->commandBuffers);
 
 		context->DestroySwapchainKHR(context->device, context->swapchain, NULL);
+		vkDestroyCommandPool(context->device, context->commandPool, NULL);
+
+        for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            vkDestroySemaphore(context->device, context->imageAvailableSemaphore[i], NULL);
+            vkDestroySemaphore(context->device, context->renderFinishedSemaphore[i], NULL);
+            vkDestroyFence(context->device, context->inFlightFences[i], NULL);
+        }
+
 		vkDestroyDevice(context->device, NULL);
 	}
 
