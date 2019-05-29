@@ -90,7 +90,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vulkanErrorCallback(
 	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 	void* pUserData);
 
-GLFWwindow* createCreateGlfwindow(int width, int height);
+GLFWwindow* createWindow(int width, int height);
 
 int getPhysicalDevice(vulkanContext* context);
 
@@ -132,6 +132,8 @@ VkExtent2D clampExtent2D(VkExtent2D e, VkExtent2D min, VkExtent2D max);
 
 void destroyVulkanContext(vulkanContext* context);
 
+void cleanSwapchain(vulkanContext* context);
+
 
 int main(void)
 {
@@ -142,7 +144,7 @@ int main(void)
 	GLFWwindow* window = NULL;
 	vulkanContext context = { 0 };
 
-	if ((window = createCreateGlfwindow(width, height)) != NULL &&
+	if ((window = createWindow(width, height)) != NULL &&
 		!createVulkanInstance(&context) &&
 		!glfwCreateWindowSurface(context.instance, window, NULL, &context.surface) &&
 		!getPhysicalDevice(&context) &&
@@ -185,7 +187,7 @@ void glfwErrorCallback(int error, const char* description)
 }
 
 
-GLFWwindow* createCreateGlfwindow(int width, int height)
+GLFWwindow* createWindow(int width, int height)
 {
 	GLFWwindow* window;
 	const GLFWvidmode* videoMode;
@@ -1135,7 +1137,6 @@ void render(vulkanContext *context)
 	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = &result; // Optional when only one swapchain, provide an array in case of multiple swapchains
 	
-    
     result = context->QueuePresentKHR(context->presentQueue, &presentInfo);
 
     if (result)
@@ -1170,22 +1171,7 @@ void destroyVulkanContext(vulkanContext* context)
 {
 	if (context->device)
 	{
-		vkDestroyPipeline(context->device, context->pipeline, NULL);
-		vkDestroyPipelineLayout(context->device, context->pipelineLayout, NULL);
-		vkDestroyRenderPass(context->device, context->renderPass, NULL);
-
-		for (uint32_t i = 0; i < context->imageCount; i++)
-		{
-			vkDestroyImageView(context->device, context->imageViews[i], NULL);
-			vkDestroyFramebuffer(context->device, context->swapChainFramebuffers[i], NULL);
-		}
-
-		free(context->images);
-		free(context->imageViews);
-		free(context->swapChainFramebuffers);
-		free(context->commandBuffers);
-
-		context->DestroySwapchainKHR(context->device, context->swapchain, NULL);
+        cleanSwapchain(context);
 		vkDestroyCommandPool(context->device, context->commandPool, NULL);
 
         for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -1204,6 +1190,27 @@ void destroyVulkanContext(vulkanContext* context)
 		context->DestroyDebugUtilsMessengerEXT(context->instance, context->messenger, NULL);
 		vkDestroyInstance(context->instance, NULL);
 	}
+}
+
+
+void cleanSwapchain(vulkanContext* context)
+{
+    vkDestroyPipeline(context->device, context->pipeline, NULL);
+    vkDestroyPipelineLayout(context->device, context->pipelineLayout, NULL);
+    vkDestroyRenderPass(context->device, context->renderPass, NULL);
+    vkFreeCommandBuffers(context->device, context->commandPool, context->imageCount, context->commandBuffers);
+
+    for (uint32_t i = 0; i < context->imageCount; i++)
+    {
+        vkDestroyImageView(context->device, context->imageViews[i], NULL);
+        vkDestroyFramebuffer(context->device, context->swapChainFramebuffers[i], NULL);
+    }
+
+    context->DestroySwapchainKHR(context->device, context->swapchain, NULL);
+    free(context->images);
+    free(context->commandBuffers);
+    free(context->imageViews);
+    free(context->swapChainFramebuffers);
 }
 
 
