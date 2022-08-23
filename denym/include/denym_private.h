@@ -45,13 +45,13 @@ typedef struct vulkanContext
 	VkImageView* imageViews;
 	uint32_t imageCount;
 	VkFramebuffer *swapChainFramebuffers;
-
 	VkRenderPass renderPass;
-	VkPipelineLayout pipelineLayout;
-	VkPipeline pipeline;
-
 	VkCommandPool commandPool;
-	VkCommandBuffer* commandBuffers;
+
+	// geometry
+	VkCommandBuffer* commandBuffers; // draw cmds
+	VkPipelineLayout pipelineLayout; // uniforms sent to shaders
+	VkPipeline pipeline;             // type of render
 
 	VkSemaphore imageAvailableSemaphore[MAX_FRAMES_IN_FLIGHT];
 	VkSemaphore renderFinishedSemaphore[MAX_FRAMES_IN_FLIGHT];
@@ -83,6 +83,40 @@ typedef struct denym
 	vulkanContext vulkanContext;
 	GLFWwindow *window;
 } denym;
+
+/*
+typedef struct dnm_object
+{
+	const char *vertex_shader;
+	const char *fragment_shader;
+
+	int nb_vertices;
+
+	// vertex attributes
+	float *positions;
+	float *colors;
+
+	//int nb_uniforms;
+	//dnm_uniform uniforms;
+
+	// int nb_constant;
+	// dnm_shader_constants;
+} dnm_object;
+
+
+int dnm_init_object(
+	const char *vertex_shader,
+	const char *fragment_shader,
+	int nb_vertices,
+	dnm_object *object)
+{
+	object->positions = NULL;
+	object->colors = NULL;
+	object->nb_vertices = nb_vertices;
+
+	return 0;
+}
+*/
 
 
 void glfwErrorCallback(int error, const char* description);
@@ -117,13 +151,13 @@ int loadShader(vulkanContext* context, const char* name, VkShaderModule *outShad
 
 int createRenderPass(vulkanContext* context);
 
-int createPipeline(vulkanContext* context);
+int createPipeline(vulkanContext* context, const char *vertShaderName, const char *fragShaderName);
 
 int createFramebuffer(vulkanContext* context);
 
 int createCommandPool(vulkanContext* context);
 
-int createCommandBuffers(vulkanContext* context);
+int createCommandBuffers(vulkanContext* context, uint32_t vertexCount);
 
 int createSynchronizationObjects(vulkanContext* context);
 

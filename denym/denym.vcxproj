@@ -137,7 +137,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\denym.c" />
-    <ClCompile Include="src\triangle.c" />
+    <ClCompile Include="src\hardcoded_triangle.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\first_example.frag" />

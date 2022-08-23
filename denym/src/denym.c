@@ -28,10 +28,8 @@ int denymInit(int window_width, int window_height)
 		!createSwapchain(&engine.vulkanContext) &&
 		!createImageViews(&engine.vulkanContext) &&
 		!createRenderPass(&engine.vulkanContext) &&
-		!createPipeline(&engine.vulkanContext) &&
 		!createFramebuffer(&engine.vulkanContext) &&
 		!createCommandPool(&engine.vulkanContext) &&
-		!createCommandBuffers(&engine.vulkanContext) &&
 		!createSynchronizationObjects(&engine.vulkanContext))
 	{
 		result = 0;
@@ -40,6 +38,20 @@ int denymInit(int window_width, int window_height)
 	else
 	{
 		denymTerminate();
+	}
+
+	return result;
+}
+
+
+int denymCreateGeometry(uint32_t vertexCount, const char *vertShaderName, const char *fragShaderName)
+{
+	int result = -1;
+
+	if(!createPipeline(&engine.vulkanContext, vertShaderName, fragShaderName) &&
+		!createCommandBuffers(&engine.vulkanContext, vertexCount))
+	{
+		result = 0;
 	}
 
 	return result;
@@ -616,16 +628,19 @@ int createImageViews(vulkanContext* context)
 int loadShader(vulkanContext* context, const char* name, VkShaderModule* outShaderr)
 {
 	FILE* f;
+	char fullName[FILENAME_MAX];
+
+	snprintf(fullName, FILENAME_MAX, "resources/shaders/%s", name);
 
 #ifdef _MSC_VER
-	fopen_s(&f, name, "rb");
+	fopen_s(&f, fullName, "rb");
 #else
-	f = fopen(name, "r");
+	f = fopen(fullName, "r");
 #endif
 
 	if (f == NULL)
 	{
-		perror(name);
+		perror(fullName);
 
 		return -1;
 	}
@@ -648,7 +663,7 @@ int loadShader(vulkanContext* context, const char* name, VkShaderModule* outShad
 	VkResult result = vkCreateShaderModule(context->device, &createInfo, NULL, outShaderr);
 
 	if(result)
-		fprintf(stderr, "Failed to load shader \"%s\"", name);
+		fprintf(stderr, "Failed to load shader \"%s\"", fullName);
 
 	free(data);
 
@@ -707,16 +722,16 @@ int createRenderPass(vulkanContext* context)
 }
 
 
-int createPipeline(vulkanContext* context)
+int createPipeline(vulkanContext* context, const char *vertShaderName, const char *fragShaderName)
 {
 	int result = -1;
 	VkShaderModule vertShader;
 	VkShaderModule fragShader;
 
-	if (loadShader(context, "resources/shaders/hardcoded_triangle.vert.spv", &vertShader))
+	if (loadShader(context, vertShaderName, &vertShader))
 		goto err_vert;
 
-	if (loadShader(context, "resources/shaders/basic_color_interp.frag.spv", &fragShader))
+	if (loadShader(context, fragShaderName, &fragShader))
 		goto err_frag;
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
@@ -914,7 +929,7 @@ int createCommandPool(vulkanContext* context)
 }
 
 
-int createCommandBuffers(vulkanContext* context)
+int createCommandBuffers(vulkanContext* context, uint32_t vertexCount)
 {
 	context->commandBuffers = malloc(sizeof * context->commandBuffers * context->imageCount);
 
@@ -943,7 +958,7 @@ int createCommandBuffers(vulkanContext* context)
 	renderPassInfo.renderArea.offset.y = 0;
 	renderPassInfo.renderArea.extent = context->swapchainExtent;
 	// clear color (see VK_ATTACHMENT_LOAD_OP_CLEAR)
-	VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+	VkClearValue clearColor = { 0.2f, 0.2f, 0.2f, 1.0f };
 	renderPassInfo.clearValueCount = 1;
 	renderPassInfo.pClearValues = &clearColor;
 
@@ -961,7 +976,7 @@ int createCommandBuffers(vulkanContext* context)
 		renderPassInfo.framebuffer = context->swapChainFramebuffers[i];
 		vkCmdBeginRenderPass(context->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // VK_SUBPASS_CONTENTS_INLINE for primary
 		vkCmdBindPipeline(context->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, context->pipeline);
-		vkCmdDraw(context->commandBuffers[i], 3, 1, 0, 0);
+		vkCmdDraw(context->commandBuffers[i], vertexCount, 1, 0, 0);
 		vkCmdEndRenderPass(context->commandBuffers[i]);
 
 		result = vkEndCommandBuffer(context->commandBuffers[i]);

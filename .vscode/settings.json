@@ -9,6 +9,7 @@
         "vulkan_core.h": "c",
         "denym_private.h": "c",
         "denym.h": "c",
-        "unistd.h": "c"
+        "unistd.h": "c",
+        "types.h": "c"
     }
 }
