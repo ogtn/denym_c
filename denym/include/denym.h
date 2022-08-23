@@ -15,7 +15,14 @@ void denymRender(void);
 
 void denymWaitForNextFrame(void);
 
-int denymCreateGeometry(uint32_t vertexCount, const char *vertShaderName, const char *fragShaderName);
+
+typedef struct geometry_t* geometry;
+
+geometry denymCreateGeometry(uint32_t vertexCount);
+
+typedef struct renderable_t* renderable;
+
+renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, const char *fragShaderName);
 
 
 #endif

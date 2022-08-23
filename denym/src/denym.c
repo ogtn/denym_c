@@ -44,17 +44,34 @@ int denymInit(int window_width, int window_height)
 }
 
 
-int denymCreateGeometry(uint32_t vertexCount, const char *vertShaderName, const char *fragShaderName)
+geometry denymCreateGeometry(uint32_t vertexCount)
 {
-	int result = -1;
+	geometry geometry = &engine.renderable.geometry;
+	geometry->vertexCount = vertexCount;
 
-	if(!createPipeline(&engine.vulkanContext, vertShaderName, fragShaderName) &&
-		!createCommandBuffers(&engine.vulkanContext, vertexCount))
+	geometry->attribCount = 0;
+	geometry->colors =  NULL;
+	geometry->positions = NULL;
+
+	return geometry;
+}
+
+
+renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, const char *fragShaderName)
+{
+	renderable renderable = &engine.renderable;
+
+	//renderable->vertShaderName = vertShaderName;
+	//renderable->fragShaderName = fragShaderName;
+	// renderable->geometry = geometry;
+
+	if(!createPipeline(vertShaderName, fragShaderName) &&
+		!createCommandBuffers(&engine.vulkanContext, renderable))
 	{
-		result = 0;
+		return renderable;
 	}
 
-	return result;
+	return NULL;
 }
 
 
@@ -80,7 +97,7 @@ int denymKeepRunning(void)
 
 void denymRender(void)
 {
-	render(&engine.vulkanContext);
+	render(&engine.vulkanContext, &engine.renderable);
 	engine.vulkanContext.currentFrame = (engine.vulkanContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
@@ -625,7 +642,7 @@ int createImageViews(vulkanContext* context)
 }
 
 
-int loadShader(vulkanContext* context, const char* name, VkShaderModule* outShaderr)
+int loadShader(const char* name, VkShaderModule* outShaderr)
 {
 	FILE* f;
 	char fullName[FILENAME_MAX];
@@ -660,7 +677,7 @@ int loadShader(vulkanContext* context, const char* name, VkShaderModule* outShad
 	createInfo.codeSize = size;
 	createInfo.pCode = data;
 
-	VkResult result = vkCreateShaderModule(context->device, &createInfo, NULL, outShaderr);
+	VkResult result = vkCreateShaderModule(engine.vulkanContext.device, &createInfo, NULL, outShaderr);
 
 	if(result)
 		fprintf(stderr, "Failed to load shader \"%s\"", fullName);
@@ -722,16 +739,16 @@ int createRenderPass(vulkanContext* context)
 }
 
 
-int createPipeline(vulkanContext* context, const char *vertShaderName, const char *fragShaderName)
+int createPipeline(const char *vertShaderName, const char *fragShaderName)
 {
 	int result = -1;
 	VkShaderModule vertShader;
 	VkShaderModule fragShader;
 
-	if (loadShader(context, vertShaderName, &vertShader))
+	if (loadShader(vertShaderName, &vertShader))
 		goto err_vert;
 
-	if (loadShader(context, fragShaderName, &fragShader))
+	if (loadShader(fragShaderName, &fragShader))
 		goto err_frag;
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
@@ -766,8 +783,8 @@ int createPipeline(vulkanContext* context, const char *vertShaderName, const cha
 	VkViewport viewport = { 0 };
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = (float)context->swapchainExtent.width;
-	viewport.height = (float)context->swapchainExtent.height;
+	viewport.width = (float)engine.vulkanContext.swapchainExtent.width;
+	viewport.height = (float)engine.vulkanContext.swapchainExtent.height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
@@ -775,7 +792,7 @@ int createPipeline(vulkanContext* context, const char *vertShaderName, const cha
 	VkRect2D scissor = { 0 };
 	scissor.offset.x = 0;
 	scissor.offset.y = 0;
-	scissor.extent = context->swapchainExtent;
+	scissor.extent = engine.vulkanContext.swapchainExtent;
 
 	// aggregate viewport and scissor
 	VkPipelineViewportStateCreateInfo viewportState = { VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
@@ -841,7 +858,7 @@ int createPipeline(vulkanContext* context, const char *vertShaderName, const cha
 	// Required here even if we don't need it (hence empty). Use to set uniforms in shaders
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
 
-	if (vkCreatePipelineLayout(context->device, &pipelineLayoutInfo, NULL, &context->pipelineLayout))
+	if (vkCreatePipelineLayout(engine.vulkanContext.device, &pipelineLayoutInfo, NULL, &engine.renderable.pipelineLayout))
 	{
 		fprintf(stderr, "Failed to create pipeline layout");
 
@@ -860,26 +877,26 @@ int createPipeline(vulkanContext* context, const char *vertShaderName, const cha
 	pipelineInfo.pDepthStencilState = NULL;
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = NULL; // &dynamicState;
-	pipelineInfo.layout = context->pipelineLayout;
-	pipelineInfo.renderPass = context->renderPass;
+	pipelineInfo.layout = engine.renderable.pipelineLayout;
+	pipelineInfo.renderPass = engine.vulkanContext.renderPass;
 	pipelineInfo.subpass = 0; // index of our only subpass
 	// those two are needed only when re-using another existing pipeline
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE ;
 	pipelineInfo.basePipelineIndex = -1;
 
 	// interesting second parameter : pipeline cache can be used to speedup all this, even across runs, through a file !
-	if (vkCreateGraphicsPipelines(context->device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &context->pipeline))
+	if (vkCreateGraphicsPipelines(engine.vulkanContext.device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &engine.renderable.pipeline))
 	{
 		fprintf(stderr, "Failed to create graphic pipeline.\n");
-		vkDestroyPipelineLayout(context->device, context->pipelineLayout, NULL);
+		vkDestroyPipelineLayout(engine.vulkanContext.device, engine.renderable.pipelineLayout, NULL);
 	}
 	else
 		result = 0;
 
 err_pipeline_layout:
-	vkDestroyShaderModule(context->device, fragShader, NULL);
+	vkDestroyShaderModule(engine.vulkanContext.device, fragShader, NULL);
 err_frag:
-	vkDestroyShaderModule(context->device, vertShader, NULL);
+	vkDestroyShaderModule(engine.vulkanContext.device, vertShader, NULL);
 err_vert:
 
 	return result;
@@ -929,16 +946,16 @@ int createCommandPool(vulkanContext* context)
 }
 
 
-int createCommandBuffers(vulkanContext* context, uint32_t vertexCount)
+int createCommandBuffers(vulkanContext* context, renderable renderable)
 {
-	context->commandBuffers = malloc(sizeof * context->commandBuffers * context->imageCount);
+	renderable->commandBuffers = malloc(sizeof * renderable->commandBuffers * context->imageCount);
 
 	VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 	allocInfo.commandPool = context->commandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = context->imageCount;
 
-	VkResult result = vkAllocateCommandBuffers(context->device, &allocInfo, context->commandBuffers);
+	VkResult result = vkAllocateCommandBuffers(context->device, &allocInfo, renderable->commandBuffers);
 
 	if (result != VK_SUCCESS)
 	{
@@ -964,7 +981,7 @@ int createCommandBuffers(vulkanContext* context, uint32_t vertexCount)
 
 	for (uint32_t i = 0; i < context->imageCount; i++)
 	{
-		result = vkBeginCommandBuffer(context->commandBuffers[i], &beginInfo);
+		result = vkBeginCommandBuffer(renderable->commandBuffers[i], &beginInfo);
 
 		if (result != VK_SUCCESS)
 		{
@@ -974,12 +991,12 @@ int createCommandBuffers(vulkanContext* context, uint32_t vertexCount)
 		}
 
 		renderPassInfo.framebuffer = context->swapChainFramebuffers[i];
-		vkCmdBeginRenderPass(context->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // VK_SUBPASS_CONTENTS_INLINE for primary
-		vkCmdBindPipeline(context->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, context->pipeline);
-		vkCmdDraw(context->commandBuffers[i], vertexCount, 1, 0, 0);
-		vkCmdEndRenderPass(context->commandBuffers[i]);
+		vkCmdBeginRenderPass(renderable->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // VK_SUBPASS_CONTENTS_INLINE for primary
+		vkCmdBindPipeline(renderable->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipeline);
+		vkCmdDraw(renderable->commandBuffers[i], renderable->geometry.vertexCount, 1, 0, 0);
+		vkCmdEndRenderPass(renderable->commandBuffers[i]);
 
-		result = vkEndCommandBuffer(context->commandBuffers[i]);
+		result = vkEndCommandBuffer(renderable->commandBuffers[i]);
 
 		if (result != VK_SUCCESS)
 		{
@@ -1030,7 +1047,7 @@ int createSynchronizationObjects(vulkanContext* context)
 }
 
 
-void render(vulkanContext *context)
+void render(vulkanContext *context, renderable renderable)
 {
 	uint32_t imageIndex;
 
@@ -1052,7 +1069,7 @@ void render(vulkanContext *context)
 	submitInfo.pWaitDstStageMask = waitStages;
 	// command buffer associated with the image available
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &context->commandBuffers[imageIndex];
+	submitInfo.pCommandBuffers = &renderable->commandBuffers[imageIndex];
 	// semaphore to signal when the command buffer's execution is finished
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &context->renderFinishedSemaphore[context->currentFrame];
@@ -1130,10 +1147,10 @@ void destroyVulkanContext(vulkanContext* context)
 
 void cleanSwapchain(vulkanContext* context)
 {
-    vkDestroyPipeline(context->device, context->pipeline, NULL);
-    vkDestroyPipelineLayout(context->device, context->pipelineLayout, NULL);
+    vkDestroyPipeline(context->device, engine.renderable.pipeline, NULL);
+    vkDestroyPipelineLayout(context->device, engine.renderable.pipelineLayout, NULL);
     vkDestroyRenderPass(context->device, context->renderPass, NULL);
-    vkFreeCommandBuffers(context->device, context->commandPool, context->imageCount, context->commandBuffers);
+    vkFreeCommandBuffers(context->device, context->commandPool, context->imageCount, engine.renderable.commandBuffers);
 
     for (uint32_t i = 0; i < context->imageCount; i++)
     {
@@ -1143,7 +1160,7 @@ void cleanSwapchain(vulkanContext* context)
 
     context->DestroySwapchainKHR(context->device, context->swapchain, NULL);
     free(context->images);
-    free(context->commandBuffers);
+    free(engine.renderable.commandBuffers);
     free(context->imageViews);
     free(context->swapChainFramebuffers);
 }

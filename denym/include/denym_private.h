@@ -48,11 +48,6 @@ typedef struct vulkanContext
 	VkRenderPass renderPass;
 	VkCommandPool commandPool;
 
-	// geometry
-	VkCommandBuffer* commandBuffers; // draw cmds
-	VkPipelineLayout pipelineLayout; // uniforms sent to shaders
-	VkPipeline pipeline;             // type of render
-
 	VkSemaphore imageAvailableSemaphore[MAX_FRAMES_IN_FLIGHT];
 	VkSemaphore renderFinishedSemaphore[MAX_FRAMES_IN_FLIGHT];
     VkFence inFlightFences[MAX_FRAMES_IN_FLIGHT];
@@ -78,45 +73,39 @@ typedef struct vulkanContext
 } vulkanContext;
 
 
+typedef struct geometry_t
+{
+	uint32_t vertexCount;
+
+	// attributes
+	uint32_t attribCount;
+	float *positions;
+	float *colors;
+
+	// constants
+
+	// uniforms
+} geometry_t;
+
+
+typedef struct renderable_t
+{
+	geometry_t geometry; // statically allocated for now
+	//const char *vertShaderName;
+	//const char *fragShaderName;
+	VkCommandBuffer* commandBuffers; // draw cmds
+	VkPipelineLayout pipelineLayout; // uniforms sent to shaders
+	VkPipeline pipeline;             // type of render
+} renderable_t;
+
+
 typedef struct denym
 {
 	vulkanContext vulkanContext;
 	GLFWwindow *window;
+
+	renderable_t renderable; // statically allocated for now
 } denym;
-
-/*
-typedef struct dnm_object
-{
-	const char *vertex_shader;
-	const char *fragment_shader;
-
-	int nb_vertices;
-
-	// vertex attributes
-	float *positions;
-	float *colors;
-
-	//int nb_uniforms;
-	//dnm_uniform uniforms;
-
-	// int nb_constant;
-	// dnm_shader_constants;
-} dnm_object;
-
-
-int dnm_init_object(
-	const char *vertex_shader,
-	const char *fragment_shader,
-	int nb_vertices,
-	dnm_object *object)
-{
-	object->positions = NULL;
-	object->colors = NULL;
-	object->nb_vertices = nb_vertices;
-
-	return 0;
-}
-*/
 
 
 void glfwErrorCallback(int error, const char* description);
@@ -147,21 +136,21 @@ int createSwapchain(vulkanContext* context);
 
 int createImageViews(vulkanContext* context);
 
-int loadShader(vulkanContext* context, const char* name, VkShaderModule *outShaderr);
+int loadShader(const char* name, VkShaderModule *outShaderr);
 
 int createRenderPass(vulkanContext* context);
 
-int createPipeline(vulkanContext* context, const char *vertShaderName, const char *fragShaderName);
+int createPipeline(const char *vertShaderName, const char *fragShaderName);
 
 int createFramebuffer(vulkanContext* context);
 
 int createCommandPool(vulkanContext* context);
 
-int createCommandBuffers(vulkanContext* context, uint32_t vertexCount);
+int createCommandBuffers(vulkanContext* context, renderable renderable);
 
 int createSynchronizationObjects(vulkanContext* context);
 
-void render(vulkanContext* context);
+void render(vulkanContext* context, renderable renderable);
 
 uint32_t clamp(uint32_t n, uint32_t min, uint32_t max);
 
