@@ -241,7 +241,7 @@ int createVulkanInstance(vulkanContext* context)
 
 	// TODO: check return value
 	context->CreateDebugUtilsMessengerEXT(context->instance, &debugMessengerCreateInfo, NULL, &context->messenger);
-	
+
 	return result;
 }
 
@@ -570,7 +570,7 @@ int createSwapchain(vulkanContext* context)
 	}
 
 	VkResult result = context->CreateSwapchainKHR(context->device, &createInfo, NULL, &context->swapchain);
-	
+
 	if (result != VK_SUCCESS)
 		fprintf(stderr, "Swapchain creation failed.\n");
 
@@ -616,7 +616,7 @@ int createImageViews(vulkanContext* context)
 int loadShader(vulkanContext* context, const char* name, VkShaderModule* outShaderr)
 {
 	FILE* f;
-	
+
 #ifdef _MSC_VER
 	fopen_s(&f, name, "rb");
 #else
@@ -635,7 +635,7 @@ int loadShader(vulkanContext* context, const char* name, VkShaderModule* outShad
 	fseek(f, 0, SEEK_SET);
 
 	uint32_t* data = malloc(size);
-	
+
 	if (fread(data, 1, size, f) != size)
 		perror("");
 
@@ -651,7 +651,7 @@ int loadShader(vulkanContext* context, const char* name, VkShaderModule* outShad
 		fprintf(stderr, "Failed to load shader \"%s\"", name);
 
 	free(data);
-	
+
 	return result;
 }
 
@@ -779,7 +779,7 @@ int createPipeline(vulkanContext* context)
 	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
 	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE; // see rasterizer.depth* for moar depth control
-	
+
 	// multisampling disabled
 	VkPipelineMultisampleStateCreateInfo multisampling = { VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
 	multisampling.sampleShadingEnable = VK_FALSE;
@@ -812,7 +812,7 @@ int createPipeline(vulkanContext* context)
 
 	/* If we list some of the previous stages here, they'll become dynamic and we'll
 	be able to change their value throughout the life of the pipeline
-	VkDynamicState dynamicStates[] = 
+	VkDynamicState dynamicStates[] =
 	{
 		VK_DYNAMIC_STATE_VIEWPORT,
 		VK_DYNAMIC_STATE_LINE_WIDTH
@@ -924,7 +924,7 @@ int createCommandBuffers(vulkanContext* context)
 	allocInfo.commandBufferCount = context->imageCount;
 
 	VkResult result = vkAllocateCommandBuffers(context->device, &allocInfo, context->commandBuffers);
-	
+
 	if (result != VK_SUCCESS)
 	{
 		fprintf(stderr, "Failed to allocate command buffers.\n");
@@ -947,7 +947,7 @@ int createCommandBuffers(vulkanContext* context)
 	renderPassInfo.clearValueCount = 1;
 	renderPassInfo.pClearValues = &clearColor;
 
-	for (uint32_t i = 0; i < context->imageCount; i++) 
+	for (uint32_t i = 0; i < context->imageCount; i++)
 	{
 		result = vkBeginCommandBuffer(context->commandBuffers[i], &beginInfo);
 
@@ -1044,7 +1044,7 @@ void render(vulkanContext *context)
 
 	result = vkQueueSubmit(context->graphicQueue, 1, &submitInfo, context->inFlightFences[context->currentFrame]);
 
-	if (result != VK_SUCCESS) 
+	if (result != VK_SUCCESS)
 	{
 		fprintf(stderr, "Failed to submit draw command buffer.\n");
 	}
@@ -1056,7 +1056,7 @@ void render(vulkanContext *context)
 	presentInfo.pSwapchains = &context->swapchain;
 	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = &result; // Optional when only one swapchain, provide an array in case of multiple swapchains
-	
+
     result = context->QueuePresentKHR(context->presentQueue, &presentInfo);
 
     if (result)
