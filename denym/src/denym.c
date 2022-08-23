@@ -713,10 +713,10 @@ int createPipeline(vulkanContext* context)
 	VkShaderModule vertShader;
 	VkShaderModule fragShader;
 
-	if (loadShader(context, "resources/shaders/first_example.vert.spv", &vertShader))
+	if (loadShader(context, "resources/shaders/hardcoded_triangle.vert.spv", &vertShader))
 		goto err_vert;
 
-	if (loadShader(context, "resources/shaders/first_example.frag.spv", &fragShader))
+	if (loadShader(context, "resources/shaders/basic_color_interp.frag.spv", &fragShader))
 		goto err_frag;
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
@@ -932,12 +932,23 @@ int createCommandBuffers(vulkanContext* context)
 		return result;
 	}
 
+	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	beginInfo.pInheritanceInfo = NULL; // NULL in case of primary
+
+	VkRenderPassBeginInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+	renderPassInfo.renderPass = context->renderPass;
+	// render area : pixels outside have undefined values
+	renderPassInfo.renderArea.offset.x = 0;
+	renderPassInfo.renderArea.offset.y = 0;
+	renderPassInfo.renderArea.extent = context->swapchainExtent;
+	// clear color (see VK_ATTACHMENT_LOAD_OP_CLEAR)
+	VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+	renderPassInfo.clearValueCount = 1;
+	renderPassInfo.pClearValues = &clearColor;
+
 	for (uint32_t i = 0; i < context->imageCount; i++) 
 	{
-		VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		beginInfo.pInheritanceInfo = NULL; // NULL in case of primary
-
 		result = vkBeginCommandBuffer(context->commandBuffers[i], &beginInfo);
 
 		if (result != VK_SUCCESS)
@@ -947,18 +958,7 @@ int createCommandBuffers(vulkanContext* context)
 			return result;
 		}
 
-		VkRenderPassBeginInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
-		renderPassInfo.renderPass = context->renderPass;
 		renderPassInfo.framebuffer = context->swapChainFramebuffers[i];
-		// render area : pixels outside have undefined values
-		renderPassInfo.renderArea.offset.x = 0;
-		renderPassInfo.renderArea.offset.y = 0;
-		renderPassInfo.renderArea.extent = context->swapchainExtent;
-		// clear color (see VK_ATTACHMENT_LOAD_OP_CLEAR)
-		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-		renderPassInfo.clearValueCount = 1;
-		renderPassInfo.pClearValues = &clearColor;
-
 		vkCmdBeginRenderPass(context->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // VK_SUBPASS_CONTENTS_INLINE for primary
 		vkCmdBindPipeline(context->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, context->pipeline);
 		vkCmdDraw(context->commandBuffers[i], 3, 1, 0, 0);
@@ -966,7 +966,7 @@ int createCommandBuffers(vulkanContext* context)
 
 		result = vkEndCommandBuffer(context->commandBuffers[i]);
 
-		if (result != VK_SUCCESS) 
+		if (result != VK_SUCCESS)
 		{
 			fprintf(stderr, "Failed to end recording command buffer %d/%d.\n", i + 1, context->imageCount);
 
@@ -995,18 +995,20 @@ int createSynchronizationObjects(vulkanContext* context)
             return -1;
         }
 
-        /*
-        VkDebugUtilsObjectNameInfoEXT objectNameInfo = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
-        objectNameInfo.objectType = VK_OBJECT_TYPE_SEMAPHORE;
+		/*
+		#ifdef _DEBUG
+		VkDebugUtilsObjectNameInfoEXT objectNameInfo = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+		objectNameInfo.objectType = VK_OBJECT_TYPE_SEMAPHORE;
 
-        objectNameInfo.pObjectName = "Image available semaphore";
-        objectNameInfo.objectHandle = (uint64_t)context->imageAvailableSemaphore;
-        context->SetDebugUtilsObjectNameEXT(context->device, &objectNameInfo);
+		objectNameInfo.pObjectName = "Image available semaphore";
+		objectNameInfo.objectHandle = (uint64_t)context->imageAvailableSemaphore;
+		context->SetDebugUtilsObjectNameEXT(context->device, &objectNameInfo);
 
-        objectNameInfo.pObjectName = "Render finished semaphore";
-        objectNameInfo.objectHandle = (uint64_t)context->renderFinishedSemaphore;
-        context->SetDebugUtilsObjectNameEXT(context->device, &objectNameInfo);
-        */
+		objectNameInfo.pObjectName = "Render finished semaphore";
+		objectNameInfo.objectHandle = (uint64_t)context->renderFinishedSemaphore;
+		context->SetDebugUtilsObjectNameEXT(context->device, &objectNameInfo);
+		#endif
+		*/
     }
 
 	return 0;
