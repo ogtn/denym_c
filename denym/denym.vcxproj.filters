@@ -21,6 +21,9 @@
     <ClCompile Include="src\denym.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\triangle.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\first_example.frag">
@@ -29,5 +32,13 @@
     <None Include="resources\shaders\first_example.vert">
       <Filter>shaders</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\denym.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\denym_private.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

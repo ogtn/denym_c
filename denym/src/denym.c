@@ -1,13 +1,14 @@
-#include "denym_private.h"
-#include <stdio.h>
-#include <string.h>
-
 #ifdef _MSC_VER
 #include <windows.h>
 void usleep(__int64 usec);
 #else
 #include <unistd.h>
 #endif
+
+
+#include "denym_private.h"
+#include <stdio.h>
+#include <string.h>
 
 
 static denym engine;

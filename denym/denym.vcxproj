@@ -71,6 +71,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LibraryPath>$(SolutionDir)/lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(MSBuildProjectDirectory)\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -136,10 +137,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\denym.c" />
+    <ClCompile Include="src\triangle.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\first_example.frag" />
     <None Include="resources\shaders\first_example.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\denym.h" />
+    <ClInclude Include="include\denym_private.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
