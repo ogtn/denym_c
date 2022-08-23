@@ -57,15 +57,30 @@ geometry denymCreateGeometry(uint32_t vertexCount)
 }
 
 
+void denymGeometryAddPosition(geometry geometry, float *positions)
+{
+	geometry->attribCount++;
+	geometry->positions = positions;
+}
+
+
+void denymGeometryAddColors(geometry geometry, float *colors)
+{
+	geometry->attribCount++;
+	geometry->colors = colors;
+}
+
+
 renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, const char *fragShaderName)
 {
 	renderable renderable = &engine.renderable;
 
-	//renderable->vertShaderName = vertShaderName;
-	//renderable->fragShaderName = fragShaderName;
+	renderable->vertShaderName = vertShaderName;
+	renderable->fragShaderName = fragShaderName;
 	// renderable->geometry = geometry;
 
-	if(!createPipeline(vertShaderName, fragShaderName) &&
+	if(!createPipeline(renderable) &&
+		!createVertexBuffers(geometry) &&
 		!createCommandBuffers(&engine.vulkanContext, renderable))
 	{
 		return renderable;
@@ -739,16 +754,16 @@ int createRenderPass(vulkanContext* context)
 }
 
 
-int createPipeline(const char *vertShaderName, const char *fragShaderName)
+int createPipeline(renderable renderable)
 {
 	int result = -1;
 	VkShaderModule vertShader;
 	VkShaderModule fragShader;
 
-	if (loadShader(vertShaderName, &vertShader))
+	if (loadShader(renderable->vertShaderName, &vertShader))
 		goto err_vert;
 
-	if (loadShader(fragShaderName, &fragShader))
+	if (loadShader(renderable->fragShaderName, &fragShader))
 		goto err_frag;
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
@@ -766,13 +781,52 @@ int createPipeline(const char *vertShaderName, const char *fragShaderName)
 	shaderStages[0] = vertShaderStageInfo;
 	shaderStages[1] = fragShaderStageInfo;
 
-	// empty in our case, as we don't send vertex attributes
-	// everything is hardcoded in the shaders
+	// vertex attributes
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
-	vertexInputInfo.vertexBindingDescriptionCount = 0;
-	vertexInputInfo.pVertexBindingDescriptions = NULL;
-	vertexInputInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputInfo.pVertexAttributeDescriptions = NULL;
+
+	if(renderable->geometry.attribCount > 0)
+	{
+		vertexInputInfo.vertexBindingDescriptionCount = renderable->geometry.attribCount;
+		vertexInputInfo.vertexAttributeDescriptionCount = renderable->geometry.attribCount;
+
+		VkVertexInputAttributeDescription *vertextAttributeDescriptions = malloc(sizeof * vertextAttributeDescriptions * renderable->geometry.attribCount);
+		VkVertexInputBindingDescription *vertexBindingDescriptions = malloc(sizeof * vertexBindingDescriptions * renderable->geometry.attribCount);
+
+		// here we could have had positions and colors in the same array
+		// in this case, only one vertexBindingDescriptions, and two vertextAttributeDescriptions
+
+		if(renderable->geometry.positions)
+		{
+			vertextAttributeDescriptions[0].binding = 0;
+			vertextAttributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT; // vec2
+			vertextAttributeDescriptions[0].location = 0;
+			vertextAttributeDescriptions[0].offset = 0; // because only one type of data in this array (positions), no interleaving
+
+			vertexBindingDescriptions[0].binding = 0;
+			vertexBindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			vertexBindingDescriptions[0].stride = sizeof(float) * 2;
+		}
+
+		if(renderable->geometry.colors)
+		{
+			vertextAttributeDescriptions[1].binding = 1;
+			vertextAttributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT; // vec3
+			vertextAttributeDescriptions[1].location = 1;
+			vertextAttributeDescriptions[1].offset = 0; // because only one type of data in this array (colors), no interleaving
+
+			vertexBindingDescriptions[1].binding = 1;
+			vertexBindingDescriptions[1].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			vertexBindingDescriptions[1].stride = sizeof(float) * 3;
+		}
+
+		vertexInputInfo.pVertexAttributeDescriptions = vertextAttributeDescriptions;
+		vertexInputInfo.pVertexBindingDescriptions = vertexBindingDescriptions;
+	}
+	else
+	{
+		vertexInputInfo.pVertexAttributeDescriptions = NULL;
+		vertexInputInfo.pVertexBindingDescriptions = NULL;
+	}
 
 	// type of geometry we want to draw
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly = { VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
@@ -946,6 +1000,87 @@ int createCommandPool(vulkanContext* context)
 }
 
 
+int createVertexBuffers(geometry geometry)
+{
+	if(geometry->positions)
+		createVertexBuffer(
+			sizeof * geometry->positions * geometry->vertexCount * 2,
+			&geometry->bufferPositions,
+			&geometry->memoryPositions,
+			geometry->positions);
+
+	if(geometry->colors)
+		createVertexBuffer(
+			sizeof * geometry->colors * geometry->vertexCount * 3,
+			&geometry->bufferColors,
+			&geometry->memoryColors,
+			geometry->colors);
+
+	return 0; // BAAAAAAAD TODO, clean this shit
+}
+
+
+int createVertexBuffer(uint32_t size, VkBuffer* buffer, VkDeviceMemory* vertexBufferMemory, void* src)
+{
+	VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	bufferCreateInfo.size = size;
+	bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	// TODO destroy this with geometry
+	if(vkCreateBuffer(engine.vulkanContext.device, &bufferCreateInfo, NULL, buffer))
+		return -1;
+
+	VkMemoryRequirements bufferMemoryRequirements;
+	vkGetBufferMemoryRequirements(engine.vulkanContext.device, *buffer, &bufferMemoryRequirements);
+
+	bufferMemoryRequirements.alignment;
+	bufferMemoryRequirements.memoryTypeBits;
+	bufferMemoryRequirements.size;
+
+	VkMemoryAllocateInfo memoryAllocateInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
+	memoryAllocateInfo.allocationSize = bufferMemoryRequirements.size;
+	findMemoryTypeIndex(
+		bufferMemoryRequirements.memoryTypeBits,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		&memoryAllocateInfo.memoryTypeIndex);
+
+	if(vkAllocateMemory(engine.vulkanContext.device, &memoryAllocateInfo, NULL, vertexBufferMemory))
+		return -1;
+
+	// only one vertex buffer that takes all the memory, so offset is 0
+	if(vkBindBufferMemory(engine.vulkanContext.device, *buffer, *vertexBufferMemory, 0))
+		return -1;
+
+	// actually copy the data to the allocated memory
+	void *dest;
+	vkMapMemory(engine.vulkanContext.device, *vertexBufferMemory, 0, size, 0, &dest);
+    memcpy(dest, src, size);
+	vkUnmapMemory(engine.vulkanContext.device, *vertexBufferMemory);
+
+	return 0;
+}
+
+
+int findMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties, uint32_t* index)
+{
+	VkPhysicalDeviceMemoryProperties memProperties;
+	vkGetPhysicalDeviceMemoryProperties(engine.vulkanContext.physicalDevice, &memProperties);
+
+	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+	{
+		if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+		{
+			*index = i;
+
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+
 int createCommandBuffers(vulkanContext* context, renderable renderable)
 {
 	renderable->commandBuffers = malloc(sizeof * renderable->commandBuffers * context->imageCount);
@@ -993,6 +1128,22 @@ int createCommandBuffers(vulkanContext* context, renderable renderable)
 		renderPassInfo.framebuffer = context->swapChainFramebuffers[i];
 		vkCmdBeginRenderPass(renderable->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // VK_SUBPASS_CONTENTS_INLINE for primary
 		vkCmdBindPipeline(renderable->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipeline);
+
+		// bind vertex attributes
+		if(renderable->geometry.attribCount > 0)
+		{
+			VkBuffer buffers[] = {
+				renderable->geometry.bufferPositions,
+				renderable->geometry.bufferColors
+			};
+			VkDeviceSize offsets[] = {
+				0,
+				0
+			};
+
+			vkCmdBindVertexBuffers(renderable->commandBuffers[i], 0, 2, buffers, offsets);
+		}
+
 		vkCmdDraw(renderable->commandBuffers[i], renderable->geometry.vertexCount, 1, 0, 0);
 		vkCmdEndRenderPass(renderable->commandBuffers[i]);
 

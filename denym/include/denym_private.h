@@ -81,6 +81,10 @@ typedef struct geometry_t
 	uint32_t attribCount;
 	float *positions;
 	float *colors;
+	VkBuffer bufferPositions;
+	VkBuffer bufferColors;
+	VkDeviceMemory memoryPositions;
+	VkDeviceMemory memoryColors;
 
 	// constants
 
@@ -91,8 +95,8 @@ typedef struct geometry_t
 typedef struct renderable_t
 {
 	geometry_t geometry; // statically allocated for now
-	//const char *vertShaderName;
-	//const char *fragShaderName;
+	const char *vertShaderName;
+	const char *fragShaderName;
 	VkCommandBuffer* commandBuffers; // draw cmds
 	VkPipelineLayout pipelineLayout; // uniforms sent to shaders
 	VkPipeline pipeline;             // type of render
@@ -140,11 +144,17 @@ int loadShader(const char* name, VkShaderModule *outShaderr);
 
 int createRenderPass(vulkanContext* context);
 
-int createPipeline(const char *vertShaderName, const char *fragShaderName);
+int createPipeline(renderable renderable);
 
 int createFramebuffer(vulkanContext* context);
 
 int createCommandPool(vulkanContext* context);
+
+int createVertexBuffers(geometry geometry);
+
+int createVertexBuffer(uint32_t size, VkBuffer* buffer, VkDeviceMemory* vertexBufferMemory, void* src);
+
+int findMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties, uint32_t* index);
 
 int createCommandBuffers(vulkanContext* context, renderable renderable);
 

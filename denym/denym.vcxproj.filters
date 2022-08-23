@@ -21,7 +21,7 @@
     <ClCompile Include="src\denym.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\hardcoded_triangle.c">
+    <ClCompile Include="src\vertex_attribute_triangle.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

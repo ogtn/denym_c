@@ -20,6 +20,11 @@ typedef struct geometry_t* geometry;
 
 geometry denymCreateGeometry(uint32_t vertexCount);
 
+void denymGeometryAddPosition(geometry, float *positions);
+
+void denymGeometryAddColors(geometry, float *colors);
+
+
 typedef struct renderable_t* renderable;
 
 renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, const char *fragShaderName);
