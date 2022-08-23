@@ -1,0 +1,6 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory '/home/olivier/private/denym'
+make: Leaving directory '/home/olivier/private/denym'
+ 
+make: *** No targets specified and no makefile found.  Stop.
+

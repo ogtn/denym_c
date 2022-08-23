@@ -1,9 +1,6 @@
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#include "denym_private.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-
 
 #ifdef _MSC_VER
 #include <windows.h>
@@ -13,177 +10,77 @@ void usleep(__int64 usec);
 #endif
 
 
-static const char* APP_NAME = "Denym WIP";
-static const int APP_VERSION = VK_MAKE_VERSION(0, 1, 0);
-
-static const char* ENGINE_NAME = "Denym";
-static const int ENGINE_VERSION = VK_MAKE_VERSION(0, 1, 0);
-
-#define MAX_FRAMES_IN_FLIGHT 2
-
-#define DECL_VK_PFN(name) PFN_vk##name name
+static denym engine;
 
 
-typedef struct vulkanContext
+int denymInit(int window_width, int window_height)
 {
-	VkInstance instance;
+	int result = -1;
 
-	VkPhysicalDevice physicalDevice;
-	VkPhysicalDeviceProperties physicalDeviceProperties;
-	VkPhysicalDeviceFeatures physicalDeviceFeatures;
-	VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties;
-	int graphicsQueueFamilyIndex;
-	int presentQueueFamilyIndex;
-
-	VkDevice device;
-	VkSurfaceKHR surface;
-	VkSurfaceFormatKHR surfaceFormat;
-	VkPresentModeKHR presentMode;
-	VkSurfaceCapabilitiesKHR surfaceCapabilities;
-	VkQueue graphicQueue;
-	VkQueue presentQueue;
-	VkDebugUtilsMessengerEXT messenger;
-
-	VkSwapchainKHR swapchain;
-	VkExtent2D swapchainExtent;
-	VkImage* images;
-	VkImageView* imageViews;
-	uint32_t imageCount;
-	VkFramebuffer *swapChainFramebuffers;
-
-	VkRenderPass renderPass;
-	VkPipelineLayout pipelineLayout;
-	VkPipeline pipeline;
-
-	VkCommandPool commandPool;
-	VkCommandBuffer* commandBuffers;
-
-	VkSemaphore imageAvailableSemaphore[MAX_FRAMES_IN_FLIGHT];
-	VkSemaphore renderFinishedSemaphore[MAX_FRAMES_IN_FLIGHT];
-    VkFence inFlightFences[MAX_FRAMES_IN_FLIGHT];
-    int currentFrame;
-
-	// instance extension functions
-	DECL_VK_PFN(GetDeviceProcAddr);
-	DECL_VK_PFN(GetPhysicalDeviceSurfaceSupportKHR);
-	DECL_VK_PFN(GetPhysicalDeviceSurfaceCapabilitiesKHR);
-	DECL_VK_PFN(GetPhysicalDeviceSurfaceFormatsKHR);
-	DECL_VK_PFN(GetPhysicalDeviceSurfacePresentModesKHR);
-	DECL_VK_PFN(CreateDebugUtilsMessengerEXT);
-	DECL_VK_PFN(DestroyDebugUtilsMessengerEXT);
-
-	// device extensions functions
-	DECL_VK_PFN(DestroySurfaceKHR);
-	DECL_VK_PFN(CreateSwapchainKHR);
-	DECL_VK_PFN(DestroySwapchainKHR);
-	DECL_VK_PFN(GetSwapchainImagesKHR);
-	DECL_VK_PFN(AcquireNextImageKHR);
-	DECL_VK_PFN(QueuePresentKHR);
-	DECL_VK_PFN(SetDebugUtilsObjectNameEXT);
-} vulkanContext;
-
-void glfwErrorCallback(int error, const char* description);
-
-VKAPI_ATTR VkBool32 VKAPI_CALL vulkanErrorCallback(
-	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-	VkDebugUtilsMessageTypeFlagsEXT messageType,
-	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-	void* pUserData);
-
-GLFWwindow* createWindow(int width, int height);
-
-int getPhysicalDevice(vulkanContext* context);
-
-void getPhyscalDeviceCapabilities(vulkanContext* context);
-
-int getDevice(vulkanContext* context);
-
-int createVulkanInstance(vulkanContext* context);
-
-int getInstanceExtensionsAddr(vulkanContext* context);
-
-int getDeviceExtensionsAddr(vulkanContext* context);
-
-int getSwapchainCapabilities(vulkanContext* context);
-
-int createSwapchain(vulkanContext* context);
-
-int createImageViews(vulkanContext* context);
-
-int loadShader(vulkanContext* context, const char* name, VkShaderModule *outShaderr);
-
-int createRenderPass(vulkanContext* context);
-
-int createPipeline(vulkanContext* context);
-
-int createFramebuffer(vulkanContext* context);
-
-int createCommandPool(vulkanContext* context);
-
-int createCommandBuffers(vulkanContext* context);
-
-int createSynchronizationObjects(vulkanContext* context);
-
-void render(vulkanContext* context);
-
-uint32_t clamp(uint32_t n, uint32_t min, uint32_t max);
-
-VkExtent2D clampExtent2D(VkExtent2D e, VkExtent2D min, VkExtent2D max);
-
-void destroyVulkanContext(vulkanContext* context);
-
-void cleanSwapchain(vulkanContext* context);
-
-
-int main(void)
-{
-	const int width = 640;
-	const int height = 480;
-	int result = EXIT_FAILURE;
-
-	GLFWwindow* window = NULL;
-	vulkanContext context = { 0 };
-
-	if ((window = createWindow(width, height)) != NULL &&
-		!createVulkanInstance(&context) &&
-		!glfwCreateWindowSurface(context.instance, window, NULL, &context.surface) &&
-		!getPhysicalDevice(&context) &&
-		!getDevice(&context) &&
-		!getDeviceExtensionsAddr(&context) &&
-		!getSwapchainCapabilities(&context) &&
-		!createSwapchain(&context) &&
-		!createImageViews(&context) &&
-		!createRenderPass(&context) &&
-		!createPipeline(&context) &&
-		!createFramebuffer(&context) &&
-		!createCommandPool(&context) &&
-		!createCommandBuffers(&context) &&
-		!createSynchronizationObjects(&context))
+	if ((engine.window = createWindow(window_width, window_height)) != NULL &&
+		!createVulkanInstance(&engine.vulkanContext) &&
+		!glfwCreateWindowSurface(engine.vulkanContext.instance, engine.window, NULL, &engine.vulkanContext.surface) &&
+		!getPhysicalDevice(&engine.vulkanContext) &&
+		!getDevice(&engine.vulkanContext) &&
+		!getDeviceExtensionsAddr(&engine.vulkanContext) &&
+		!getSwapchainCapabilities(&engine.vulkanContext) &&
+		!createSwapchain(&engine.vulkanContext) &&
+		!createImageViews(&engine.vulkanContext) &&
+		!createRenderPass(&engine.vulkanContext) &&
+		!createPipeline(&engine.vulkanContext) &&
+		!createFramebuffer(&engine.vulkanContext) &&
+		!createCommandPool(&engine.vulkanContext) &&
+		!createCommandBuffers(&engine.vulkanContext) &&
+		!createSynchronizationObjects(&engine.vulkanContext))
 	{
-		result = EXIT_SUCCESS;
-        context.currentFrame = 0;
-
-		while (!glfwWindowShouldClose(window) && !glfwGetKey(window, GLFW_KEY_ESCAPE))
-		{
-			render(&context);
-            context.currentFrame = (context.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-			usleep(2000);
-			glfwPollEvents();
-		}
+		result = 0;
+        engine.vulkanContext.currentFrame = 0;
 	}
-
-	vkDeviceWaitIdle(context.device);
-	destroyVulkanContext(&context);
-	glfwDestroyWindow(window);
-	glfwTerminate();
+	else
+	{
+		denymTerminate();
+	}
 
 	return result;
 }
 
 
+void denymTerminate(void)
+{
+	vkDeviceWaitIdle(engine.vulkanContext.device);
+	destroyVulkanContext(&engine.vulkanContext);
+	glfwDestroyWindow(engine.window);
+	glfwTerminate();
+
+	memset(&engine.vulkanContext, 0, sizeof(vulkanContext));
+	memset(&engine, 0, sizeof(denym));
+}
+
+
+int denymKeepRunning(void)
+{
+	glfwPollEvents();
+
+	return !glfwWindowShouldClose(engine.window) && !glfwGetKey(engine.window, GLFW_KEY_ESCAPE);
+}
+
+
+void denymRender(void)
+{
+	render(&engine.vulkanContext);
+	engine.vulkanContext.currentFrame = (engine.vulkanContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+
+void denymWaitForNextFrame(void)
+{
+	usleep(2000);
+}
+
+
 void glfwErrorCallback(int error, const char* description)
 {
-	fprintf(stderr, "Error %d occured : %s\n", error, description);
+	fprintf(stderr, "GLFW error %d occured : %s\n", error, description);
 }
 
 
@@ -299,7 +196,7 @@ int createVulkanInstance(vulkanContext* context)
 	appInfo.applicationVersion = APP_VERSION;
 	appInfo.pEngineName = ENGINE_NAME;
 	appInfo.engineVersion = ENGINE_VERSION;
-	appInfo.apiVersion = VK_API_VERSION_1_1;
+	appInfo.apiVersion = VK_API_VERSION_1_3;
 
 	// Configure debug logger callback
 	VkDebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = { VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT };
@@ -322,7 +219,7 @@ int createVulkanInstance(vulkanContext* context)
 	instInfo.ppEnabledExtensionNames = requestedExtensions;
 	// Use validation layers if this is a debug build
 #if defined(_DEBUG)
-	const char* layers[] = { "VK_LAYER_LUNARG_standard_validation" };
+	const char* layers[] = { "VK_LAYER_KHRONOS_validation" };
 	instInfo.enabledLayerCount = sizeof(layers) / sizeof layers[0];
 	instInfo.ppEnabledLayerNames = layers;
 #endif
@@ -372,19 +269,35 @@ int getPhysicalDevice(vulkanContext* context)
 		}
 	}
 
+	if (matchingPhysicalDevice == NULL)
+	{
+		for (uint32_t i = 0; i < count; i++)
+		{
+			VkPhysicalDeviceProperties physicalDeviceProperties;
+			vkGetPhysicalDeviceProperties(physicalDevices[i], &physicalDeviceProperties);
+
+			if (physicalDeviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
+			{
+				matchingPhysicalDevice = physicalDevices[i];
+				context->physicalDeviceProperties = physicalDeviceProperties;
+				break;
+			}
+		}
+	}
+
 	free(physicalDevices);
 
 	if (matchingPhysicalDevice == NULL)
 		return -1;
 
 	context->physicalDevice = matchingPhysicalDevice;
-	getPhyscalDeviceCapabilities(context);
+	getPhysicalDeviceCapabilities(context);
 
 	return 0;
 }
 
 
-void getPhyscalDeviceCapabilities(vulkanContext* context)
+void getPhysicalDeviceCapabilities(vulkanContext* context)
 {
 	uint32_t queueFamilyCount;
 	vkGetPhysicalDeviceQueueFamilyProperties(context->physicalDevice, &queueFamilyCount, NULL);
@@ -497,28 +410,30 @@ int getDevice(vulkanContext *context)
 }
 
 
-#define getInstanceProcAddr(vulkanContext, name)																			\
-    do {																													\
-        if((vulkanContext->name = (PFN_vk##name)glfwGetInstanceProcAddress(vulkanContext->instance, "vk" #name)) == NULL)	\
-		{																													\
-			fprintf(stderr, "Failed to get 'vk" #name " pointer from loader'\n");											\
-			return -1;																										\
-		}																													\
-    } while(0)																												\
+#define getInstanceProcAddr(vulkanContext, name)                                                                            \
+	do {                                                                                                                    \
+		if((vulkanContext->name = (PFN_vk##name)glfwGetInstanceProcAddress(vulkanContext->instance, "vk" #name)) == NULL)   \
+		{                                                                                                                   \
+			fprintf(stderr, "Failed to get 'vk" #name " pointer from loader'\n");                                           \
+			res = -1;                                                                                                       \
+		}                                                                                                                   \
+	} while(0)                                                                                                              \
 
 
-#define getDeviceProcAddr(vulkanContext, name)																					\
-    do {																														\
-        if((vulkanContext->name = (PFN_vk##name)vulkanContext->GetDeviceProcAddr(vulkanContext->device, "vk" #name)) == NULL)	\
-		{																														\
-			fprintf(stderr, "Failed to get 'vk" #name " pointer from loader'\n");												\
-			return -1;																											\
-		}																														\
-    } while(0)																													\
+#define getDeviceProcAddr(vulkanContext, name)                                                                                  \
+	do {                                                                                                                        \
+		if((vulkanContext->name = (PFN_vk##name)vulkanContext->GetDeviceProcAddr(vulkanContext->device, "vk" #name)) == NULL)   \
+		{                                                                                                                       \
+			fprintf(stderr, "Failed to get 'vk" #name " pointer from loader'\n");                                               \
+			res = -1;                                                                                                           \
+		}                                                                                                                       \
+	} while(0)                                                                                                                  \
 
 
 int getInstanceExtensionsAddr(vulkanContext* context)
 {
+	int res = 0;
+
 	getInstanceProcAddr(context, GetDeviceProcAddr);
 	getInstanceProcAddr(context, GetPhysicalDeviceSurfaceSupportKHR);
 	getInstanceProcAddr(context, GetPhysicalDeviceSurfaceCapabilitiesKHR);
@@ -527,12 +442,14 @@ int getInstanceExtensionsAddr(vulkanContext* context)
 	getInstanceProcAddr(context, CreateDebugUtilsMessengerEXT);
 	getInstanceProcAddr(context, DestroyDebugUtilsMessengerEXT);
 
-	return 0;
+	return res;
 }
 
 
 int getDeviceExtensionsAddr(vulkanContext* context)
 {
+	int res = 0;
+
 	getDeviceProcAddr(context, DestroySurfaceKHR);
 	getDeviceProcAddr(context, CreateSwapchainKHR);
 	getDeviceProcAddr(context, DestroySwapchainKHR);
@@ -707,7 +624,7 @@ int loadShader(vulkanContext* context, const char* name, VkShaderModule* outShad
 
 	if (f == NULL)
 	{
-		perror("");
+		perror(name);
 
 		return -1;
 	}
@@ -795,10 +712,10 @@ int createPipeline(vulkanContext* context)
 	VkShaderModule vertShader;
 	VkShaderModule fragShader;
 
-	if (loadShader(context, "resources/shaders/vert.spv", &vertShader))
+	if (loadShader(context, "resources/shaders/first_example.vert.spv", &vertShader))
 		goto err_vert;
 
-	if (loadShader(context, "resources/shaders/frag.spv", &fragShader))
+	if (loadShader(context, "resources/shaders/first_example.frag.spv", &fragShader))
 		goto err_frag;
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };

@@ -23,10 +23,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="resources\shaders\first_example.fs">
+    <None Include="resources\shaders\first_example.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="resources\shaders\first_example.vs">
+    <None Include="resources\shaders\first_example.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

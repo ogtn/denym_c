@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "glfw3.h": "c",
+        "string.h": "c",
+        "vulkan.h": "c",
+        "xlib.h": "c",
+        "vulkan_xlib.h": "c",
+        "vk_platform.h": "c",
+        "vulkan_core.h": "c",
+        "denym_private.h": "c",
+        "denym.h": "c",
+        "unistd.h": "c"
+    }
+}
