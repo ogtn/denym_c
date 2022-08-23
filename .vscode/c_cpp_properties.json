@@ -1,12 +1,12 @@
 {
     "configurations": [
         {
-            "name": "Linux",
+            "name": "Linux debug",
             "includePath": [
-                "${workspaceFolder}/**",
+                "${workspaceFolder}/include/",
                 "${workspaceFolder}/denym/include/"
             ],
-            "defines": [],
+            "defines": ["_DEBUG"],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c17",
             "cppStandard": "c++14",

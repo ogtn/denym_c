@@ -6,10 +6,17 @@
             "command": "/usr/bin/clang",
             "args": [
                 "-fdiagnostics-color=always",
+
                 "-g",
+                "-D_DEBUG",
+
                 "${file}",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}",
+
+                "-I${workspaceFolder}/include/",
+                "-I${workspaceFolder}/denym/include/",
+
                 "-lvulkan",
                 "-lglfw"
             ],
