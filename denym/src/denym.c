@@ -8,6 +8,7 @@ void usleep(__int64 usec);
 
 #include "denym_private.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 
@@ -275,7 +276,7 @@ int createVulkanInstance(vulkanContext* context)
 	if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
 		fprintf(stderr, "Unable to find a compatible Vulkan Driver.\n");
 	else if (result)
-		fprintf(stderr, "Could not create a Vulkan instance (for unknown reasons).");
+		fprintf(stderr, "Could not create a Vulkan instance (for unknown reasons).\n");
 
 	free((void*)requestedExtensions); // cast to avoid C4090 warning from MSVC
 	free(availableExtensions);
@@ -284,7 +285,7 @@ int createVulkanInstance(vulkanContext* context)
 	getInstanceExtensionsAddr(context);
 
 	// TODO: check return value
-	context->CreateDebugUtilsMessengerEXT(context->instance, &debugMessengerCreateInfo, NULL, &context->messenger);
+	//context->CreateDebugUtilsMessengerEXT(context->instance, &debugMessengerCreateInfo, NULL, &context->messenger);
 
 	return result;
 }
@@ -330,10 +331,29 @@ int getPhysicalDevice(vulkanContext* context)
 		}
 	}
 
+	if (matchingPhysicalDevice == NULL)
+	{
+		for (uint32_t i = 0; i < count; i++)
+		{
+			VkPhysicalDeviceProperties physicalDeviceProperties;
+			vkGetPhysicalDeviceProperties(physicalDevices[i], &physicalDeviceProperties);
+
+			if (physicalDeviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU)
+			{
+				matchingPhysicalDevice = physicalDevices[i];
+				context->physicalDeviceProperties = physicalDeviceProperties;
+				break;
+			}
+		}
+	}
+
 	free(physicalDevices);
 
 	if (matchingPhysicalDevice == NULL)
+	{
+		fprintf(stderr, "Unable to find a physical device.\n");
 		return -1;
+	}
 
 	context->physicalDevice = matchingPhysicalDevice;
 	getPhysicalDeviceCapabilities(context);
