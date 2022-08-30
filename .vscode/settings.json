@@ -10,6 +10,9 @@
         "denym_private.h": "c",
         "denym.h": "c",
         "unistd.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "gl.h": "c",
+        "cstdlib": "c",
+        "stdlib.h": "c"
     }
 }

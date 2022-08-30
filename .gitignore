@@ -1,3 +1,4 @@
 UpgradeLog.htm
 denym/resources/shaders/*.spv
 x64/
+.vs
