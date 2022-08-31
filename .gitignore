@@ -1,4 +1,6 @@
 UpgradeLog.htm
-denym/resources/shaders/*.spv
+*.spv
 x64/
 .vs
+bin/
+dep/
