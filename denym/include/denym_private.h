@@ -27,8 +27,8 @@ typedef struct vulkanContext
 	VkPhysicalDeviceProperties physicalDeviceProperties;
 	VkPhysicalDeviceFeatures physicalDeviceFeatures;
 	VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties;
-	int graphicsQueueFamilyIndex;
-	int presentQueueFamilyIndex;
+	uint32_t graphicsQueueFamilyIndex;
+	uint32_t presentQueueFamilyIndex;
 
 	VkDevice device;
 	VkSurfaceKHR surface;
@@ -47,6 +47,7 @@ typedef struct vulkanContext
 	VkFramebuffer *swapChainFramebuffers;
 	VkRenderPass renderPass;
 	VkCommandPool commandPool;
+	VkCommandPool bufferCopyCommandPool;
 	VkBool32 framebufferResized;
 
 	VkSemaphore imageAvailableSemaphore[MAX_FRAMES_IN_FLIGHT];
@@ -157,7 +158,13 @@ int createCommandPool(vulkanContext* context);
 
 int createVertexBuffers(geometry geometry);
 
-int createVertexBuffer(uint32_t size, VkBuffer* buffer, VkDeviceMemory* vertexBufferMemory, void* src);
+int createBuffer(VkDeviceSize size, VkBuffer *buffer, VkDeviceMemory *vertexBufferMemory, VkMemoryPropertyFlags properties, VkBufferUsageFlags bufferUsage);
+
+int createVertexBuffer(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* vertexBufferMemory, void* src);
+
+int createVertexBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* vertexBufferMemory, void* src);
+
+int copyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size);
 
 int findMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties, uint32_t* index);
 

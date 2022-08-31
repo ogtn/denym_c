@@ -1,15 +1,8 @@
-#ifdef _MSC_VER
-#include <windows.h>
-void usleep(__int64 usec);
-#else
-#include <unistd.h>
-#endif
-
-
 #include "denym_private.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <threads.h>
 
 
 static denym engine;
@@ -116,7 +109,11 @@ void denymRender(void)
 
 void denymWaitForNextFrame(void)
 {
-	usleep(2000);
+	struct timespec duration;
+	duration.tv_sec = 0;
+	duration.tv_nsec = 2000000;
+
+	thrd_sleep(&duration, NULL);
 }
 
 
@@ -613,7 +610,7 @@ int createSwapchain(vulkanContext* context)
 	{
 		int width, height;
 		glfwGetFramebufferSize(engine.window, &width, &height);
-		VkExtent2D windowExtent = { width, height };
+		VkExtent2D windowExtent = { (uint32_t)width, (uint32_t)height };
 
 		context->swapchainExtent = clampExtent2D(
 			windowExtent,
@@ -744,7 +741,7 @@ int loadShader(const char* name, VkShaderModule* outShaderr)
 	}
 
 	fseek(f, 0, SEEK_END);
-	uint32_t size = ftell(f);
+	size_t size = (size_t)ftell(f);
 	fseek(f, 0, SEEK_SET);
 
 	uint32_t* data = malloc(size);
@@ -1053,6 +1050,7 @@ int createFramebuffer(vulkanContext* context)
 
 int createCommandPool(vulkanContext* context)
 {
+	// main command pool
 	VkCommandPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
 	poolInfo.queueFamilyIndex = context->graphicsQueueFamilyIndex;
 	poolInfo.flags = 0; // we don't care for this small example, with a fully static scene
@@ -1060,7 +1058,15 @@ int createCommandPool(vulkanContext* context)
 	VkResult result = vkCreateCommandPool(context->device, &poolInfo, NULL, &context->commandPool);
 
 	if (result != VK_SUCCESS)
-		fprintf(stderr, "Error while creating the command pool.\n");
+		fprintf(stderr, "Error while creating the main command pool.\n");
+
+	// dedicated to buffer copies
+	poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+
+	result = vkCreateCommandPool(context->device, &poolInfo, NULL, &context->bufferCopyCommandPool);
+
+	if (result != VK_SUCCESS)
+		fprintf(stderr, "Error while creating the transient command pool.\n");
 
 	return result;
 }
@@ -1069,14 +1075,14 @@ int createCommandPool(vulkanContext* context)
 int createVertexBuffers(geometry geometry)
 {
 	if(geometry->positions)
-		createVertexBuffer(
+		createVertexBufferWithStaging(
 			sizeof * geometry->positions * geometry->vertexCount * 2,
 			&geometry->bufferPositions,
 			&geometry->memoryPositions,
 			geometry->positions);
 
 	if(geometry->colors)
-		createVertexBuffer(
+		createVertexBufferWithStaging(
 			sizeof * geometry->colors * geometry->vertexCount * 3,
 			&geometry->bufferColors,
 			&geometry->memoryColors,
@@ -1086,11 +1092,48 @@ int createVertexBuffers(geometry geometry)
 }
 
 
-int createVertexBuffer(uint32_t size, VkBuffer* buffer, VkDeviceMemory* vertexBufferMemory, void* src)
+int createVertexBuffer(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* vertexBufferMemory, void* src)
+{
+	createBuffer(size, buffer, vertexBufferMemory, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+
+	// copy the data to the allocated memory of the vertex buffer
+	void *dest;
+	vkMapMemory(engine.vulkanContext.device, *vertexBufferMemory, 0, size, 0, &dest);
+	memcpy(dest, src, size);
+	vkUnmapMemory(engine.vulkanContext.device, *vertexBufferMemory);
+
+	return 0;
+}
+
+
+int createVertexBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* vertexBufferMemory, void* src)
+{
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+
+	// staging buffer, accessible from the CPU, and usable as a src for buffer transfert
+	createBuffer(size, &stagingBuffer, &stagingBufferMemory, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+
+	// copy the data to the allocated memory of the staging buffer
+	void *dest;
+	vkMapMemory(engine.vulkanContext.device, stagingBufferMemory, 0, size, 0, &dest);
+	memcpy(dest, src, size);
+	vkUnmapMemory(engine.vulkanContext.device, stagingBufferMemory);
+
+	// vertex buffer on device side, faster, and usable as a dst for buffer transfert
+	createBuffer(size, buffer, vertexBufferMemory, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+	copyBuffer(stagingBuffer, *buffer, size);
+
+	return 0;
+}
+
+
+int createBuffer(VkDeviceSize size, VkBuffer *buffer, VkDeviceMemory *vertexBufferMemory, VkMemoryPropertyFlags properties, VkBufferUsageFlags bufferUsage)
 {
 	VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	bufferCreateInfo.size = size;
-	bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	bufferCreateInfo.usage = bufferUsage;
 	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	// TODO destroy this with geometry
@@ -1106,10 +1149,7 @@ int createVertexBuffer(uint32_t size, VkBuffer* buffer, VkDeviceMemory* vertexBu
 
 	VkMemoryAllocateInfo memoryAllocateInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
 	memoryAllocateInfo.allocationSize = bufferMemoryRequirements.size;
-	findMemoryTypeIndex(
-		bufferMemoryRequirements.memoryTypeBits,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		&memoryAllocateInfo.memoryTypeIndex);
+	findMemoryTypeIndex(bufferMemoryRequirements.memoryTypeBits, properties, &memoryAllocateInfo.memoryTypeIndex);
 
 	if(vkAllocateMemory(engine.vulkanContext.device, &memoryAllocateInfo, NULL, vertexBufferMemory))
 		return -1;
@@ -1118,13 +1158,49 @@ int createVertexBuffer(uint32_t size, VkBuffer* buffer, VkDeviceMemory* vertexBu
 	if(vkBindBufferMemory(engine.vulkanContext.device, *buffer, *vertexBufferMemory, 0))
 		return -1;
 
-	// actually copy the data to the allocated memory
-	void *dest;
-	vkMapMemory(engine.vulkanContext.device, *vertexBufferMemory, 0, size, 0, &dest);
-	memcpy(dest, src, size);
-	vkUnmapMemory(engine.vulkanContext.device, *vertexBufferMemory);
-
 	return 0;
+}
+
+
+int copyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size)
+{
+	VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+	allocInfo.commandPool = engine.vulkanContext.commandPool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = 1;
+
+	VkCommandBuffer commandBuffer;
+	VkResult result = vkAllocateCommandBuffers(engine.vulkanContext.device, &allocInfo, &commandBuffer);
+
+	if (result != VK_SUCCESS)
+	{
+		fprintf(stderr, "Failed to allocate command buffer.\n");
+
+		return result;
+	}
+
+	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+	VkBufferCopy copyRegion;
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = 0;
+	copyRegion.size = size;
+
+	vkCmdCopyBuffer(commandBuffer, src, dst, 1, &copyRegion);
+	vkEndCommandBuffer(commandBuffer);
+
+	VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+
+	vkQueueSubmit(engine.vulkanContext.graphicQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(engine.vulkanContext.graphicQueue); // here we just wait, but could do multiple operations in // and use a fence to wait them all
+	vkFreeCommandBuffers(engine.vulkanContext.device, engine.vulkanContext.bufferCopyCommandPool, 1, &commandBuffer);
+
+	return VK_SUCCESS;
 }
 
 
@@ -1176,9 +1252,10 @@ int createCommandBuffers(vulkanContext* context, renderable renderable)
 	renderPassInfo.renderArea.offset.y = 0;
 	renderPassInfo.renderArea.extent = context->swapchainExtent;
 	// clear color (see VK_ATTACHMENT_LOAD_OP_CLEAR)
-	VkClearValue clearColor = { 0.2f, 0.2f, 0.2f, 1.0f };
+	VkClearColorValue clearColor = {{ 0.2f, 0.2f, 0.2f, 1.0f }};
+	VkClearValue clearValue = { clearColor };
 	renderPassInfo.clearValueCount = 1;
-	renderPassInfo.pClearValues = &clearColor;
+	renderPassInfo.pClearValues = &clearValue;
 
 	for (uint32_t i = 0; i < context->imageCount; i++)
 	{
@@ -1433,20 +1510,3 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vulkanErrorCallback(
 
 	return VK_FALSE;
 }
-
-
-#ifdef _MSC_VER
-// https://www.c-plusplus.net/forum/topic/109539/usleep-unter-windows
-void usleep(__int64 usec)
-{
-	HANDLE timer;
-	LARGE_INTEGER ft;
-
-	ft.QuadPart = -(10 * usec); // Convert to 100 nanosecond interval, negative value indicates relative time
-
-	timer = CreateWaitableTimer(NULL, TRUE, NULL);
-	SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
-	WaitForSingleObject(timer, INFINITE);
-	CloseHandle(timer);
-}
-#endif

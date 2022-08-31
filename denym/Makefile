@@ -17,8 +17,9 @@ CFLAGS = -Wall -Wextra -fno-common -Wdeclaration-after-statement \
 -Wsign-compare -Wstrict-aliasing=2 -Wstrict-prototypes -Wswitch \
 -Wundef -Wunreachable-code -Wwrite-strings -Wconversion \
 -Werror=implicit-function-declaration -Wenum-compare -Wpadded \
---std=c17 #-pedantic #-pedantic-errors
-CFLAGS = -Wall -Wextra
+--std=c17 \
+-Wno-missing-field-initializers \
+#-pedantic #-pedantic-errors
 
 LFLAGS = -fPIC
 
