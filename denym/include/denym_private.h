@@ -47,6 +47,7 @@ typedef struct vulkanContext
 	VkFramebuffer *swapChainFramebuffers;
 	VkRenderPass renderPass;
 	VkCommandPool commandPool;
+	VkBool32 framebufferResized;
 
 	VkSemaphore imageAvailableSemaphore[MAX_FRAMES_IN_FLIGHT];
 	VkSemaphore renderFinishedSemaphore[MAX_FRAMES_IN_FLIGHT];
@@ -114,6 +115,8 @@ typedef struct denym
 
 void glfwErrorCallback(int error, const char* description);
 
+void glfwFramebufferResizeCallback(GLFWwindow* window, int width, int height);
+
 VKAPI_ATTR VkBool32 VKAPI_CALL vulkanErrorCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -137,6 +140,8 @@ int getDeviceExtensionsAddr(vulkanContext* context);
 int getSwapchainCapabilities(vulkanContext* context);
 
 int createSwapchain(vulkanContext* context);
+
+int recreateSwapChain(void);
 
 int createImageViews(vulkanContext* context);
 
@@ -169,6 +174,12 @@ VkExtent2D clampExtent2D(VkExtent2D e, VkExtent2D min, VkExtent2D max);
 void destroyVulkanContext(vulkanContext* context);
 
 void cleanSwapchain(vulkanContext* context);
+
+void cleanImageViews(void);
+
+void cleanFrameBuffer(void);
+
+void cleanCommandBuffers(void);
 
 
 #endif

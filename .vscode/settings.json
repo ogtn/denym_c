@@ -13,6 +13,7 @@
         "types.h": "c",
         "gl.h": "c",
         "cstdlib": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "stdint.h": "c"
     }
 }

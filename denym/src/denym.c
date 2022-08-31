@@ -25,7 +25,6 @@ int denymInit(int window_width, int window_height)
 		!getPhysicalDevice(&engine.vulkanContext) &&
 		!getDevice(&engine.vulkanContext) &&
 		!getDeviceExtensionsAddr(&engine.vulkanContext) &&
-		!getSwapchainCapabilities(&engine.vulkanContext) &&
 		!createSwapchain(&engine.vulkanContext) &&
 		!createImageViews(&engine.vulkanContext) &&
 		!createRenderPass(&engine.vulkanContext) &&
@@ -34,7 +33,7 @@ int denymInit(int window_width, int window_height)
 		!createSynchronizationObjects(&engine.vulkanContext))
 	{
 		result = 0;
-        engine.vulkanContext.currentFrame = 0;
+		engine.vulkanContext.currentFrame = 0;
 	}
 	else
 	{
@@ -80,9 +79,7 @@ renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, 
 	renderable->fragShaderName = fragShaderName;
 	// renderable->geometry = geometry;
 
-	if(!createPipeline(renderable) &&
-		!createVertexBuffers(geometry) &&
-		!createCommandBuffers(&engine.vulkanContext, renderable))
+	if(!createPipeline(renderable) && !createVertexBuffers(geometry))
 	{
 		return renderable;
 	}
@@ -93,12 +90,10 @@ renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, 
 
 void denymTerminate(void)
 {
-	vkDeviceWaitIdle(engine.vulkanContext.device);
 	destroyVulkanContext(&engine.vulkanContext);
 	glfwDestroyWindow(engine.window);
 	glfwTerminate();
 
-	memset(&engine.vulkanContext, 0, sizeof(vulkanContext));
 	memset(&engine, 0, sizeof(denym));
 }
 
@@ -113,6 +108,7 @@ int denymKeepRunning(void)
 
 void denymRender(void)
 {
+	createCommandBuffers(&engine.vulkanContext, &engine.renderable);
 	render(&engine.vulkanContext, &engine.renderable);
 	engine.vulkanContext.currentFrame = (engine.vulkanContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
@@ -127,6 +123,12 @@ void denymWaitForNextFrame(void)
 void glfwErrorCallback(int error, const char* description)
 {
 	fprintf(stderr, "GLFW error %d occured : %s\n", error, description);
+}
+
+
+void glfwFramebufferResizeCallback(GLFWwindow* window, int width, int height)
+{
+	engine.vulkanContext.framebufferResized = VK_TRUE;
 }
 
 
@@ -167,6 +169,9 @@ GLFWwindow* createWindow(int width, int height)
 	monitor = glfwGetPrimaryMonitor();
 	videoMode = glfwGetVideoMode(monitor);
 	glfwSetWindowPos(window, (videoMode->width - width) / 2, (videoMode->height - height) / 2);
+
+	// set callbacks
+	glfwSetFramebufferSizeCallback(window, glfwFramebufferResizeCallback);
 
 	return window;
 }
@@ -532,7 +537,6 @@ int getSwapchainCapabilities(vulkanContext* context)
 	// TODO: check that shit, this must be verified before creating the queues...
 	VkBool32 supported;
 	context->GetPhysicalDeviceSurfaceSupportKHR(context->physicalDevice, context->presentQueueFamilyIndex, context->surface, &supported);
-
 	context->GetPhysicalDeviceSurfaceCapabilitiesKHR(context->physicalDevice, context->surface, &context->surfaceCapabilities);
 
 	uint32_t formatCount;
@@ -592,17 +596,30 @@ int getSwapchainCapabilities(vulkanContext* context)
 
 int createSwapchain(vulkanContext* context)
 {
+	if(getSwapchainCapabilities(context))
+		return -1;
+
 	// TODO: case max = 0 for unlimited
 	uint32_t imageCount = clamp(
 		context->surfaceCapabilities.minImageCount + 1,
 		context->surfaceCapabilities.minImageCount,
 		context->surfaceCapabilities.maxImageCount);
 
-	// need to clamp here, as current can be 0xffffffff
-	context->swapchainExtent = clampExtent2D(
-		context->surfaceCapabilities.currentExtent,
-		context->surfaceCapabilities.minImageExtent,
-		context->surfaceCapabilities.maxImageExtent);
+	if(context->surfaceCapabilities.currentExtent.width != UINT32_MAX)
+	{
+		context->swapchainExtent = context->surfaceCapabilities.currentExtent;
+	}
+	else
+	{
+		int width, height;
+		glfwGetFramebufferSize(engine.window, &width, &height);
+		VkExtent2D windowExtent = { width, height };
+
+		context->swapchainExtent = clampExtent2D(
+			windowExtent,
+			context->surfaceCapabilities.minImageExtent,
+			context->surfaceCapabilities.maxImageExtent);
+	}
 
 	VkSwapchainCreateInfoKHR createInfo = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
 	createInfo.surface = context->surface;
@@ -616,6 +633,7 @@ int createSwapchain(vulkanContext* context)
 	createInfo.presentMode = context->presentMode;
 	createInfo.preTransform = context->surfaceCapabilities.currentTransform;
 	createInfo.clipped = VK_TRUE;
+	createInfo.oldSwapchain = VK_NULL_HANDLE;
 
 	// If the two queues are the same
 	if(context->graphicsQueueFamilyIndex == context->presentQueueFamilyIndex)
@@ -640,6 +658,34 @@ int createSwapchain(vulkanContext* context)
 
 	return result;
 }
+
+
+int recreateSwapChain(void)
+{
+	int result = -1;
+	int width, height;
+
+	glfwGetFramebufferSize(engine.window, &width, &height);
+
+	while(width == 0 || height == 0)
+	{
+		glfwWaitEvents();
+		glfwGetFramebufferSize(engine.window, &width, &height);
+	}
+
+	vkDeviceWaitIdle(engine.vulkanContext.device);
+	cleanSwapchain(&engine.vulkanContext);
+
+	if(!createSwapchain(&engine.vulkanContext)
+		&& !createImageViews(&engine.vulkanContext)
+		&& !createFramebuffer(&engine.vulkanContext))
+	{
+		result = 0;
+	}
+
+	return result;
+}
+
 
 int createImageViews(vulkanContext* context)
 {
@@ -1075,7 +1121,7 @@ int createVertexBuffer(uint32_t size, VkBuffer* buffer, VkDeviceMemory* vertexBu
 	// actually copy the data to the allocated memory
 	void *dest;
 	vkMapMemory(engine.vulkanContext.device, *vertexBufferMemory, 0, size, 0, &dest);
-    memcpy(dest, src, size);
+	memcpy(dest, src, size);
 	vkUnmapMemory(engine.vulkanContext.device, *vertexBufferMemory);
 
 	return 0;
@@ -1184,19 +1230,19 @@ int createCommandBuffers(vulkanContext* context, renderable renderable)
 int createSynchronizationObjects(vulkanContext* context)
 {
 	VkSemaphoreCreateInfo semaphoreInfo = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
-    VkFenceCreateInfo fenceInfo = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // fence is not blocking when created
+	VkFenceCreateInfo fenceInfo = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // fence is not blocking when created
 
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-    {
-        if (vkCreateSemaphore(context->device, &semaphoreInfo, NULL, &context->imageAvailableSemaphore[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(context->device, &semaphoreInfo, NULL, &context->renderFinishedSemaphore[i]) != VK_SUCCESS ||
-            vkCreateFence(context->device, &fenceInfo, NULL, &context->inFlightFences[i]))
-        {
-            fprintf(stderr, "Failed to create sync objets.\n");
+	for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		if (vkCreateSemaphore(context->device, &semaphoreInfo, NULL, &context->imageAvailableSemaphore[i]) != VK_SUCCESS ||
+		vkCreateSemaphore(context->device, &semaphoreInfo, NULL, &context->renderFinishedSemaphore[i]) != VK_SUCCESS ||
+		vkCreateFence(context->device, &fenceInfo, NULL, &context->inFlightFences[i]))
+		{
+			fprintf(stderr, "Failed to create sync objets.\n");
 
-            return -1;
-        }
+			return -1;
+		}
 
 		/*
 		#ifdef _DEBUG
@@ -1212,7 +1258,7 @@ int createSynchronizationObjects(vulkanContext* context)
 		context->SetDebugUtilsObjectNameEXT(context->device, &objectNameInfo);
 		#endif
 		*/
-    }
+	}
 
 	return 0;
 }
@@ -1222,14 +1268,24 @@ void render(vulkanContext *context, renderable renderable)
 {
 	uint32_t imageIndex;
 
-    // Wait for fence, so we limit the number of in flight frames
-    vkWaitForFences(context->device, 1, &context->inFlightFences[context->currentFrame], VK_TRUE, UINT64_MAX);
-    vkResetFences(context->device, 1, &context->inFlightFences[context->currentFrame]);
+	// Wait for fence, so we limit the number of in flight frames
+	vkWaitForFences(context->device, 1, &context->inFlightFences[context->currentFrame], VK_TRUE, UINT64_MAX);
 
-    VkResult result = context->AcquireNextImageKHR(context->device, context->swapchain, UINT64_MAX, context->imageAvailableSemaphore[context->currentFrame], VK_NULL_HANDLE, &imageIndex);
+	VkResult result = context->AcquireNextImageKHR(context->device, context->swapchain, UINT64_MAX, context->imageAvailableSemaphore[context->currentFrame], VK_NULL_HANDLE, &imageIndex);
 
-    if (result)
-        result = 0;
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		recreateSwapChain();
+		return;
+	}
+	else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
+		fprintf(stderr, "AcquireNextImageKHR() failed\n");
+
+		return;
+	}
+
+	vkResetFences(context->device, 1, &context->inFlightFences[context->currentFrame]);
 
 	VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
 
@@ -1260,10 +1316,15 @@ void render(vulkanContext *context, renderable renderable)
 	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = &result; // Optional when only one swapchain, provide an array in case of multiple swapchains
 
-    result = context->QueuePresentKHR(context->presentQueue, &presentInfo);
+	result = context->QueuePresentKHR(context->presentQueue, &presentInfo);
 
-    if (result)
-        result = 0;
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || engine.vulkanContext.framebufferResized)
+	{
+		engine.vulkanContext.framebufferResized = VK_FALSE;
+		recreateSwapChain();
+	}
+	else if(result)
+		fprintf(stderr, "QueuePresentKHR() failed\n");
 }
 
 
@@ -1294,46 +1355,68 @@ void destroyVulkanContext(vulkanContext* context)
 {
 	if (context->device)
 	{
-        cleanSwapchain(context);
-		vkDestroyCommandPool(context->device, context->commandPool, NULL);
+		vkDeviceWaitIdle(context->device);
+		cleanSwapchain(context);
+		vkDestroyPipeline(context->device, engine.renderable.pipeline, NULL);
+		vkDestroyPipelineLayout(context->device, engine.renderable.pipelineLayout, NULL);
+		vkDestroyRenderPass(context->device, context->renderPass, NULL);
 
-        for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            vkDestroySemaphore(context->device, context->imageAvailableSemaphore[i], NULL);
-            vkDestroySemaphore(context->device, context->renderFinishedSemaphore[i], NULL);
-            vkDestroyFence(context->device, context->inFlightFences[i], NULL);
-        }
+		for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		{
+			vkDestroySemaphore(context->device, context->imageAvailableSemaphore[i], NULL);
+			vkDestroySemaphore(context->device, context->renderFinishedSemaphore[i], NULL);
+			vkDestroyFence(context->device, context->inFlightFences[i], NULL);
+		}
 
+		cleanCommandBuffers();
 		vkDestroyDevice(context->device, NULL);
 	}
 
 	if (context->instance)
 	{
-		context->DestroySurfaceKHR(context->instance, context->surface, NULL);
+		if(context->DestroySurfaceKHR)
+			context->DestroySurfaceKHR(context->instance, context->surface, NULL);
+
 		context->DestroyDebugUtilsMessengerEXT(context->instance, context->messenger, NULL);
 		vkDestroyInstance(context->instance, NULL);
 	}
+
+	memset(context, 0, sizeof(vulkanContext));
+}
+
+
+void cleanImageViews(void)
+{
+	for (uint32_t i = 0; i < engine.vulkanContext.imageCount; i++)
+		vkDestroyImageView(engine.vulkanContext.device, engine.vulkanContext.imageViews[i], NULL);
+
+	free(engine.vulkanContext.images);
+	free(engine.vulkanContext.imageViews);
+}
+
+
+void cleanFrameBuffer(void)
+{
+	for (uint32_t i = 0; i < engine.vulkanContext.imageCount; i++)
+		vkDestroyFramebuffer(engine.vulkanContext.device, engine.vulkanContext.swapChainFramebuffers[i], NULL);
+
+	free(engine.vulkanContext.swapChainFramebuffers);
+}
+
+
+void cleanCommandBuffers(void)
+{
+	vkFreeCommandBuffers(engine.vulkanContext.device, engine.vulkanContext.commandPool, engine.vulkanContext.imageCount, engine.renderable.commandBuffers);
+	vkDestroyCommandPool(engine.vulkanContext.device, engine.vulkanContext.commandPool, NULL);
+	free(engine.renderable.commandBuffers);
 }
 
 
 void cleanSwapchain(vulkanContext* context)
 {
-    vkDestroyPipeline(context->device, engine.renderable.pipeline, NULL);
-    vkDestroyPipelineLayout(context->device, engine.renderable.pipelineLayout, NULL);
-    vkDestroyRenderPass(context->device, context->renderPass, NULL);
-    vkFreeCommandBuffers(context->device, context->commandPool, context->imageCount, engine.renderable.commandBuffers);
-
-    for (uint32_t i = 0; i < context->imageCount; i++)
-    {
-        vkDestroyImageView(context->device, context->imageViews[i], NULL);
-        vkDestroyFramebuffer(context->device, context->swapChainFramebuffers[i], NULL);
-    }
-
-    context->DestroySwapchainKHR(context->device, context->swapchain, NULL);
-    free(context->images);
-    free(engine.renderable.commandBuffers);
-    free(context->imageViews);
-    free(context->swapChainFramebuffers);
+	cleanFrameBuffer();
+	cleanImageViews();
+	context->DestroySwapchainKHR(context->device, context->swapchain, NULL);
 }
 
 
