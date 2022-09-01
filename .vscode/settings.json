@@ -2,5 +2,14 @@
     "files.associations": {
         "*.h": "c",
         "*.c": "c"
+    },
+    "files.exclude": {
+        "**/bin": true,
+        "**/dep": true,
+        "**/lib": true,
+        ".vs": true,
+        "**.sln": true,
+        "**/*vcxproj*": true,
+        "**/*.spv": true
     }
 }
