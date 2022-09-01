@@ -1,4 +1,6 @@
 #include "denym_private.h"
+#include "shader.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -720,52 +722,6 @@ int createImageViews(vulkanContext* context)
 }
 
 
-int loadShader(const char* name, VkShaderModule* outShaderr)
-{
-	FILE* f;
-	char fullName[FILENAME_MAX];
-
-	snprintf(fullName, FILENAME_MAX, "resources/shaders/%s", name);
-
-#ifdef _MSC_VER
-	fopen_s(&f, fullName, "rb");
-#else
-	f = fopen(fullName, "r");
-#endif
-
-	if (f == NULL)
-	{
-		perror(fullName);
-
-		return -1;
-	}
-
-	fseek(f, 0, SEEK_END);
-	size_t size = (size_t)ftell(f);
-	fseek(f, 0, SEEK_SET);
-
-	uint32_t* data = malloc(size);
-
-	if (fread(data, 1, size, f) != size)
-		perror("");
-
-	fclose(f);
-
-	VkShaderModuleCreateInfo createInfo = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
-	createInfo.codeSize = size;
-	createInfo.pCode = data;
-
-	VkResult result = vkCreateShaderModule(engine.vulkanContext.device, &createInfo, NULL, outShaderr);
-
-	if(result)
-		fprintf(stderr, "Failed to load shader \"%s\"", fullName);
-
-	free(data);
-
-	return result;
-}
-
-
 int createRenderPass(vulkanContext* context)
 {
 	VkAttachmentDescription colorAttachment = { 0 };
@@ -823,10 +779,10 @@ int createPipeline(renderable renderable)
 	VkShaderModule vertShader;
 	VkShaderModule fragShader;
 
-	if (loadShader(renderable->vertShaderName, &vertShader))
+	if (loadShader(engine.vulkanContext.device, renderable->vertShaderName, &vertShader))
 		goto err_vert;
 
-	if (loadShader(renderable->fragShaderName, &fragShader))
+	if (loadShader(engine.vulkanContext.device, renderable->fragShaderName, &fragShader))
 		goto err_frag;
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };

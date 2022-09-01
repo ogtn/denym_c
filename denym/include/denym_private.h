@@ -1,12 +1,9 @@
 #ifndef _denym_private_h_
 #define _denym_private_h_
 
+
 #include "denym.h"
-
-
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
+#include "denym_common.h"
 
 static const char* APP_NAME = "Denym WIP";
 static const int APP_VERSION = VK_MAKE_API_VERSION(0, 0, 1, 0);
@@ -145,8 +142,6 @@ int createSwapchain(vulkanContext* context);
 int recreateSwapChain(void);
 
 int createImageViews(vulkanContext* context);
-
-int loadShader(const char* name, VkShaderModule *outShaderr);
 
 int createRenderPass(vulkanContext* context);
 
