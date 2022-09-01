@@ -22,14 +22,14 @@ shaders: $(SHADERS_SPV)
 
 # create one run_* target per .c, and allow to execute the test
 $(TEST_TARGETS):
-	@make --no-print-directory $(patsubst run_%, %, $@)
+	@$(MAKE) --no-print-directory $(patsubst run_%, %, $@)
 
 # run the specified executable
 %: $(DIR_BIN)/% shaders
 	LD_LIBRARY_PATH=$(DIR_DENYM)/bin ./$<
 
 $(LIB_DENYM):
-	@make --no-print-directory -C $(DIR_DENYM)
+	@$(MAKE) --no-print-directory -C $(DIR_DENYM)
 
 $(DIR_BIN)/%: $(DIR_SRC)/%.c $(LIB_DENYM) | $(DIR_BIN) $(DIR_DEP)
 	$(CC) $(CFLAGS) $(LFLAGS) $(INC) -MMD -MF $(patsubst $(DIR_SRC)/%.c, $(DIR_DEP)/%.d, $<) -o $@ $<
@@ -39,4 +39,4 @@ $(DIR_SHADERS)/%.spv: $(DIR_SHADERS)/%
 
 clean:
 	@rm -rf $(DIR_BIN) $(DIR_DEP) $(wildcard $(DIR_SHADERS)/*.spv)
-	@make --no-print-directory -C $(DIR_DENYM) clean
+	@$(MAKE) --no-print-directory -C $(DIR_DENYM) clean
