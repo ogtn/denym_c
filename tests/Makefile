@@ -16,6 +16,8 @@ TEST_TARGETS = $(patsubst $(DIR_SRC)/%.c, run_%, $(SRC))
 SHADER_SRC = $(wildcard $(DIR_SHADERS)/*.vert) $(wildcard $(DIR_SHADERS)/*.frag)
 SHADERS_SPV = $(patsubst $(DIR_SHADERS)/%, $(DIR_SHADERS)/%.spv, $(SHADER_SRC))
 
+-include $(DEP)
+
 all: $(EXE) shaders
 
 shaders: $(SHADERS_SPV)
@@ -32,11 +34,13 @@ $(LIB_DENYM):
 	@$(MAKE) --no-print-directory -C $(DIR_DENYM)
 
 $(DIR_BIN)/%: $(DIR_SRC)/%.c $(LIB_DENYM) | $(DIR_BIN) $(DIR_DEP)
-	$(CC) $(CFLAGS) $(LFLAGS) $(INC) -MMD -MF $(patsubst $(DIR_SRC)/%.c, $(DIR_DEP)/%.d, $<) -o $@ $<
+	$(CC) $(CFLAGS) $(LFLAGS) $(INC) -MMD -MF $(patsubst $(DIR_SRC)/%.c, $(DIR_DEP)/%.d, $<) $< -o $@
 
 $(DIR_SHADERS)/%.spv: $(DIR_SHADERS)/%
-	glslangValidator -V -o $@ $<
+	glslangValidator -V $< -o $@
 
 clean:
 	@rm -rf $(DIR_BIN) $(DIR_DEP) $(wildcard $(DIR_SHADERS)/*.spv)
 	@$(MAKE) --no-print-directory -C $(DIR_DENYM) clean
+
+.PHONY: $(LIB_DENYM)

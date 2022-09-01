@@ -5,8 +5,6 @@ DIR_DEP = dep
 
 LIB_NAME = libdenym.so
 
--include $(DEP)
-
 CC = clang
 
 # hardcore mode :)
@@ -22,7 +20,7 @@ CFLAGS = -Wall -Wextra -fno-common -Wdeclaration-after-statement \
 -Wundef -Wunreachable-code -Wwrite-strings -Wconversion \
 -Werror=implicit-function-declaration -Wenum-compare -Wpadded \
 --std=c17 \
-#-Wno-missing-field-initializers \
+-Wno-missing-field-initializers \
 #-pedantic #-pedantic-errors
 
 $(DIR_BIN):
