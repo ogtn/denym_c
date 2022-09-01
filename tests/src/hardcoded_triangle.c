@@ -6,23 +6,24 @@ int main(void)
 {
 	const int width = 640;
 	const int height = 480;
-	int result = EXIT_FAILURE;
 
-	if (!denymInit(width, height))
+	if (denymInit(width, height))
+		return EXIT_FAILURE;
+	
+	geometry geometry = denymCreateGeometry(3);
+	renderable triangle = denymCreateRenderable(
+		geometry,
+		"hardcoded_triangle.vert.spv",
+		"basic_color_interp.frag.spv");
+
+	while (denymKeepRunning())
 	{
-		geometry geometry = denymCreateGeometry(3);
-		renderable renderable = denymCreateRenderable(geometry, "hardcoded_triangle.vert.spv", "basic_color_interp.frag.spv");
-
-		result = EXIT_SUCCESS;
-
-		while (denymKeepRunning())
-		{
-			denymRender();
-			denymWaitForNextFrame();
-		}
+		denymRender(triangle);
+		denymWaitForNextFrame();
 	}
 
+	denymDestroyRenderable(triangle);
 	denymTerminate();
 
-	return result;
+	return EXIT_SUCCESS;
 }

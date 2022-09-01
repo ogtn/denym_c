@@ -6,7 +6,6 @@ int main(void)
 {
 	const int width = 640;
 	const int height = 480;
-	int result = EXIT_FAILURE;
 
 	// clip coordinates
 	float positions[] = 
@@ -23,23 +22,22 @@ int main(void)
 		0, 0, 1
 	};
 
-	if (!denymInit(width, height))
+	if (denymInit(width, height))
+		return EXIT_FAILURE;
+
+	geometry geometry = denymCreateGeometry(3);
+	denymGeometryAddPosition(geometry, positions);
+	denymGeometryAddColors(geometry, colors);
+	renderable triangle = denymCreateRenderable(geometry, "basic_position_color_attribute.vert.spv", "basic_color_interp.frag.spv");
+
+	while (denymKeepRunning())
 	{
-		geometry geometry = denymCreateGeometry(3);
-		denymGeometryAddPosition(geometry, positions);
-		denymGeometryAddColors(geometry, colors);
-		renderable renderable = denymCreateRenderable(geometry, "basic_position_color_attribute.vert.spv", "basic_color_interp.frag.spv");
-
-		result = EXIT_SUCCESS;
-
-		while (denymKeepRunning())
-		{
-			denymRender();
-			denymWaitForNextFrame();
-		}
+		denymRender(triangle);
+		denymWaitForNextFrame();
 	}
 
+	denymDestroyRenderable(triangle);
 	denymTerminate();
 
-	return result;
+	return EXIT_SUCCESS;
 }
