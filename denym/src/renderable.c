@@ -17,8 +17,9 @@ renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, 
 	renderable->vertShaderName = vertShaderName;
 	renderable->fragShaderName = fragShaderName;
 	renderable->geometry = geometry;
+	renderable->needCommandBufferUpdate = VK_TRUE;
 
-	if(!createPipeline(renderable) && !createBuffers(geometry))
+	if(!createPipeline(renderable) && !createBuffers(geometry) && createCommandBuffers(renderable))
 	{
 		return renderable;
 	}
@@ -29,37 +30,36 @@ renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, 
 
 void denymDestroyRenderable(renderable renderable)
 {
-	// TODO clean a shitload of stuff here !!! (shaders...)
-
-	denymDestroyGeometry(renderable->geometry);
+	// TODO clean a shitload of stuff here !!!
 	vkDestroyPipeline(engine.vulkanContext.device, renderable->pipeline, NULL);
+	vkDestroyShaderModule(engine.vulkanContext.device, renderable->fragShader, NULL);
+	vkDestroyShaderModule(engine.vulkanContext.device, renderable->vertShader, NULL);
 	vkDestroyPipelineLayout(engine.vulkanContext.device, renderable->pipelineLayout, NULL);
 	vkFreeCommandBuffers(engine.vulkanContext.device, engine.vulkanContext.commandPool, engine.vulkanContext.imageCount, renderable->commandBuffers);
 	free(renderable->commandBuffers);
+	denymDestroyGeometry(renderable->geometry);
 }
 
 
 int createPipeline(renderable renderable)
 {
 	int result = -1;
-	VkShaderModule vertShader;
-	VkShaderModule fragShader;
 
-	if (loadShader(engine.vulkanContext.device, renderable->vertShaderName, &vertShader))
+	if (loadShader(engine.vulkanContext.device, renderable->vertShaderName, &renderable->vertShader))
 		goto err_vert;
 
-	if (loadShader(engine.vulkanContext.device, renderable->fragShaderName, &fragShader))
+	if (loadShader(engine.vulkanContext.device, renderable->fragShaderName, &renderable->fragShader))
 		goto err_frag;
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
 	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vertShaderStageInfo.module = vertShader;
+	vertShaderStageInfo.module = renderable->vertShader;
 	vertShaderStageInfo.pName = "main";
 	// TODO : check vertShaderStageInfo.pSpecializationInfo to pass constants to the shaders
 
 	VkPipelineShaderStageCreateInfo fragShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
 	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragShaderStageInfo.module = fragShader;
+	fragShaderStageInfo.module = renderable->fragShader;
 	fragShaderStageInfo.pName = "main";
 
 	VkPipelineShaderStageCreateInfo shaderStages[2];
@@ -245,10 +245,109 @@ int createPipeline(renderable renderable)
 		result = 0;
 
 err_pipeline_layout:
-	vkDestroyShaderModule(engine.vulkanContext.device, fragShader, NULL);
+	vkDestroyShaderModule(engine.vulkanContext.device, renderable->fragShader, NULL);
 err_frag:
-	vkDestroyShaderModule(engine.vulkanContext.device, vertShader, NULL);
+	vkDestroyShaderModule(engine.vulkanContext.device, renderable->vertShader, NULL);
 err_vert:
+
+	return result;
+}
+
+
+int createCommandBuffers(renderable renderable)
+{
+	renderable->commandBuffers = malloc(sizeof * renderable->commandBuffers * engine.vulkanContext.imageCount);
+
+	VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+	allocInfo.commandPool = engine.vulkanContext.commandPool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = engine.vulkanContext.imageCount;
+
+	VkResult result = vkAllocateCommandBuffers(engine.vulkanContext.device, &allocInfo, renderable->commandBuffers);
+
+	if (result != VK_SUCCESS)
+	{
+		fprintf(stderr, "Failed to allocate command buffers.\n");
+
+		return result;
+	}
+}
+
+
+int updateCommandBuffers(renderable renderable)
+{
+	VkResult result = VK_SUCCESS;
+
+	if(renderable->needCommandBufferUpdate == VK_FALSE)
+		return result;
+
+	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	beginInfo.pInheritanceInfo = NULL; // NULL in case of primary
+
+	VkRenderPassBeginInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+	renderPassInfo.renderPass = engine.vulkanContext.renderPass;
+	// render area : pixels outside have undefined values
+	renderPassInfo.renderArea.offset.x = 0;
+	renderPassInfo.renderArea.offset.y = 0;
+	renderPassInfo.renderArea.extent = engine.vulkanContext.swapchainExtent;
+	// clear color (see VK_ATTACHMENT_LOAD_OP_CLEAR)
+	VkClearColorValue clearColor = {{ 0.2f, 0.2f, 0.2f, 1.0f }};
+	VkClearValue clearValue = { clearColor };
+	renderPassInfo.clearValueCount = 1;
+	renderPassInfo.pClearValues = &clearValue;
+
+	for (uint32_t i = 0; i < engine.vulkanContext.imageCount; i++)
+	{
+		result = vkBeginCommandBuffer(renderable->commandBuffers[i], &beginInfo);
+
+		if (result != VK_SUCCESS)
+		{
+			fprintf(stderr, "Failed to begin recording command buffer %d/%d.\n", i + 1, engine.vulkanContext.imageCount);
+
+			return result;
+		}
+
+		renderPassInfo.framebuffer = engine.vulkanContext.swapChainFramebuffers[i];
+		vkCmdBeginRenderPass(renderable->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // VK_SUBPASS_CONTENTS_INLINE for primary
+		vkCmdBindPipeline(renderable->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipeline);
+
+		// bind vertex attributes
+		if(renderable->geometry->attribCount > 0)
+		{
+			VkBuffer buffers[] = {
+				renderable->geometry->bufferPositions,
+				renderable->geometry->bufferColors
+			};
+			VkDeviceSize offsets[] = {
+				0,
+				0
+			};
+
+			vkCmdBindVertexBuffers(renderable->commandBuffers[i], 0, 2, buffers, offsets);
+
+			if(renderable->geometry->indices)
+				vkCmdBindIndexBuffer(renderable->commandBuffers[i], renderable->geometry->bufferIndices, 0, VK_INDEX_TYPE_UINT16);
+		}
+
+		if(renderable->geometry->indices)
+			vkCmdDrawIndexed(renderable->commandBuffers[i], renderable->geometry->vertexCount, 1, 0, 0, 0);
+		else
+			vkCmdDraw(renderable->commandBuffers[i], renderable->geometry->vertexCount, 1, 0, 0);
+
+		vkCmdEndRenderPass(renderable->commandBuffers[i]);
+
+		result = vkEndCommandBuffer(renderable->commandBuffers[i]);
+
+		if (result != VK_SUCCESS)
+		{
+			fprintf(stderr, "Failed to end recording command buffer %d/%d.\n", i + 1, engine.vulkanContext.imageCount);
+
+			return result;
+		}
+	}
+
+	renderable->needCommandBufferUpdate = VK_FALSE;
 
 	return result;
 }

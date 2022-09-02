@@ -51,8 +51,6 @@ int createFramebuffer(vulkanContext* context);
 
 int createCommandPool(vulkanContext* context);
 
-int createCommandBuffers(vulkanContext* context, renderable renderable);
-
 int createSynchronizationObjects(vulkanContext* context);
 
 void render(vulkanContext* context, renderable renderable);

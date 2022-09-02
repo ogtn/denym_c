@@ -60,7 +60,7 @@ int denymKeepRunning(void)
 
 void denymRender(renderable renderable)
 {
-	createCommandBuffers(&engine.vulkanContext, renderable);
+	updateCommandBuffers(renderable);
 	render(&engine.vulkanContext, renderable);
 	engine.vulkanContext.currentFrame = (engine.vulkanContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
@@ -620,7 +620,6 @@ int recreateSwapChain(void)
 {
 	int result = -1;
 	int width, height;
-
 	glfwGetFramebufferSize(engine.window, &width, &height);
 
 	while(width == 0 || height == 0)
@@ -782,94 +781,6 @@ int createCommandPool(vulkanContext* context)
 }
 
 
-int createCommandBuffers(vulkanContext* context, renderable renderable)
-{
-	renderable->commandBuffers = malloc(sizeof * renderable->commandBuffers * context->imageCount);
-
-	VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
-	allocInfo.commandPool = context->commandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = context->imageCount;
-
-	VkResult result = vkAllocateCommandBuffers(context->device, &allocInfo, renderable->commandBuffers);
-
-	if (result != VK_SUCCESS)
-	{
-		fprintf(stderr, "Failed to allocate command buffers.\n");
-
-		return result;
-	}
-
-	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-	beginInfo.pInheritanceInfo = NULL; // NULL in case of primary
-
-	VkRenderPassBeginInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
-	renderPassInfo.renderPass = context->renderPass;
-	// render area : pixels outside have undefined values
-	renderPassInfo.renderArea.offset.x = 0;
-	renderPassInfo.renderArea.offset.y = 0;
-	renderPassInfo.renderArea.extent = context->swapchainExtent;
-	// clear color (see VK_ATTACHMENT_LOAD_OP_CLEAR)
-	VkClearColorValue clearColor = {{ 0.2f, 0.2f, 0.2f, 1.0f }};
-	VkClearValue clearValue = { clearColor };
-	renderPassInfo.clearValueCount = 1;
-	renderPassInfo.pClearValues = &clearValue;
-
-	for (uint32_t i = 0; i < context->imageCount; i++)
-	{
-		result = vkBeginCommandBuffer(renderable->commandBuffers[i], &beginInfo);
-
-		if (result != VK_SUCCESS)
-		{
-			fprintf(stderr, "Failed to begin recording command buffer %d/%d.\n", i + 1, context->imageCount);
-
-			return result;
-		}
-
-		renderPassInfo.framebuffer = context->swapChainFramebuffers[i];
-		vkCmdBeginRenderPass(renderable->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // VK_SUBPASS_CONTENTS_INLINE for primary
-		vkCmdBindPipeline(renderable->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipeline);
-
-		// bind vertex attributes
-		if(renderable->geometry->attribCount > 0)
-		{
-			VkBuffer buffers[] = {
-				renderable->geometry->bufferPositions,
-				renderable->geometry->bufferColors
-			};
-			VkDeviceSize offsets[] = {
-				0,
-				0
-			};
-
-			vkCmdBindVertexBuffers(renderable->commandBuffers[i], 0, 2, buffers, offsets);
-
-			if(renderable->geometry->indices)
-				vkCmdBindIndexBuffer(renderable->commandBuffers[i], renderable->geometry->bufferIndices, 0, VK_INDEX_TYPE_UINT16);
-		}
-
-		if(renderable->geometry->indices)
-			vkCmdDrawIndexed(renderable->commandBuffers[i], renderable->geometry->vertexCount, 1, 0, 0, 0);
-		else
-			vkCmdDraw(renderable->commandBuffers[i], renderable->geometry->vertexCount, 1, 0, 0);
-
-		vkCmdEndRenderPass(renderable->commandBuffers[i]);
-
-		result = vkEndCommandBuffer(renderable->commandBuffers[i]);
-
-		if (result != VK_SUCCESS)
-		{
-			fprintf(stderr, "Failed to end recording command buffer %d/%d.\n", i + 1, context->imageCount);
-
-			return result;
-		}
-	}
-
-	return result;
-}
-
-
 int createSynchronizationObjects(vulkanContext* context)
 {
 	VkSemaphoreCreateInfo semaphoreInfo = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
@@ -918,6 +829,7 @@ void render(vulkanContext *context, renderable renderable)
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
+		renderable->needCommandBufferUpdate = VK_TRUE; // TODO cmdbuffer references swapchain elements... fix this
 		recreateSwapChain();
 		return;
 	}
@@ -964,6 +876,7 @@ void render(vulkanContext *context, renderable renderable)
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || engine.vulkanContext.framebufferResized)
 	{
 		engine.vulkanContext.framebufferResized = VK_FALSE;
+		renderable->needCommandBufferUpdate = VK_TRUE;  // TODO cmdbuffer references swapchain elements... fix this
 		recreateSwapChain();
 	}
 	else if(result)
