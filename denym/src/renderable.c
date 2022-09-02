@@ -18,7 +18,7 @@ renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, 
 	renderable->fragShaderName = fragShaderName;
 	renderable->geometry = geometry;
 
-	if(!createPipeline(renderable) && !createVertexBuffers(geometry))
+	if(!createPipeline(renderable) && !createBuffers(geometry))
 	{
 		return renderable;
 	}
@@ -29,7 +29,9 @@ renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, 
 
 void denymDestroyRenderable(renderable renderable)
 {
-	// TODO clean a shitload of stuff here !!!
+	// TODO clean a shitload of stuff here !!! (shaders...)
+
+	denymDestroyGeometry(renderable->geometry);
 	vkDestroyPipeline(engine.vulkanContext.device, renderable->pipeline, NULL);
 	vkDestroyPipelineLayout(engine.vulkanContext.device, renderable->pipelineLayout, NULL);
 	vkFreeCommandBuffers(engine.vulkanContext.device, engine.vulkanContext.commandPool, engine.vulkanContext.imageCount, renderable->commandBuffers);
@@ -100,6 +102,18 @@ int createPipeline(renderable renderable)
 			vertexBindingDescriptions[1].binding = 1;
 			vertexBindingDescriptions[1].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 			vertexBindingDescriptions[1].stride = sizeof(float) * 3;
+		}
+
+		if(renderable->geometry->indices)
+		{
+			vertextAttributeDescriptions[2].binding = 2;
+			vertextAttributeDescriptions[2].format = VK_FORMAT_R16_UINT; // uint16_t
+			vertextAttributeDescriptions[2].location = 2;
+			vertextAttributeDescriptions[2].offset = 0; // because only one type of data in this array (indices), no interleaving
+
+			vertexBindingDescriptions[2].binding = 2;
+			vertexBindingDescriptions[2].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			vertexBindingDescriptions[2].stride = sizeof(uint16_t);
 		}
 
 		vertexInputInfo.pVertexAttributeDescriptions = vertextAttributeDescriptions;

@@ -21,9 +21,13 @@ void denymWaitForNextFrame(void);
 
 geometry denymCreateGeometry(uint32_t vertexCount);
 
+void denymDestroyGeometry(geometry geometry);
+
 void denymGeometryAddPosition(geometry, float *positions);
 
 void denymGeometryAddColors(geometry, float *colors);
+
+void denymGeometryAddIndices(geometry geometry, uint16_t *indices);
 
 renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, const char *fragShaderName);
 

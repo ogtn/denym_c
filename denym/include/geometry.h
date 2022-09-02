@@ -13,10 +13,13 @@ typedef struct geometry_t
 	uint32_t attribCount;
 	float *positions;
 	float *colors;
+	uint16_t *indices;
 	VkBuffer bufferPositions;
 	VkBuffer bufferColors;
+	VkBuffer bufferIndices;
 	VkDeviceMemory memoryPositions;
 	VkDeviceMemory memoryColors;
+	VkDeviceMemory memoryIndices;
 
 	// constants
 
@@ -24,7 +27,7 @@ typedef struct geometry_t
 } geometry_t;
 
 
-int createVertexBuffers(geometry geometry);
+int createBuffers(geometry geometry);
 
 
 #endif

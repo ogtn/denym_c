@@ -51,16 +51,6 @@ int createFramebuffer(vulkanContext* context);
 
 int createCommandPool(vulkanContext* context);
 
-int createBuffer(VkDeviceSize size, VkBuffer *buffer, VkDeviceMemory *vertexBufferMemory, VkMemoryPropertyFlags properties, VkBufferUsageFlags bufferUsage);
-
-int createVertexBuffer(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* vertexBufferMemory, void* src);
-
-int createVertexBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* vertexBufferMemory, void* src);
-
-int copyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size);
-
-int findMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties, uint32_t* index);
-
 int createCommandBuffers(vulkanContext* context, renderable renderable);
 
 int createSynchronizationObjects(vulkanContext* context);
