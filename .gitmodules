@@ -1,0 +1,3 @@
+[submodule "dependancies/cglm"]
+	path = dependancies/cglm
+	url = git@github.com:recp/cglm.git
