@@ -61,6 +61,7 @@ int denymKeepRunning(void)
 
 void denymRender(renderable renderable)
 {
+	makeReady(renderable);
 	updateCommandBuffers(renderable);
 	render(&engine.vulkanContext, renderable);
 	engine.vulkanContext.currentFrame = (engine.vulkanContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

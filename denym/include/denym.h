@@ -45,7 +45,13 @@ renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, 
 
 void denymDestroyRenderable(renderable renderable);
 
+int useUniforms(renderable renderable);
+
 int updateUniformsBuffer(renderable renderable, const modelViewProj *mvp);
+
+int usePushConstants(renderable renderable);
+
+int updatePushConstants(renderable renderable, float alpha);
 
 
 #endif

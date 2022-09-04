@@ -20,19 +20,31 @@ renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, 
 	renderable->fragShaderName = fragShaderName;
 	renderable->geometry = geometry;
 	renderable->needCommandBufferUpdate = VK_TRUE;
+	renderable->isReady = VK_FALSE;
+
+	return renderable;
+}
+
+
+int makeReady(renderable renderable)
+{
+	if(renderable->isReady)
+		return 0;
 
 	if(!createDescriptorSetLayout(renderable) &&
 		!createDescriptorPool(renderable) &&
 		!createUniformsBuffer(renderable) &&
 		!createDescriptorSets(renderable) &&
 		!createPipeline(renderable) &&
-		!createBuffers(geometry) &&
+		!createBuffers(renderable->geometry) &&
 		!createCommandBuffers(renderable))
 	{
-		return renderable;
+		renderable->isReady = VK_TRUE;
+
+		return 0;
 	}
 
-	return NULL;
+	return -1;
 }
 
 
@@ -198,7 +210,7 @@ int createPipeline(renderable renderable)
 	// Basic color blending for one framebuffer
 	VkPipelineColorBlendAttachmentState colorBlendAttachment = { 0 };
 	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	colorBlendAttachment.blendEnable = VK_FALSE;
+	colorBlendAttachment.blendEnable = VK_TRUE;
 	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
@@ -229,10 +241,24 @@ int createPipeline(renderable renderable)
 	// Required here even when we don't use it
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
 
-	if(renderable->uniformDescriptorSetLayout)
+	if(renderable->useUniforms)
 	{
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.pSetLayouts = &renderable->uniformDescriptorSetLayout;
+	}
+
+	// Push constant
+	VkPushConstantRange pushConstantRange =
+	{
+		.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+		.size = sizeof(float),
+		.offset = 0
+	};
+
+	if(renderable->usePushConstant)
+	{
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 	}
 
 	if (vkCreatePipelineLayout(engine.vulkanContext.device, &pipelineLayoutInfo, NULL, &renderable->pipelineLayout))
@@ -355,7 +381,12 @@ int updateCommandBuffers(renderable renderable)
 		}
 
 		// bind descriptor set to send uniforms
-		vkCmdBindDescriptorSets(renderable->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipelineLayout, 0, 1, &renderable->uniformDescriptorSets[i], 0, NULL);
+		if(renderable->useUniforms)
+			vkCmdBindDescriptorSets(renderable->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipelineLayout, 0, 1, &renderable->uniformDescriptorSets[i], 0, NULL);
+
+		// push constant
+		if(renderable->usePushConstant)
+			vkCmdPushConstants(renderable->commandBuffers[i], renderable->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &renderable->pushConstantAlpha);
 
 		if(renderable->geometry->indices)
 			vkCmdDrawIndexed(renderable->commandBuffers[i], renderable->geometry->vertexCount, 1, 0, 0, 0);
@@ -380,6 +411,17 @@ int updateCommandBuffers(renderable renderable)
 }
 
 
+int useUniforms(renderable renderable)
+{
+	if(renderable->isReady)
+		return -1;
+
+	renderable->useUniforms = VK_TRUE;
+
+	return 0;
+}
+
+
 int createUniformsBuffer(renderable renderable)
 {
 	renderable->uniformBuffers = malloc(sizeof * renderable->uniformBuffers * engine.vulkanContext.imageCount);
@@ -394,6 +436,9 @@ int createUniformsBuffer(renderable renderable)
 
 int updateUniformsBuffer(renderable renderable, const modelViewProj *mvp)
 {
+	if(renderable->isReady == VK_FALSE || renderable->useUniforms == VK_FALSE)
+		return -1;
+
 	void *dest;
 	VkDeviceMemory deviceMemory = renderable->uniformBuffersMemory[engine.vulkanContext.currentFrame];
 	VkDeviceSize size = sizeof * mvp;
@@ -496,4 +541,26 @@ int createDescriptorSets(renderable renderable)
 	}
 
 	return result;
+}
+
+
+int usePushConstants(renderable renderable)
+{
+	if(renderable->isReady)
+		return -1;
+
+	renderable->usePushConstant = VK_TRUE;
+
+	return 0;
+}
+
+int updatePushConstants(renderable renderable, float alpha)
+{
+	if(renderable->isReady == VK_FALSE || renderable->usePushConstant == VK_FALSE)
+		return -1;
+
+	renderable->pushConstantAlpha = alpha;
+	renderable->needCommandBufferUpdate = VK_TRUE;
+
+	return 0;
 }

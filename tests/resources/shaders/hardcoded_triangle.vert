@@ -19,7 +19,7 @@ vec2 positions[3] = vec2[]
 
 layout(location = 0) out vec3 fragColor;
 
-void main() 
+void main()
 {
     // z = 0, w = 1 so transformation to clip coordinate will be a non op
     gl_Position = vec4(positions[gl_VertexIndex], 0, 1);
