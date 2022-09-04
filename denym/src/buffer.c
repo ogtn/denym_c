@@ -82,8 +82,6 @@ int createBuffer(VkDeviceSize size, VkBuffer *buffer, VkDeviceMemory *vertexBuff
 
     // TODO check this ?
 	// bufferMemoryRequirements.alignment;
-	// bufferMemoryRequirements.memoryTypeBits;
-	// bufferMemoryRequirements.size;
 
 	VkMemoryAllocateInfo memoryAllocateInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
 	memoryAllocateInfo.allocationSize = bufferMemoryRequirements.size;
@@ -103,7 +101,7 @@ int createBuffer(VkDeviceSize size, VkBuffer *buffer, VkDeviceMemory *vertexBuff
 int copyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size)
 {
 	VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
-	allocInfo.commandPool = engine.vulkanContext.commandPool;
+	allocInfo.commandPool = engine.vulkanContext.bufferCopyCommandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 1;
 

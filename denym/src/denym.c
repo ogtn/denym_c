@@ -21,6 +21,7 @@ int denymInit(int window_width, int window_height)
 		!getPhysicalDevice(&engine.vulkanContext) &&
 		!getDevice(&engine.vulkanContext) &&
 		!getDeviceExtensionsAddr(&engine.vulkanContext) &&
+		!getSwapchainCapabilities(&engine.vulkanContext) &&
 		!createSwapchain(&engine.vulkanContext) &&
 		!createImageViews(&engine.vulkanContext) &&
 		!createRenderPass(&engine.vulkanContext) &&
@@ -331,8 +332,8 @@ void getPhysicalDeviceCapabilities(vulkanContext* context)
 	VkQueueFamilyProperties* queueFamilyProperties = malloc(sizeof * queueFamilyProperties * queueFamilyCount);
 	vkGetPhysicalDeviceQueueFamilyProperties(context->physicalDevice, &queueFamilyCount, queueFamilyProperties);
 
-	context->graphicsQueueFamilyIndex = -1;
-	context->presentQueueFamilyIndex = -1;
+	context->graphicsQueueFamilyIndex = UINT32_MAX;
+	context->presentQueueFamilyIndex = UINT32_MAX;
 
 	for (uint32_t i = 0; i < queueFamilyCount; i++)
 	{
@@ -343,12 +344,12 @@ void getPhysicalDeviceCapabilities(vulkanContext* context)
 		fprintf(stderr, "        queueCount : %d.\n", queueFamilyProperties[i].queueCount);
 		fprintf(stderr, "        can present images : %s.\n", canPresentImages ? "true" : "false");
 
-		if (context->graphicsQueueFamilyIndex == -1 &&
+		if (context->graphicsQueueFamilyIndex == UINT32_MAX &&
 			queueFamilyProperties[i].queueCount >= 1 &&
 			queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
 			context->graphicsQueueFamilyIndex = i;
 
-		if (context->presentQueueFamilyIndex == -1 &&
+		if (context->presentQueueFamilyIndex == UINT32_MAX &&
 			queueFamilyProperties[i].queueCount >= 1 &&
 			canPresentImages)
 			context->presentQueueFamilyIndex = i;
@@ -356,7 +357,8 @@ void getPhysicalDeviceCapabilities(vulkanContext* context)
 
 	free(queueFamilyProperties);
 
-	vkGetPhysicalDeviceFeatures(context->physicalDevice, &context->physicalDeviceFeatures);
+	// TODO: use or discard this
+	//vkGetPhysicalDeviceFeatures(context->physicalDevice, &context->physicalDeviceFeatures);
 	vkGetPhysicalDeviceMemoryProperties(context->physicalDevice, &context->physicalDeviceMemoryProperties);
 }
 
@@ -552,9 +554,6 @@ int getSwapchainCapabilities(vulkanContext* context)
 
 int createSwapchain(vulkanContext* context)
 {
-	if(getSwapchainCapabilities(context))
-		return -1;
-
 	// TODO: case max = 0 for unlimited
 	uint32_t imageCount = clamp(
 		context->surfaceCapabilities.minImageCount + 1,
@@ -931,7 +930,9 @@ void destroyVulkanContext(vulkanContext* context)
 		if(context->DestroySurfaceKHR)
 			context->DestroySurfaceKHR(context->instance, context->surface, NULL);
 
-		context->DestroyDebugUtilsMessengerEXT(context->instance, context->messenger, NULL);
+		if(context->DestroyDebugUtilsMessengerEXT)
+			context->DestroyDebugUtilsMessengerEXT(context->instance, context->messenger, NULL);
+
 		vkDestroyInstance(context->instance, NULL);
 	}
 
@@ -972,9 +973,6 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vulkanErrorCallback(
 	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 	void* pUserData)
 {
-	messageSeverity;
-	messageType;
-	pUserData;
 	fprintf(stderr, "Vulkan log : %s\n", pCallbackData->pMessage);
 
 	return VK_FALSE;

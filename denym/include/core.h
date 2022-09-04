@@ -16,8 +16,8 @@ typedef struct vulkanContext
 
 	VkPhysicalDevice physicalDevice;
 	VkPhysicalDeviceProperties physicalDeviceProperties;
-	VkPhysicalDeviceFeatures physicalDeviceFeatures;
 	VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties;
+	//VkPhysicalDeviceFeatures physicalDeviceFeatures;
 	uint32_t graphicsQueueFamilyIndex;
 	uint32_t presentQueueFamilyIndex;
 
@@ -35,16 +35,16 @@ typedef struct vulkanContext
 	VkImage* images;
 	VkImageView* imageViews;
 	uint32_t imageCount;
+	VkBool32 framebufferResized;
 	VkFramebuffer *swapChainFramebuffers;
 	VkRenderPass renderPass;
 	VkCommandPool commandPool;
 	VkCommandPool bufferCopyCommandPool;
-	VkBool32 framebufferResized;
 
 	VkSemaphore imageAvailableSemaphore[MAX_FRAMES_IN_FLIGHT];
 	VkSemaphore renderFinishedSemaphore[MAX_FRAMES_IN_FLIGHT];
     VkFence inFlightFences[MAX_FRAMES_IN_FLIGHT];
-    int currentFrame;
+    uint64_t currentFrame; // 64bits for padding purpose only
 
 	// instance extension functions
 	DECL_VK_PFN(GetDeviceProcAddr);

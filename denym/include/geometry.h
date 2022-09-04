@@ -20,10 +20,6 @@ typedef struct geometry_t
 	VkDeviceMemory memoryPositions;
 	VkDeviceMemory memoryColors;
 	VkDeviceMemory memoryIndices;
-
-	// constants
-
-	// uniforms
 } geometry_t;
 
 
