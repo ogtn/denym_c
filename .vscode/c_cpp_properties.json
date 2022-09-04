@@ -4,7 +4,8 @@
             "name": "Linux debug",
             "includePath": [
                 "${workspaceFolder}/include/",
-                "${workspaceFolder}/denym/include/"
+                "${workspaceFolder}/denym/include/",
+                "${workspaceFolder}/dependancies/cglm/include/"
             ],
             "defines": [
                 "_DEBUG"
