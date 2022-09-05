@@ -38,7 +38,7 @@ void denymTerminate(void);
 
 int denymKeepRunning(void);
 
-void denymRender(renderable renderable);
+void denymRender(renderable *renderables, uint32_t renderablesCount);
 
 void denymWaitForNextFrame(void);
 

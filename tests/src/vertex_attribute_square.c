@@ -46,7 +46,7 @@ int main(void)
 
 	while (denymKeepRunning())
 	{
-		denymRender(square);
+		denymRender(&square, 1);
 		denymWaitForNextFrame();
 	}
 	

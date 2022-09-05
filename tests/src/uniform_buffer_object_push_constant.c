@@ -69,7 +69,7 @@ int main(void)
         float alpha = (sinf(elapsed_since_start * 4) + 1) / 2;
         updatePushConstants(square, alpha);
 
-		denymRender(square);
+		denymRender(&square, 1);
 		denymWaitForNextFrame();
 	}
 

@@ -53,7 +53,7 @@ int createCommandPool(vulkanContext* context);
 
 int createSynchronizationObjects(vulkanContext* context);
 
-void render(vulkanContext* context, renderable renderable);
+void render(vulkanContext *context, renderable *renderables, uint32_t renderablesCount);
 
 uint32_t clamp(uint32_t n, uint32_t min, uint32_t max);
 

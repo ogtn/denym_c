@@ -60,11 +60,15 @@ int denymKeepRunning(void)
 }
 
 
-void denymRender(renderable renderable)
+void denymRender(renderable *renderables, uint32_t renderablesCount)
 {
-	makeReady(renderable);
-	updateCommandBuffers(renderable);
-	render(&engine.vulkanContext, renderable);
+	for(uint32_t i = 0; i < renderablesCount; i++)
+	{
+		makeReady(renderables[i]);
+		updateCommandBuffers(renderables[i]);
+	}
+
+	render(&engine.vulkanContext, renderables, renderablesCount);
 	engine.vulkanContext.currentFrame = (engine.vulkanContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
@@ -819,7 +823,7 @@ int createSynchronizationObjects(vulkanContext* context)
 }
 
 
-void render(vulkanContext *context, renderable renderable)
+void render(vulkanContext *context, renderable *renderables, uint32_t renderablesCount)
 {
 	uint32_t imageIndex;
 
@@ -830,8 +834,12 @@ void render(vulkanContext *context, renderable renderable)
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
-		renderable->needCommandBufferUpdate = VK_TRUE; // TODO cmdbuffer references swapchain elements... fix this
+		// TODO cmdbuffer references swapchain elements... fix this
+		for(uint32_t i = 0; i < renderablesCount; i++)
+			renderables[i]->needCommandBufferUpdate = VK_TRUE;
+
 		recreateSwapChain();
+
 		return;
 	}
 	else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
@@ -843,25 +851,26 @@ void render(vulkanContext *context, renderable renderable)
 
 	vkResetFences(context->device, 1, &context->inFlightFences[context->currentFrame]);
 
-	VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-
-	// one wait stage (color writing, and it's associated semaphore). Could be more stages here
-	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &context->imageAvailableSemaphore[context->currentFrame];
-	submitInfo.pWaitDstStageMask = waitStages;
-	// command buffer associated with the image available
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &renderable->commandBuffers[imageIndex];
-	// semaphore to signal when the command buffer's execution is finished
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &context->renderFinishedSemaphore[context->currentFrame];
-
-	result = vkQueueSubmit(context->graphicQueue, 1, &submitInfo, context->inFlightFences[context->currentFrame]);
-
-	if (result != VK_SUCCESS)
+	for(uint32_t i = 0; i < renderablesCount; i++)
 	{
-		fprintf(stderr, "Failed to submit draw command buffer.\n");
+		VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+
+		// one wait stage (color writing, and it's associated semaphore). Could be more stages here
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = &context->imageAvailableSemaphore[context->currentFrame];
+		submitInfo.pWaitDstStageMask = waitStages;
+		// command buffer associated with the image available
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &renderables[i]->commandBuffers[imageIndex];
+		// semaphore to signal when the command buffer's execution is finished
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &context->renderFinishedSemaphore[context->currentFrame];
+
+		result = vkQueueSubmit(context->graphicQueue, 1, &submitInfo, context->inFlightFences[context->currentFrame]);
+
+		if (result != VK_SUCCESS)
+			fprintf(stderr, "Failed to submit draw command buffer.\n");
 	}
 
 	VkPresentInfoKHR presentInfo = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
@@ -876,8 +885,11 @@ void render(vulkanContext *context, renderable renderable)
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || engine.vulkanContext.framebufferResized)
 	{
+		// TODO cmdbuffer references swapchain elements... fix this
+		for(uint32_t i = 0; i < renderablesCount; i++)
+			renderables[i]->needCommandBufferUpdate = VK_TRUE;
+
 		engine.vulkanContext.framebufferResized = VK_FALSE;
-		renderable->needCommandBufferUpdate = VK_TRUE;  // TODO cmdbuffer references swapchain elements... fix this
 		recreateSwapChain();
 	}
 	else if(result)

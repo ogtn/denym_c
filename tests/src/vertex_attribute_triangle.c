@@ -35,7 +35,7 @@ int main(void)
 
 	while (denymKeepRunning())
 	{
-		denymRender(triangle);
+		denymRender(&triangle, 1);
 		denymWaitForNextFrame();
 	}
 
