@@ -20,7 +20,6 @@ typedef struct modelViewProj
     mat4 projection;
 } modelViewProj;
 
-
 int denymInit(int window_width, int window_height);
 
 void denymTerminate(void);
@@ -52,6 +51,8 @@ int updateUniformsBuffer(renderable renderable, const modelViewProj *mvp);
 int usePushConstants(renderable renderable);
 
 int updatePushConstants(renderable renderable, float alpha);
+
+float getUptime(void);
 
 
 #endif

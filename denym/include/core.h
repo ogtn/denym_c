@@ -3,6 +3,7 @@
 
 
 #include "denym_common.h"
+#include <time.h>
 
 
 #define MAX_FRAMES_IN_FLIGHT 2
@@ -70,6 +71,7 @@ typedef struct denym
 {
 	vulkanContext vulkanContext;
 	GLFWwindow *window;
+	struct timespec uptime;
 } denym;
 
 

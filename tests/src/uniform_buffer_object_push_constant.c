@@ -1,20 +1,6 @@
 #include "denym.h"
 #include <stdlib.h>
-#include <time.h>
 #include <math.h>
-
-
-static void timespec_diff(const struct timespec *lhs, const struct timespec *rhs, struct timespec *result)
-{
-    result->tv_sec = lhs->tv_sec - rhs->tv_sec;
-    result->tv_nsec = lhs->tv_nsec - rhs->tv_nsec;
-
-    if (result->tv_nsec < 0)
-    {
-        result->tv_sec--;
-        result->tv_nsec += 1000000000L;
-    }
-}
 
 
 int main(void)
@@ -70,14 +56,9 @@ int main(void)
 	glm_perspective(glm_rad(45), width / height, 0.01f, 10, mvp.projection);
 	mvp.projection[1][1] *= -1;
 
-	struct timespec start, now, diff;
-	timespec_get(&start, TIME_UTC);
-
 	while (denymKeepRunning())
 	{
-		timespec_get(&now, TIME_UTC);
-        timespec_diff(&now, &start, &diff);
-        float elapsed_since_start = (float)diff.tv_sec + (float)diff.tv_nsec / 1000000000.f;
+        float elapsed_since_start = getUptime();
 
 	    glm_mat4_identity(mvp.model);
 		glm_rotate(mvp.model, glm_rad(elapsed_since_start * 100), axis);
@@ -88,7 +69,7 @@ int main(void)
 		denymRender(square);
 		denymWaitForNextFrame();
 	}
-	
+
 	denymDestroyRenderable(square);
 	denymTerminate();
 

@@ -31,6 +31,7 @@ int denymInit(int window_width, int window_height)
 	{
 		result = 0;
 		engine.vulkanContext.currentFrame = 0;
+		timespec_get(&engine.uptime, TIME_UTC);
 	}
 	else
 	{
