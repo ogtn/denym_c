@@ -16,7 +16,6 @@ renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, 
 	renderable->vertShaderName = vertShaderName;
 	renderable->fragShaderName = fragShaderName;
 	renderable->geometry = geometry;
-	renderable->needCommandBufferUpdate = VK_TRUE;
 	renderable->isReady = VK_FALSE;
 
 	return renderable;
@@ -32,8 +31,7 @@ int makeReady(renderable renderable)
 		!createDescriptorPool(renderable) &&
 		!createUniformsBuffer(renderable) &&
 		!createDescriptorSets(renderable) &&
-		!createPipeline(renderable) &&
-		!createCommandBuffers(renderable))
+		!createPipeline(renderable))
 	{
 		renderable->isReady = VK_TRUE;
 
@@ -53,8 +51,6 @@ void denymDestroyRenderable(renderable renderable)
 
 	vkDestroyPipeline(engine.vulkanContext.device, renderable->pipeline, NULL);
 	vkDestroyPipelineLayout(engine.vulkanContext.device, renderable->pipelineLayout, NULL);
-	vkFreeCommandBuffers(engine.vulkanContext.device, engine.vulkanContext.commandPool, engine.vulkanContext.imageCount, renderable->commandBuffers);
-	free(renderable->commandBuffers);
 
 	for(uint32_t i = 0; i < engine.vulkanContext.imageCount; i++)
 	{
@@ -248,109 +244,40 @@ err_vert:
 }
 
 
-int createCommandBuffers(renderable renderable)
+void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 {
-	renderable->commandBuffers = malloc(sizeof * renderable->commandBuffers * engine.vulkanContext.imageCount);
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipeline);
 
-	VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
-	allocInfo.commandPool = engine.vulkanContext.commandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = engine.vulkanContext.imageCount;
-
-	VkResult result = vkAllocateCommandBuffers(engine.vulkanContext.device, &allocInfo, renderable->commandBuffers);
-
-	if (result != VK_SUCCESS)
-		fprintf(stderr, "Failed to allocate command buffers.\n");
-
-	return result;
-}
-
-
-int updateCommandBuffers(renderable renderable)
-{
-	VkResult result = VK_SUCCESS;
-
-	if(renderable->needCommandBufferUpdate == VK_FALSE)
-		return result;
-
-	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-	beginInfo.pInheritanceInfo = NULL; // NULL in case of primary
-
-	VkRenderPassBeginInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
-	renderPassInfo.renderPass = engine.vulkanContext.renderPass;
-	// render area : pixels outside have undefined values
-	renderPassInfo.renderArea.offset.x = 0;
-	renderPassInfo.renderArea.offset.y = 0;
-	renderPassInfo.renderArea.extent = engine.vulkanContext.swapchainExtent;
-
-	// clear color (see VK_ATTACHMENT_LOAD_OP_CLEAR)
-	VkClearColorValue clearColor = {{ 0.2f, 0.2f, 0.2f, 1.0f }};
-	VkClearValue clearValue = { clearColor };
-	renderPassInfo.clearValueCount = 1;
-	renderPassInfo.pClearValues = &clearValue;
-
-	for (uint32_t i = 0; i < engine.vulkanContext.imageCount; i++)
+	// bind vertex attributes
+	if(renderable->geometry->attribCount > 0)
 	{
-		result = vkBeginCommandBuffer(renderable->commandBuffers[i], &beginInfo);
+		VkBuffer buffers[] = {
+			renderable->geometry->bufferPositions,
+			renderable->geometry->bufferColors
+		};
+		VkDeviceSize offsets[] = {
+			0,
+			0
+		};
 
-		if (result != VK_SUCCESS)
-		{
-			fprintf(stderr, "Failed to begin recording command buffer %d/%d.\n", i + 1, engine.vulkanContext.imageCount);
-
-			return result;
-		}
-
-		renderPassInfo.framebuffer = engine.vulkanContext.swapChainFramebuffers[i];
-		vkCmdBeginRenderPass(renderable->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // VK_SUBPASS_CONTENTS_INLINE for primary
-		vkCmdBindPipeline(renderable->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipeline);
-
-		// bind vertex attributes
-		if(renderable->geometry->attribCount > 0)
-		{
-			VkBuffer buffers[] = {
-				renderable->geometry->bufferPositions,
-				renderable->geometry->bufferColors
-			};
-			VkDeviceSize offsets[] = {
-				0,
-				0
-			};
-
-			vkCmdBindVertexBuffers(renderable->commandBuffers[i], 0, 2, buffers, offsets);
-
-			if(renderable->geometry->indices)
-				vkCmdBindIndexBuffer(renderable->commandBuffers[i], renderable->geometry->bufferIndices, 0, VK_INDEX_TYPE_UINT16);
-		}
-
-		// bind descriptor set to send uniforms
-		if(renderable->useUniforms)
-			vkCmdBindDescriptorSets(renderable->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipelineLayout, 0, 1, &renderable->uniformDescriptorSets[i], 0, NULL);
-
-		// push constant
-		if(renderable->usePushConstant)
-			vkCmdPushConstants(renderable->commandBuffers[i], renderable->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &renderable->pushConstantAlpha);
+		vkCmdBindVertexBuffers(commandBuffer, 0, 2, buffers, offsets);
 
 		if(renderable->geometry->indices)
-			vkCmdDrawIndexed(renderable->commandBuffers[i], renderable->geometry->vertexCount, 1, 0, 0, 0);
-		else
-			vkCmdDraw(renderable->commandBuffers[i], renderable->geometry->vertexCount, 1, 0, 0);
-
-		vkCmdEndRenderPass(renderable->commandBuffers[i]);
-
-		result = vkEndCommandBuffer(renderable->commandBuffers[i]);
-
-		if (result != VK_SUCCESS)
-		{
-			fprintf(stderr, "Failed to end recording command buffer %d/%d.\n", i + 1, engine.vulkanContext.imageCount);
-
-			return result;
-		}
+			vkCmdBindIndexBuffer(commandBuffer, renderable->geometry->bufferIndices, 0, VK_INDEX_TYPE_UINT16);
 	}
 
-	renderable->needCommandBufferUpdate = VK_FALSE;
+	// bind descriptor set to send uniforms
+	if(renderable->useUniforms)
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipelineLayout, 0, 1, &renderable->uniformDescriptorSets[engine.vulkanContext.currentFrame], 0, NULL);
 
-	return result;
+	// push constant
+	if(renderable->usePushConstant)
+		vkCmdPushConstants(commandBuffer, renderable->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &renderable->pushConstantAlpha);
+
+	if(renderable->geometry->indices)
+		vkCmdDrawIndexed(commandBuffer, renderable->geometry->vertexCount, 1, 0, 0, 0);
+	else
+		vkCmdDraw(commandBuffer, renderable->geometry->vertexCount, 1, 0, 0);
 }
 
 
@@ -503,7 +430,7 @@ int updatePushConstants(renderable renderable, float alpha)
 		return -1;
 
 	renderable->pushConstantAlpha = alpha;
-	renderable->needCommandBufferUpdate = VK_TRUE;
+	engine.vulkanContext.needCommandBufferUpdate = VK_TRUE;
 
 	return 0;
 }

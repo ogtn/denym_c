@@ -27,11 +27,14 @@ int denymInit(int window_width, int window_height)
 		!createRenderPass(&engine.vulkanContext) &&
 		!createFramebuffer(&engine.vulkanContext) &&
 		!createCommandPool(&engine.vulkanContext) &&
+		!createCommandBuffers() &&
 		!createSynchronizationObjects(&engine.vulkanContext))
 	{
 		result = 0;
 		engine.vulkanContext.currentFrame = 0;
 		timespec_get(&engine.uptime, TIME_UTC);
+		engine.frameCount = 0;
+		engine.vulkanContext.needCommandBufferUpdate = VK_TRUE;
 	}
 	else
 	{
@@ -47,7 +50,6 @@ void denymTerminate(void)
 	destroyVulkanContext(&engine.vulkanContext);
 	glfwDestroyWindow(engine.window);
 	glfwTerminate();
-
 	memset(&engine, 0, sizeof(denym));
 }
 
@@ -63,13 +65,12 @@ int denymKeepRunning(void)
 void denymRender(renderable *renderables, uint32_t renderablesCount)
 {
 	for(uint32_t i = 0; i < renderablesCount; i++)
-	{
 		makeReady(renderables[i]);
-		updateCommandBuffers(renderables[i]);
-	}
 
-	render(&engine.vulkanContext, renderables, renderablesCount);
+	updateCommandBuffers(renderables, renderablesCount);
+	render(&engine.vulkanContext);
 	engine.vulkanContext.currentFrame = (engine.vulkanContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+	engine.frameCount++;
 }
 
 
@@ -625,6 +626,8 @@ int recreateSwapChain(void)
 {
 	int result = -1;
 	int width, height;
+
+	engine.vulkanContext.needCommandBufferUpdate = VK_TRUE;
 	glfwGetFramebufferSize(engine.window, &width, &height);
 
 	while(width == 0 || height == 0)
@@ -786,6 +789,81 @@ int createCommandPool(vulkanContext* context)
 }
 
 
+int createCommandBuffers(void)
+{
+	VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+	allocInfo.commandPool = engine.vulkanContext.commandPool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = engine.vulkanContext.imageCount;
+
+	VkResult result = vkAllocateCommandBuffers(engine.vulkanContext.device, &allocInfo, engine.vulkanContext.commandBuffers);
+
+	if (result != VK_SUCCESS)
+		fprintf(stderr, "Failed to allocate command buffers.\n");
+
+	return result;
+}
+
+
+int updateCommandBuffers(renderable *renderables, uint32_t renderablesCount)
+{
+	VkResult result = VK_SUCCESS;
+
+	if(engine.vulkanContext.needCommandBufferUpdate == VK_FALSE)
+		return result;
+
+	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	beginInfo.pInheritanceInfo = NULL; // NULL in case of primary
+
+	VkRenderPassBeginInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+	renderPassInfo.renderPass = engine.vulkanContext.renderPass;
+	// render area : pixels outside have undefined values
+	renderPassInfo.renderArea.offset.x = 0;
+	renderPassInfo.renderArea.offset.y = 0;
+	renderPassInfo.renderArea.extent = engine.vulkanContext.swapchainExtent;
+
+	// clear color (see VK_ATTACHMENT_LOAD_OP_CLEAR)
+	VkClearColorValue clearColor = {{ 0.2f, 0.2f, 0.2f, 1.0f }};
+	VkClearValue clearValue = { clearColor };
+	renderPassInfo.clearValueCount = 1;
+	renderPassInfo.pClearValues = &clearValue;
+
+	for (uint32_t i = 0; i < engine.vulkanContext.imageCount; i++)
+	{
+		result = vkBeginCommandBuffer(engine.vulkanContext.commandBuffers[i], &beginInfo);
+
+		if (result != VK_SUCCESS)
+		{
+			fprintf(stderr, "Failed to begin recording command buffer %d/%d.\n", i + 1, engine.vulkanContext.imageCount);
+
+			return result;
+		}
+
+		renderPassInfo.framebuffer = engine.vulkanContext.swapChainFramebuffers[i];
+		vkCmdBeginRenderPass(engine.vulkanContext.commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // VK_SUBPASS_CONTENTS_INLINE for primary
+
+		for(uint32_t j = 0; j < renderablesCount; j++)
+			renderableDraw(renderables[j], engine.vulkanContext.commandBuffers[i]);
+
+		vkCmdEndRenderPass(engine.vulkanContext.commandBuffers[i]);
+
+		result = vkEndCommandBuffer(engine.vulkanContext.commandBuffers[i]);
+
+		if (result != VK_SUCCESS)
+		{
+			fprintf(stderr, "Failed to end recording command buffer %d/%d.\n", i + 1, engine.vulkanContext.imageCount);
+
+			return result;
+		}
+	}
+
+	engine.vulkanContext.needCommandBufferUpdate = VK_FALSE;
+
+	return result;
+}
+
+
 int createSynchronizationObjects(vulkanContext* context)
 {
 	VkSemaphoreCreateInfo semaphoreInfo = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
@@ -823,7 +901,7 @@ int createSynchronizationObjects(vulkanContext* context)
 }
 
 
-void render(vulkanContext *context, renderable *renderables, uint32_t renderablesCount)
+void render(vulkanContext *context)
 {
 	uint32_t imageIndex;
 
@@ -832,12 +910,9 @@ void render(vulkanContext *context, renderable *renderables, uint32_t renderable
 
 	VkResult result = context->AcquireNextImageKHR(context->device, context->swapchain, UINT64_MAX, context->imageAvailableSemaphore[context->currentFrame], VK_NULL_HANDLE, &imageIndex);
 
+	// TODO cmdbuffer references swapchain elements... fix this
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
-		// TODO cmdbuffer references swapchain elements... fix this
-		for(uint32_t i = 0; i < renderablesCount; i++)
-			renderables[i]->needCommandBufferUpdate = VK_TRUE;
-
 		recreateSwapChain();
 
 		return;
@@ -851,27 +926,26 @@ void render(vulkanContext *context, renderable *renderables, uint32_t renderable
 
 	vkResetFences(context->device, 1, &context->inFlightFences[context->currentFrame]);
 
-	for(uint32_t i = 0; i < renderablesCount; i++)
-	{
-		VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+	VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
 
-		// one wait stage (color writing, and it's associated semaphore). Could be more stages here
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &context->imageAvailableSemaphore[context->currentFrame];
-		submitInfo.pWaitDstStageMask = waitStages;
-		// command buffer associated with the image available
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &renderables[i]->commandBuffers[imageIndex];
-		// semaphore to signal when the command buffer's execution is finished
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &context->renderFinishedSemaphore[context->currentFrame];
+	// one wait stage (color writing, and it's associated semaphore). Could be more stages here
+	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = &context->imageAvailableSemaphore[context->currentFrame];
+	submitInfo.pWaitDstStageMask = waitStages;
 
-		result = vkQueueSubmit(context->graphicQueue, 1, &submitInfo, context->inFlightFences[context->currentFrame]);
+	// command buffer associated with the image available
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &engine.vulkanContext.commandBuffers[imageIndex];
 
-		if (result != VK_SUCCESS)
-			fprintf(stderr, "Failed to submit draw command buffer.\n");
-	}
+	// semaphore to signal when the command buffer's execution is finished
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &context->renderFinishedSemaphore[context->currentFrame];
+
+	result = vkQueueSubmit(context->graphicQueue, 1, &submitInfo, context->inFlightFences[context->currentFrame]);
+
+	if (result != VK_SUCCESS)
+		fprintf(stderr, "Failed to submit draw command buffer.\n");
 
 	VkPresentInfoKHR presentInfo = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
 	presentInfo.waitSemaphoreCount = 1;
@@ -883,12 +957,9 @@ void render(vulkanContext *context, renderable *renderables, uint32_t renderable
 
 	result = context->QueuePresentKHR(context->presentQueue, &presentInfo);
 
+	// TODO cmdbuffer references swapchain elements... fix this
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || engine.vulkanContext.framebufferResized)
 	{
-		// TODO cmdbuffer references swapchain elements... fix this
-		for(uint32_t i = 0; i < renderablesCount; i++)
-			renderables[i]->needCommandBufferUpdate = VK_TRUE;
-
 		engine.vulkanContext.framebufferResized = VK_FALSE;
 		recreateSwapChain();
 	}
@@ -935,6 +1006,7 @@ void destroyVulkanContext(vulkanContext* context)
 			vkDestroyFence(context->device, context->inFlightFences[i], NULL);
 		}
 
+		vkFreeCommandBuffers(engine.vulkanContext.device, engine.vulkanContext.commandPool, engine.vulkanContext.imageCount, engine.vulkanContext.commandBuffers);
 		vkDestroyCommandPool(engine.vulkanContext.device, engine.vulkanContext.commandPool, NULL);
 		vkDestroyDevice(context->device, NULL);
 	}

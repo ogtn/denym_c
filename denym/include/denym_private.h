@@ -51,9 +51,13 @@ int createFramebuffer(vulkanContext* context);
 
 int createCommandPool(vulkanContext* context);
 
+int createCommandBuffers(void);
+
+int updateCommandBuffers(renderable *renderables, uint32_t renderablesCount);
+
 int createSynchronizationObjects(vulkanContext* context);
 
-void render(vulkanContext *context, renderable *renderables, uint32_t renderablesCount);
+void render(vulkanContext *context);
 
 uint32_t clamp(uint32_t n, uint32_t min, uint32_t max);
 

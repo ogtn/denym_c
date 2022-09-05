@@ -28,10 +28,6 @@ typedef struct renderable_t
 	VkBool32 usePushConstant;
 	float pushConstantAlpha;
 
-	// command buffers
-	VkCommandBuffer* commandBuffers; // draw cmds
-	VkBool32 needCommandBufferUpdate;
-
 	// state
 	VkBool32 isReady;
 
@@ -55,9 +51,7 @@ int updatePushConstants(renderable renderable, float alpha);
 
 int createPipeline(renderable renderable);
 
-int createCommandBuffers(renderable renderable);
-
-int updateCommandBuffers(renderable renderable);
+void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer);
 
 int createUniformsBuffer(renderable renderable);
 

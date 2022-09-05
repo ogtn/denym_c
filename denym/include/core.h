@@ -45,7 +45,11 @@ typedef struct vulkanContext
 	VkSemaphore imageAvailableSemaphore[MAX_FRAMES_IN_FLIGHT];
 	VkSemaphore renderFinishedSemaphore[MAX_FRAMES_IN_FLIGHT];
     VkFence inFlightFences[MAX_FRAMES_IN_FLIGHT];
-    uint64_t currentFrame; // 64bits for padding purpose only
+    uint32_t currentFrame;
+
+	// command buffers
+	VkBool32 needCommandBufferUpdate;
+	VkCommandBuffer commandBuffers[MAX_FRAMES_IN_FLIGHT];
 
 	// instance extension functions
 	DECL_VK_PFN(GetDeviceProcAddr);
@@ -71,7 +75,9 @@ typedef struct denym
 {
 	vulkanContext vulkanContext;
 	GLFWwindow *window;
+
 	struct timespec uptime;
+	uint64_t frameCount;
 } denym;
 
 
