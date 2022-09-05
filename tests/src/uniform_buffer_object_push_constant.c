@@ -34,11 +34,14 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 
-	geometry geometry = denymCreateGeometry(6);
-	denymGeometryAddPosition(geometry, positions);
-	denymGeometryAddColors(geometry, colors);
-    denymGeometryAddIndices(geometry, indices);
+	geometryCreateInfo geometryCreateInfo = {
+		.vertexCount = 6,
+		.positions = positions,
+		.colors = colors,
+		.indices = indices,
+		.indiceCount = sizeof indices / sizeof *indices };
 
+	geometry geometry = geometryCreate(&geometryCreateInfo);
 	renderable square = denymCreateRenderable(
 		geometry,
 		"mvp_ubo_position_color_attribute.vert.spv",

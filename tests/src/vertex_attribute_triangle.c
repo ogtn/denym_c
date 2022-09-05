@@ -25,9 +25,12 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 
-	geometry geometry = denymCreateGeometry(3);
-	denymGeometryAddPosition(geometry, positions);
-	denymGeometryAddColors(geometry, colors);
+	geometryCreateInfo geometryCreateInfo = {
+		.vertexCount = 3,
+		.positions = positions,
+		.colors = colors };
+
+	geometry geometry = geometryCreate(&geometryCreateInfo);
 	renderable triangle = denymCreateRenderable(geometry, "basic_position_color_attribute.vert.spv", "basic_color_interp.frag.spv");
 
 	while (denymKeepRunning())

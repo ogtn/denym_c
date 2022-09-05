@@ -10,7 +10,8 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 	
-	geometry geometry = denymCreateGeometry(3);
+	geometryCreateInfo geometryCreateInfo = { .vertexCount = 3 };
+	geometry geometry = geometryCreate(&geometryCreateInfo);
 	renderable triangle = denymCreateRenderable(
 		geometry,
 		"hardcoded_triangle.vert.spv",

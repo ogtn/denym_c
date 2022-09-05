@@ -36,7 +36,7 @@ int makeReady(renderable renderable)
 		!createUniformsBuffer(renderable) &&
 		!createDescriptorSets(renderable) &&
 		!createPipeline(renderable) &&
-		!createBuffers(renderable->geometry) &&
+		!geometryCreateBuffers(renderable->geometry) &&
 		!createCommandBuffers(renderable))
 	{
 		renderable->isReady = VK_TRUE;
@@ -69,7 +69,7 @@ void denymDestroyRenderable(renderable renderable)
 	free(renderable->uniformBuffers);
 	free(renderable->uniformBuffersMemory);
 
-	denymDestroyGeometry(renderable->geometry);
+	geometryDestroy(renderable->geometry);
 }
 
 

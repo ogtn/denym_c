@@ -6,42 +6,30 @@
 static geometry_t static_geometry;
 
 
-geometry denymCreateGeometry(uint32_t vertexCount)
+geometry geometryCreate(const geometryCreateInfo *createInfo)
 {
 	geometry geometry = &static_geometry;
-	geometry->vertexCount = vertexCount;
 
-	geometry->attribCount = 0;
-	geometry->colors =  NULL;
-	geometry->positions = NULL;
+	geometry->vertexCount = createInfo->vertexCount;
+	geometry->indiceCount = createInfo->indiceCount;
+	geometry->attribCount =
+		!!createInfo->colors +
+		!!createInfo->positions +
+		!!createInfo->indices;
+
+	geometry->positions = createInfo->positions;
+	geometry->colors = createInfo->colors;
+	geometry->indices = createInfo->indices;
+
+	if((createInfo->indiceCount != 0 && createInfo->indices == NULL) ||
+		(createInfo->indiceCount == 0 && createInfo->indices != NULL))
+		return NULL;
 
 	return geometry;
 }
 
 
-void denymGeometryAddPosition(geometry geometry, float *positions)
-{
-	geometry->attribCount++;
-	geometry->positions = positions;
-}
-
-
-void denymGeometryAddColors(geometry geometry, float *colors)
-{
-	geometry->attribCount++;
-	geometry->colors = colors;
-}
-
-
-void denymGeometryAddIndices(geometry geometry, uint16_t *indices)
-{
-	// TODO indicesCount should be equal to vertexCount
-	geometry->attribCount++;
-	geometry->indices = indices;
-}
-
-
-void denymDestroyGeometry(geometry geometry)
+void geometryDestroy(geometry geometry)
 {
 	if(geometry->positions)
 	{
@@ -63,25 +51,25 @@ void denymDestroyGeometry(geometry geometry)
 }
 
 
-int createBuffers(geometry geometry)
+int geometryCreateBuffers(geometry geometry)
 {
 	if(geometry->positions)
 		createVertexBufferWithStaging(
-			sizeof * geometry->positions * geometry->vertexCount * 2, // TODO vertexCount is wrong here... should be posCount
+			sizeof * geometry->positions * geometry->vertexCount * 2,
 			&geometry->bufferPositions,
 			&geometry->memoryPositions,
 			geometry->positions);
 
 	if(geometry->colors)
 		createVertexBufferWithStaging(
-			sizeof * geometry->colors * geometry->vertexCount * 3, // TODO same here
+			sizeof * geometry->colors * geometry->vertexCount * 3,
 			&geometry->bufferColors,
 			&geometry->memoryColors,
 			geometry->colors);
 
 	if(geometry->indices)
 		createIndexBufferWithStaging(
-			sizeof * geometry->indices * geometry->vertexCount, // TODO this is ok though, vertexCount should be equal to indicesCount, but we need to check this when adding them
+			sizeof * geometry->indices * geometry->indiceCount,
 			&geometry->bufferIndices,
 			&geometry->memoryIndices,
 			geometry->indices);

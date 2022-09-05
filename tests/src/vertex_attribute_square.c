@@ -33,10 +33,12 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 
-	geometry geometry = denymCreateGeometry(6);
-	denymGeometryAddPosition(geometry, positions);
-	denymGeometryAddColors(geometry, colors);
-	
+	geometryCreateInfo geometryCreateInfo = {
+		.vertexCount = 6,
+		.positions = positions,
+		.colors = colors };
+
+	geometry geometry = geometryCreate(&geometryCreateInfo);
 	renderable square = denymCreateRenderable(
 		geometry,
 		"basic_position_color_attribute.vert.spv",

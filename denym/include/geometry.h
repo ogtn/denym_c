@@ -8,22 +8,28 @@
 typedef struct geometry_t
 {
 	uint32_t vertexCount;
+	uint16_t indiceCount;
+	uint16_t attribCount;
 
-	// attributes
-	uint32_t attribCount;
 	float *positions;
 	float *colors;
 	uint16_t *indices;
+
 	VkBuffer bufferPositions;
 	VkBuffer bufferColors;
 	VkBuffer bufferIndices;
+
 	VkDeviceMemory memoryPositions;
 	VkDeviceMemory memoryColors;
 	VkDeviceMemory memoryIndices;
 } geometry_t;
 
 
-int createBuffers(geometry geometry);
+geometry geometryCreate(const geometryCreateInfo *createInfo);
+
+void geometryDestroy(geometry geometry);
+
+int geometryCreateBuffers(geometry geometry);
 
 
 #endif

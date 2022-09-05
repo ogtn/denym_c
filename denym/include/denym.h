@@ -20,6 +20,18 @@ typedef struct modelViewProj
     mat4 projection;
 } modelViewProj;
 
+
+typedef struct geometryCreateInfo
+{
+	uint32_t vertexCount;
+	uint16_t indiceCount;
+
+	float *positions;
+	float *colors;
+	uint16_t *indices;
+} geometryCreateInfo;
+
+
 int denymInit(int window_width, int window_height);
 
 void denymTerminate(void);
@@ -30,15 +42,9 @@ void denymRender(renderable renderable);
 
 void denymWaitForNextFrame(void);
 
-geometry denymCreateGeometry(uint32_t vertexCount);
+geometry geometryCreate(const geometryCreateInfo *createInfo);
 
-void denymDestroyGeometry(geometry geometry);
-
-void denymGeometryAddPosition(geometry, float *positions);
-
-void denymGeometryAddColors(geometry, float *colors);
-
-void denymGeometryAddIndices(geometry geometry, uint16_t *indices);
+void geometryDestroy(geometry geometry);
 
 renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, const char *fragShaderName);
 
