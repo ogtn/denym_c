@@ -5,12 +5,18 @@
 #include <string.h>
 
 
-static geometry_t static_geometry;
-
-
 geometry geometryCreate(const geometryCreateInfo *createInfo)
 {
-	geometry geometry = &static_geometry;
+	if((createInfo->indiceCount != 0 && createInfo->indices == NULL) ||
+		(createInfo->indiceCount == 0 && createInfo->indices != NULL))
+	{
+		fprintf(stderr, "geometryCreate() failed (indiceCount=%i)(indices=%p)\n",
+			createInfo->indiceCount, (void*)createInfo->indices);
+
+		return NULL;
+	}
+
+	geometry geometry = calloc(1, sizeof(*geometry));
 
 	geometry->vertexCount = createInfo->vertexCount;
 	geometry->indiceCount = createInfo->indiceCount;
@@ -23,18 +29,10 @@ geometry geometryCreate(const geometryCreateInfo *createInfo)
 	geometry->colors = createInfo->colors;
 	geometry->indices = createInfo->indices;
 
-	if((createInfo->indiceCount != 0 && createInfo->indices == NULL) ||
-		(createInfo->indiceCount == 0 && createInfo->indices != NULL))
-	{
-		fprintf(stderr, "geometryCreate() failed (indiceCount=%i)(indices=%p)\n",
-			createInfo->indiceCount, (void*)createInfo->indices);
-
-		return NULL;
-	}
-
 	if(geometryCreateBuffers(geometry))
 	{
-		fprintf(stderr, "geometryCreate() failed to create buffers\n");
+		free(geometry);
+		fprintf(stderr, "geometryCreateBuffers() failed to create buffers\n");
 
 		return NULL;
 	}
@@ -62,6 +60,8 @@ void geometryDestroy(geometry geometry)
 		vkFreeMemory(engine.vulkanContext.device, geometry->memoryIndices, NULL);
 		vkDestroyBuffer(engine.vulkanContext.device, geometry->bufferIndices, NULL);
 	}
+
+	free(geometry);
 }
 
 
@@ -103,6 +103,7 @@ void geometryFillPipelineVertexInputStateCreateInfo(geometry geometry, VkPipelin
 	createInfo->vertexBindingDescriptionCount = geometry->attribCount;
 	createInfo->vertexAttributeDescriptionCount = geometry->attribCount;
 
+	// TODO: free those at some point
 	VkVertexInputAttributeDescription *vertextAttributeDescriptions = malloc(sizeof * vertextAttributeDescriptions * geometry->attribCount);
 	VkVertexInputBindingDescription *vertexBindingDescriptions = malloc(sizeof * vertexBindingDescriptions * geometry->attribCount);
 

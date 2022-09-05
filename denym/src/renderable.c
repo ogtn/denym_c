@@ -9,12 +9,9 @@
 #include <stdio.h>
 
 
-static renderable_t static_renderable;
-
-
 renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, const char *fragShaderName)
 {
-	renderable renderable = &static_renderable;
+	renderable renderable = calloc(1, sizeof(*renderable));
 
 	renderable->vertShaderName = vertShaderName;
 	renderable->fragShaderName = fragShaderName;
@@ -69,6 +66,7 @@ void denymDestroyRenderable(renderable renderable)
 	free(renderable->uniformBuffersMemory);
 
 	geometryDestroy(renderable->geometry);
+	free(renderable);
 }
 
 
