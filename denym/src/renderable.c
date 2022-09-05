@@ -36,7 +36,6 @@ int makeReady(renderable renderable)
 		!createUniformsBuffer(renderable) &&
 		!createDescriptorSets(renderable) &&
 		!createPipeline(renderable) &&
-		!geometryCreateBuffers(renderable->geometry) &&
 		!createCommandBuffers(renderable))
 	{
 		renderable->isReady = VK_TRUE;
@@ -100,62 +99,7 @@ int createPipeline(renderable renderable)
 
 	// vertex attributes
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
-
-	if(renderable->geometry->attribCount > 0)
-	{
-		vertexInputInfo.vertexBindingDescriptionCount = renderable->geometry->attribCount;
-		vertexInputInfo.vertexAttributeDescriptionCount = renderable->geometry->attribCount;
-
-		VkVertexInputAttributeDescription *vertextAttributeDescriptions = malloc(sizeof * vertextAttributeDescriptions * renderable->geometry->attribCount);
-		VkVertexInputBindingDescription *vertexBindingDescriptions = malloc(sizeof * vertexBindingDescriptions * renderable->geometry->attribCount);
-
-		// here we could have had positions and colors in the same array
-		// in this case, only one vertexBindingDescriptions, and two vertextAttributeDescriptions
-
-		if(renderable->geometry->positions)
-		{
-			vertextAttributeDescriptions[0].binding = 0;
-			vertextAttributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT; // vec2
-			vertextAttributeDescriptions[0].location = 0;
-			vertextAttributeDescriptions[0].offset = 0; // because only one type of data in this array (positions), no interleaving
-
-			vertexBindingDescriptions[0].binding = 0;
-			vertexBindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			vertexBindingDescriptions[0].stride = sizeof(float) * 2;
-		}
-
-		if(renderable->geometry->colors)
-		{
-			vertextAttributeDescriptions[1].binding = 1;
-			vertextAttributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT; // vec3
-			vertextAttributeDescriptions[1].location = 1;
-			vertextAttributeDescriptions[1].offset = 0; // because only one type of data in this array (colors), no interleaving
-
-			vertexBindingDescriptions[1].binding = 1;
-			vertexBindingDescriptions[1].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			vertexBindingDescriptions[1].stride = sizeof(float) * 3;
-		}
-
-		if(renderable->geometry->indices)
-		{
-			vertextAttributeDescriptions[2].binding = 2;
-			vertextAttributeDescriptions[2].format = VK_FORMAT_R16_UINT; // uint16_t
-			vertextAttributeDescriptions[2].location = 2;
-			vertextAttributeDescriptions[2].offset = 0; // because only one type of data in this array (indices), no interleaving
-
-			vertexBindingDescriptions[2].binding = 2;
-			vertexBindingDescriptions[2].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			vertexBindingDescriptions[2].stride = sizeof(uint16_t);
-		}
-
-		vertexInputInfo.pVertexAttributeDescriptions = vertextAttributeDescriptions;
-		vertexInputInfo.pVertexBindingDescriptions = vertexBindingDescriptions;
-	}
-	else
-	{
-		vertexInputInfo.pVertexAttributeDescriptions = NULL;
-		vertexInputInfo.pVertexBindingDescriptions = NULL;
-	}
+	geometryFillPipelineVertexInputStateCreateInfo(renderable->geometry, &vertexInputInfo);
 
 	// type of geometry we want to draw
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly = { VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
@@ -341,6 +285,7 @@ int updateCommandBuffers(renderable renderable)
 	renderPassInfo.renderArea.offset.x = 0;
 	renderPassInfo.renderArea.offset.y = 0;
 	renderPassInfo.renderArea.extent = engine.vulkanContext.swapchainExtent;
+
 	// clear color (see VK_ATTACHMENT_LOAD_OP_CLEAR)
 	VkClearColorValue clearColor = {{ 0.2f, 0.2f, 0.2f, 1.0f }};
 	VkClearValue clearValue = { clearColor };

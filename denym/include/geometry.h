@@ -31,5 +31,7 @@ void geometryDestroy(geometry geometry);
 
 int geometryCreateBuffers(geometry geometry);
 
+void geometryFillPipelineVertexInputStateCreateInfo(geometry geometry, VkPipelineVertexInputStateCreateInfo *createInfo);
+
 
 #endif
