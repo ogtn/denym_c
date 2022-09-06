@@ -3,38 +3,6 @@
 #include <math.h>
 
 
-static renderable makeTriangle(void)
-{
-    // clip coordinates
-	float positions[] = 
-	{
-		0.0f, -0.5f,
-		0.5f, 0.5f,
-		-0.5f, 0.5f
-	};
-
-	float colors[] =
-	{
-		1, 0, 0,
-		0, 1, 0,
-		0, 0, 1
-	};
-
-	geometryCreateInfo geometryCreateInfo = {
-		.vertexCount = 3,
-		.positions = positions,
-		.colors = colors };
-
-	geometry geometry = geometryCreate(&geometryCreateInfo);
-    renderable triangle = denymCreateRenderable(
-        geometry,
-        "basic_position_color_attribute.vert.spv",
-        "basic_color_interp.frag.spv");
-
-    return triangle;
-}
-
-
 static renderable makeSquare(void)
 {
     // clip coordinates
@@ -82,7 +50,7 @@ static renderable makeSquare(void)
 int main(void)
 {
 	const int width = 640;
-	const int height = 640;
+	const int height = 480;
 
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
@@ -104,9 +72,13 @@ int main(void)
 	{
         float elapsed_since_start = getUptime();
 
+		vec3 down = { 0, 0, -0.5f };
 	    glm_mat4_identity(mvp.model);
+		glm_translate(mvp.model, down);
+		glm_rotate(mvp.model, -glm_rad(elapsed_since_start * 100), axis);
         updateUniformsBuffer(square1, &mvp);
 
+		glm_mat4_identity(mvp.model);
 		glm_rotate(mvp.model, glm_rad(elapsed_since_start * 100), axis);
 		updateUniformsBuffer(square, &mvp);
 

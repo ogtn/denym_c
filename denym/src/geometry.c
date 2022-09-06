@@ -110,6 +110,8 @@ void geometryFillPipelineVertexInputStateCreateInfo(geometry geometry, VkPipelin
 	// TODO: here we could have had positions, colors and indices in the same array
 	// in this case, only one vertexBindingDescriptions, and two vertextAttributeDescriptions
 
+	// TODO: index is fucked up, should not be hardcoded (position + index with no color would break)
+
 	if(geometry->positions)
 	{
 		vertextAttributeDescriptions[0].binding = 0;

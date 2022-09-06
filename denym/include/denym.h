@@ -25,7 +25,7 @@ typedef struct geometryCreateInfo
 {
 	uint32_t vertexCount;
 	uint16_t indiceCount;
-
+	uint16_t __padding;
 	float *positions;
 	float *colors;
 	uint16_t *indices;

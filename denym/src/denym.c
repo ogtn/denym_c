@@ -67,6 +67,15 @@ void denymRender(renderable *renderables, uint32_t renderablesCount)
 	for(uint32_t i = 0; i < renderablesCount; i++)
 		makeReady(renderables[i]);
 
+	if(engine.vulkanContext.needRecreatePipeline)
+	{
+		for(uint32_t i = 0; i < renderablesCount; i++)
+			recreatePipeline(renderables[i]);
+
+		fprintf(stderr, "frame %ld: recreatePipeline()\n", engine.frameCount);
+		engine.vulkanContext.needRecreatePipeline = VK_FALSE;
+	}
+
 	updateCommandBuffers(renderables, renderablesCount);
 	render(&engine.vulkanContext);
 	engine.vulkanContext.currentFrame = (engine.vulkanContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -93,6 +102,7 @@ void glfwErrorCallback(int error, const char* description)
 void glfwFramebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
 	engine.vulkanContext.framebufferResized = VK_TRUE;
+	glfwGetFramebufferSize(engine.window, &width, &height);
 }
 
 
@@ -639,11 +649,16 @@ int recreateSwapChain(void)
 	vkDeviceWaitIdle(engine.vulkanContext.device);
 	cleanSwapchain(&engine.vulkanContext);
 
+	// TODO : clean this ugly mess
+	engine.vulkanContext.GetPhysicalDeviceSurfaceCapabilitiesKHR(engine.vulkanContext.physicalDevice, engine.vulkanContext.surface, &engine.vulkanContext.surfaceCapabilities);
+
 	if(!createSwapchain(&engine.vulkanContext)
 		&& !createImageViews(&engine.vulkanContext)
 		&& !createFramebuffer(&engine.vulkanContext))
 	{
 		result = 0;
+
+		engine.vulkanContext.needRecreatePipeline = VK_TRUE;
 	}
 
 	return result;
@@ -833,6 +848,7 @@ int updateCommandBuffers(renderable *renderables, uint32_t renderablesCount)
 
 	for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
+		vkResetCommandBuffer(engine.vulkanContext.commandBuffers[i], 0);
 		result = vkBeginCommandBuffer(engine.vulkanContext.commandBuffers[i], &beginInfo);
 
 		if (result != VK_SUCCESS)

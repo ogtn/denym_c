@@ -49,6 +49,10 @@ typedef struct vulkanContext
 	VkBool32 needCommandBufferUpdate;
 	VkCommandBuffer commandBuffers[MAX_FRAMES_IN_FLIGHT];
 
+	// not sure if this deserves to be there...
+	VkBool32 needRecreatePipeline;
+	uint32_t __padding;
+
 	// instance extension functions
 	DECL_VK_PFN(GetDeviceProcAddr);
 	DECL_VK_PFN(GetPhysicalDeviceSurfaceSupportKHR);

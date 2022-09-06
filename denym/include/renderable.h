@@ -2,7 +2,6 @@
 #define _renderable_h_
 
 #include "denym_common.h"
-#include "geometry.h"
 
 
 typedef struct renderable_t
@@ -10,11 +9,11 @@ typedef struct renderable_t
 	geometry geometry;
 
 	// shaders
-	// TODO: is this really usefull ? shaderModules are created and destructed in the same function...
 	const char *vertShaderName;
 	const char *fragShaderName;
 	VkShaderModule vertShader;
 	VkShaderModule fragShader;
+	VkPipelineShaderStageCreateInfo shaderStages[2];
 
 	// uniforms
 	VkDescriptorPool uniformDescriptorPool;
@@ -33,7 +32,7 @@ typedef struct renderable_t
 
 	// pipeline
 	VkPipelineLayout pipelineLayout;
-	VkPipeline pipeline; // type of render
+	VkPipeline pipeline;
 } renderable_t;
 
 
@@ -49,7 +48,13 @@ int usePushConstants(renderable renderable);
 
 int updatePushConstants(renderable renderable, float alpha);
 
+int loadShaders(renderable renderable);
+
+int createPipelineLayout(renderable renderable);
+
 int createPipeline(renderable renderable);
+
+int recreatePipeline(renderable renderable);
 
 void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer);
 

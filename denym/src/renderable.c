@@ -31,6 +31,8 @@ int makeReady(renderable renderable)
 		!createDescriptorPool(renderable) &&
 		!createUniformsBuffer(renderable) &&
 		!createDescriptorSets(renderable) &&
+		!loadShaders(renderable) &&
+		!createPipelineLayout(renderable) &&
 		!createPipeline(renderable))
 	{
 		renderable->isReady = VK_TRUE;
@@ -49,6 +51,8 @@ void denymDestroyRenderable(renderable renderable)
 	vkDestroyDescriptorSetLayout(engine.vulkanContext.device, renderable->uniformDescriptorSetLayout, NULL);
 
 	vkDestroyPipeline(engine.vulkanContext.device, renderable->pipeline, NULL);
+	vkDestroyShaderModule(engine.vulkanContext.device, renderable->fragShader, NULL);
+	vkDestroyShaderModule(engine.vulkanContext.device, renderable->vertShader, NULL);
 	vkDestroyPipelineLayout(engine.vulkanContext.device, renderable->pipelineLayout, NULL);
 
 	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -62,31 +66,67 @@ void denymDestroyRenderable(renderable renderable)
 }
 
 
-int createPipeline(renderable renderable)
+int loadShaders(renderable renderable)
 {
-	int result = -1;
-
 	if (loadShader(engine.vulkanContext.device, renderable->vertShaderName, &renderable->vertShader))
-		goto err_vert;
+		return -1;
 
 	if (loadShader(engine.vulkanContext.device, renderable->fragShaderName, &renderable->fragShader))
-		goto err_frag;
+		return -1;
 
-	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
-	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vertShaderStageInfo.module = renderable->vertShader;
-	vertShaderStageInfo.pName = "main";
+	renderable->shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	renderable->shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+	renderable->shaderStages[0].module = renderable->vertShader;
+	renderable->shaderStages[0].pName = "main";
 	// TODO : check vertShaderStageInfo.pSpecializationInfo to pass constants to the shaders
 
-	VkPipelineShaderStageCreateInfo fragShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
-	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragShaderStageInfo.module = renderable->fragShader;
-	fragShaderStageInfo.pName = "main";
+	renderable->shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	renderable->shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	renderable->shaderStages[1].module = renderable->fragShader;
+	renderable->shaderStages[1].pName = "main";
 
-	VkPipelineShaderStageCreateInfo shaderStages[2];
-	shaderStages[0] = vertShaderStageInfo;
-	shaderStages[1] = fragShaderStageInfo;
+	return 0;
+}
 
+
+int createPipelineLayout(renderable renderable)
+{
+	// Required here even when we don't use it
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
+
+	if(renderable->useUniforms)
+	{
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &renderable->uniformDescriptorSetLayout;
+	}
+
+	// Push constant
+	VkPushConstantRange pushConstantRange =
+	{
+		.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+		.size = sizeof(float),
+		.offset = 0
+	};
+
+	if(renderable->usePushConstant)
+	{
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+	}
+
+	if (vkCreatePipelineLayout(engine.vulkanContext.device, &pipelineLayoutInfo, NULL, &renderable->pipelineLayout))
+	{
+		fprintf(stderr, "Failed to create pipeline layout");
+
+		return -1;
+	}
+
+	return 0;
+}
+
+
+int createPipeline(renderable renderable)
+{
 	// vertex attributes
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
 	geometryFillPipelineVertexInputStateCreateInfo(renderable->geometry, &vertexInputInfo);
@@ -172,39 +212,9 @@ int createPipeline(renderable renderable)
 	dynamicState.pDynamicStates = dynamicStates;
 	*/
 
-	// Required here even when we don't use it
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
-
-	if(renderable->useUniforms)
-	{
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &renderable->uniformDescriptorSetLayout;
-	}
-
-	// Push constant
-	VkPushConstantRange pushConstantRange =
-	{
-		.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-		.size = sizeof(float),
-		.offset = 0
-	};
-
-	if(renderable->usePushConstant)
-	{
-		pipelineLayoutInfo.pushConstantRangeCount = 1;
-		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-	}
-
-	if (vkCreatePipelineLayout(engine.vulkanContext.device, &pipelineLayoutInfo, NULL, &renderable->pipelineLayout))
-	{
-		fprintf(stderr, "Failed to create pipeline layout");
-
-		goto err_pipeline_layout;
-	}
-
 	VkGraphicsPipelineCreateInfo pipelineInfo = { VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
-	pipelineInfo.stageCount = sizeof shaderStages / sizeof shaderStages[0];
-	pipelineInfo.pStages = shaderStages;
+	pipelineInfo.stageCount = sizeof renderable->shaderStages / sizeof renderable->shaderStages[0];
+	pipelineInfo.pStages = renderable->shaderStages;
 	pipelineInfo.pVertexInputState = &vertexInputInfo;
 	pipelineInfo.pInputAssemblyState = &inputAssembly;
 	pipelineInfo.pTessellationState = NULL;
@@ -225,18 +235,19 @@ int createPipeline(renderable renderable)
 	if (vkCreateGraphicsPipelines(engine.vulkanContext.device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &renderable->pipeline))
 	{
 		fprintf(stderr, "Failed to create graphic pipeline.\n");
-		vkDestroyPipelineLayout(engine.vulkanContext.device, renderable->pipelineLayout, NULL);
+
+		return -1;
 	}
-	else
-		result = 0;
 
-err_pipeline_layout:
-	vkDestroyShaderModule(engine.vulkanContext.device, renderable->fragShader, NULL);
-err_frag:
-	vkDestroyShaderModule(engine.vulkanContext.device, renderable->vertShader, NULL);
-err_vert:
+	return 0;
+}
 
-	return result;
+
+int recreatePipeline(renderable renderable)
+{
+	vkDestroyPipeline(engine.vulkanContext.device, renderable->pipeline, NULL);
+
+	return createPipeline(renderable);
 }
 
 
