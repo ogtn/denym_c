@@ -47,19 +47,15 @@ void denymDestroyRenderable(renderable renderable)
 	// TODO clean a shitload of stuff here !!!
 	vkDestroyDescriptorPool(engine.vulkanContext.device, renderable->uniformDescriptorPool, NULL);
 	vkDestroyDescriptorSetLayout(engine.vulkanContext.device, renderable->uniformDescriptorSetLayout, NULL);
-	free(renderable->uniformDescriptorSets);
 
 	vkDestroyPipeline(engine.vulkanContext.device, renderable->pipeline, NULL);
 	vkDestroyPipelineLayout(engine.vulkanContext.device, renderable->pipelineLayout, NULL);
 
-	for(uint32_t i = 0; i < engine.vulkanContext.imageCount; i++)
+	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		vkDestroyBuffer(engine.vulkanContext.device, renderable->uniformBuffers[i], NULL);
 		vkFreeMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory[i], NULL);
 	}
-
-	free(renderable->uniformBuffers);
-	free(renderable->uniformBuffersMemory);
 
 	geometryDestroy(renderable->geometry);
 	free(renderable);
@@ -294,10 +290,7 @@ int useUniforms(renderable renderable)
 
 int createUniformsBuffer(renderable renderable)
 {
-	renderable->uniformBuffers = malloc(sizeof * renderable->uniformBuffers * engine.vulkanContext.imageCount);
-	renderable->uniformBuffersMemory = malloc(sizeof * renderable->uniformBuffersMemory * engine.vulkanContext.imageCount);
-
-	for(uint32_t i = 0; i < engine.vulkanContext.imageCount; i++)
+	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		createBuffer(sizeof(modelViewProj), &renderable->uniformBuffers[i], &renderable->uniformBuffersMemory[i], VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
 	return 0;
@@ -345,12 +338,12 @@ int createDescriptorPool(renderable renderable)
 {
 	VkDescriptorPoolSize poolSize;
 	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize.descriptorCount = engine.vulkanContext.imageCount;
+	poolSize.descriptorCount = MAX_FRAMES_IN_FLIGHT;
 
 	VkDescriptorPoolCreateInfo descriptorPoolInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
 	descriptorPoolInfo.poolSizeCount = 1;
 	descriptorPoolInfo.pPoolSizes = &poolSize;
-	descriptorPoolInfo.maxSets = engine.vulkanContext.imageCount; // maximum number of descriptor sets that can be allocated from the pool 
+	descriptorPoolInfo.maxSets = MAX_FRAMES_IN_FLIGHT; // maximum number of descriptor sets that can be allocated from the pool 
 
 	if(vkCreateDescriptorPool(engine.vulkanContext.device, &descriptorPoolInfo, NULL, &renderable->uniformDescriptorPool))
 	{
@@ -365,20 +358,17 @@ int createDescriptorPool(renderable renderable)
 
 int createDescriptorSets(renderable renderable)
 {
-	VkDescriptorSetLayout *layouts = malloc(sizeof * layouts * engine.vulkanContext.imageCount);
+	VkDescriptorSetLayout layouts[MAX_FRAMES_IN_FLIGHT];
 
-	for(uint32_t i = 0; i < engine.vulkanContext.imageCount; i++)
+	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		layouts[i] = renderable->uniformDescriptorSetLayout;
 
 	VkDescriptorSetAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
 	allocInfo.descriptorPool = renderable->uniformDescriptorPool;
 	allocInfo.pSetLayouts = layouts;
-	allocInfo.descriptorSetCount = engine.vulkanContext.imageCount;
-
-	renderable->uniformDescriptorSets = malloc(sizeof *renderable->uniformDescriptorSets * engine.vulkanContext.imageCount);
+	allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
 
 	VkResult result = vkAllocateDescriptorSets(engine.vulkanContext.device, &allocInfo, renderable->uniformDescriptorSets);
-	free(layouts);
 
 	if(result)
 	{
@@ -387,7 +377,7 @@ int createDescriptorSets(renderable renderable)
 		return -1;
 	}
 
-	for(uint32_t i = 0; i < engine.vulkanContext.imageCount; i++)
+	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		VkDescriptorBufferInfo bufferInfo;
 		bufferInfo.buffer = renderable->uniformBuffers[i];

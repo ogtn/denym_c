@@ -6,8 +6,6 @@
 #include <time.h>
 
 
-#define MAX_FRAMES_IN_FLIGHT 2
-
 #define DECL_VK_PFN(name) PFN_vk##name name
 
 

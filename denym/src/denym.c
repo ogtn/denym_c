@@ -794,7 +794,7 @@ int createCommandBuffers(void)
 	VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 	allocInfo.commandPool = engine.vulkanContext.commandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = engine.vulkanContext.imageCount;
+	allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
 
 	VkResult result = vkAllocateCommandBuffers(engine.vulkanContext.device, &allocInfo, engine.vulkanContext.commandBuffers);
 
@@ -811,6 +811,8 @@ int updateCommandBuffers(renderable *renderables, uint32_t renderablesCount)
 
 	if(engine.vulkanContext.needCommandBufferUpdate == VK_FALSE)
 		return result;
+
+	fprintf(stderr, "frame %ld: updateCommandBuffers()\n", engine.frameCount);
 
 	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -829,13 +831,13 @@ int updateCommandBuffers(renderable *renderables, uint32_t renderablesCount)
 	renderPassInfo.clearValueCount = 1;
 	renderPassInfo.pClearValues = &clearValue;
 
-	for (uint32_t i = 0; i < engine.vulkanContext.imageCount; i++)
+	for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		result = vkBeginCommandBuffer(engine.vulkanContext.commandBuffers[i], &beginInfo);
 
 		if (result != VK_SUCCESS)
 		{
-			fprintf(stderr, "Failed to begin recording command buffer %d/%d.\n", i + 1, engine.vulkanContext.imageCount);
+			fprintf(stderr, "Failed to begin recording command buffer %d/%d.\n", i + 1, MAX_FRAMES_IN_FLIGHT);
 
 			return result;
 		}
@@ -852,7 +854,7 @@ int updateCommandBuffers(renderable *renderables, uint32_t renderablesCount)
 
 		if (result != VK_SUCCESS)
 		{
-			fprintf(stderr, "Failed to end recording command buffer %d/%d.\n", i + 1, engine.vulkanContext.imageCount);
+			fprintf(stderr, "Failed to end recording command buffer %d/%d.\n", i + 1, MAX_FRAMES_IN_FLIGHT);
 
 			return result;
 		}
@@ -936,7 +938,7 @@ void render(vulkanContext *context)
 
 	// command buffer associated with the image available
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &engine.vulkanContext.commandBuffers[imageIndex];
+	submitInfo.pCommandBuffers = &engine.vulkanContext.commandBuffers[context->currentFrame];
 
 	// semaphore to signal when the command buffer's execution is finished
 	submitInfo.signalSemaphoreCount = 1;
@@ -1006,7 +1008,7 @@ void destroyVulkanContext(vulkanContext* context)
 			vkDestroyFence(context->device, context->inFlightFences[i], NULL);
 		}
 
-		vkFreeCommandBuffers(engine.vulkanContext.device, engine.vulkanContext.commandPool, engine.vulkanContext.imageCount, engine.vulkanContext.commandBuffers);
+		vkFreeCommandBuffers(engine.vulkanContext.device, engine.vulkanContext.commandPool, MAX_FRAMES_IN_FLIGHT, engine.vulkanContext.commandBuffers);
 		vkDestroyCommandPool(engine.vulkanContext.device, engine.vulkanContext.commandPool, NULL);
 		vkDestroyDevice(context->device, NULL);
 	}

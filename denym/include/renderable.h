@@ -19,9 +19,9 @@ typedef struct renderable_t
 	// uniforms
 	VkDescriptorPool uniformDescriptorPool;
 	VkDescriptorSetLayout uniformDescriptorSetLayout;
-	VkDescriptorSet *uniformDescriptorSets;
-	VkBuffer *uniformBuffers;
-	VkDeviceMemory *uniformBuffersMemory;
+	VkDescriptorSet uniformDescriptorSets[MAX_FRAMES_IN_FLIGHT];
+	VkBuffer uniformBuffers[MAX_FRAMES_IN_FLIGHT];
+	VkDeviceMemory uniformBuffersMemory[MAX_FRAMES_IN_FLIGHT];
 	VkBool32 useUniforms;
 
 	// push constant
