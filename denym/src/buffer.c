@@ -19,7 +19,19 @@ int createVertexBuffer(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* vert
 }
 
 
-int createVertexBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* vertexBufferMemory, void* src)
+int createVertexBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* bufferMemory, void* src)
+{
+	return createBufferWithStaging(size, buffer, bufferMemory, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, src);
+}
+
+
+int createIndexBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* bufferMemory, void* src)
+{
+	return createBufferWithStaging(size, buffer, bufferMemory, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, src);
+}
+
+
+int createBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkBufferUsageFlagBits bufferUsage, void* src)
 {
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
@@ -33,40 +45,15 @@ int createVertexBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceM
 	memcpy(dest, src, size);
 	vkUnmapMemory(engine.vulkanContext.device, stagingBufferMemory);
 
-	// vertex buffer on device side, faster, and usable as a dst for buffer transfert
-	createBuffer(size, buffer, vertexBufferMemory, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-
+	// buffer on device side, faster, and usable as a dst for buffer transfert
+	createBuffer(size, buffer, bufferMemory, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, bufferUsage | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 	copyBuffer(stagingBuffer, *buffer, size);
 
 	return 0;
 }
 
 
-// TODO factorize this with createVertexBufferWithStaging, only difference is flag VK_BUFFER_USAGE_INDEX_BUFFER_BIT instead of VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
-int createIndexBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* vertexBufferMemory, void* src)
-{
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
-
-	// staging buffer, accessible from the CPU, and usable as a src for buffer transfert
-	createBuffer(size, &stagingBuffer, &stagingBufferMemory, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-
-	// copy the data to the allocated memory of the staging buffer
-	void *dest;
-	vkMapMemory(engine.vulkanContext.device, stagingBufferMemory, 0, size, 0, &dest);
-	memcpy(dest, src, size);
-	vkUnmapMemory(engine.vulkanContext.device, stagingBufferMemory);
-
-	// index buffer on device side, faster, and usable as a dst for buffer transfert
-	createBuffer(size, buffer, vertexBufferMemory, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-
-	copyBuffer(stagingBuffer, *buffer, size);
-
-	return 0;
-}
-
-
-int createBuffer(VkDeviceSize size, VkBuffer *buffer, VkDeviceMemory *vertexBufferMemory, VkMemoryPropertyFlags properties, VkBufferUsageFlags bufferUsage)
+int createBuffer(VkDeviceSize size, VkBuffer *buffer, VkDeviceMemory *bufferMemory, VkMemoryPropertyFlags properties, VkBufferUsageFlags bufferUsage)
 {
 	VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	bufferCreateInfo.size = size;
@@ -87,11 +74,11 @@ int createBuffer(VkDeviceSize size, VkBuffer *buffer, VkDeviceMemory *vertexBuff
 	memoryAllocateInfo.allocationSize = bufferMemoryRequirements.size;
 	findMemoryTypeIndex(bufferMemoryRequirements.memoryTypeBits, properties, &memoryAllocateInfo.memoryTypeIndex);
 
-	if(vkAllocateMemory(engine.vulkanContext.device, &memoryAllocateInfo, NULL, vertexBufferMemory))
+	if(vkAllocateMemory(engine.vulkanContext.device, &memoryAllocateInfo, NULL, bufferMemory))
 		return -1;
 
 	// only one vertex buffer that takes all the memory, so offset is 0
-	if(vkBindBufferMemory(engine.vulkanContext.device, *buffer, *vertexBufferMemory, 0))
+	if(vkBindBufferMemory(engine.vulkanContext.device, *buffer, *bufferMemory, 0))
 		return -1;
 
 	return 0;
