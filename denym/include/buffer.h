@@ -17,6 +17,10 @@ int createIndexBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceMe
 
 int copyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size);
 
+int initiateCopyCommandBuffer(VkCommandBuffer *commandBuffer);
+
+void terminateCopyCommandBuffer(VkCommandBuffer commandBuffer);
+
 int findMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties, uint32_t* index);
 
 

@@ -77,7 +77,7 @@ int createBuffer(VkDeviceSize size, VkBuffer *buffer, VkDeviceMemory *bufferMemo
 	if(vkAllocateMemory(engine.vulkanContext.device, &memoryAllocateInfo, NULL, bufferMemory))
 		return -1;
 
-	// only one vertex buffer that takes all the memory, so offset is 0
+	// only one buffer that takes all the memory, so offset is 0
 	if(vkBindBufferMemory(engine.vulkanContext.device, *buffer, *bufferMemory, 0))
 		return -1;
 
@@ -87,13 +87,28 @@ int createBuffer(VkDeviceSize size, VkBuffer *buffer, VkDeviceMemory *bufferMemo
 
 int copyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size)
 {
+	VkCommandBuffer commandBuffer;
+	VkBufferCopy copyRegion;
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = 0;
+	copyRegion.size = size;
+
+	initiateCopyCommandBuffer(&commandBuffer);
+	vkCmdCopyBuffer(commandBuffer, src, dst, 1, &copyRegion);
+	terminateCopyCommandBuffer(commandBuffer);
+
+	return VK_SUCCESS;
+}
+
+
+int initiateCopyCommandBuffer(VkCommandBuffer *commandBuffer)
+{
 	VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 	allocInfo.commandPool = engine.vulkanContext.bufferCopyCommandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 1;
 
-	VkCommandBuffer commandBuffer;
-	VkResult result = vkAllocateCommandBuffers(engine.vulkanContext.device, &allocInfo, &commandBuffer);
+	VkResult result = vkAllocateCommandBuffers(engine.vulkanContext.device, &allocInfo, commandBuffer);
 
 	if (result != VK_SUCCESS)
 	{
@@ -105,14 +120,14 @@ int copyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size)
 	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+	vkBeginCommandBuffer(*commandBuffer, &beginInfo);
 
-	VkBufferCopy copyRegion;
-	copyRegion.srcOffset = 0;
-	copyRegion.dstOffset = 0;
-	copyRegion.size = size;
+	return VK_SUCCESS;
+}
 
-	vkCmdCopyBuffer(commandBuffer, src, dst, 1, &copyRegion);
+
+void terminateCopyCommandBuffer(VkCommandBuffer commandBuffer)
+{
 	vkEndCommandBuffer(commandBuffer);
 
 	VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
@@ -122,8 +137,6 @@ int copyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size)
 	vkQueueSubmit(engine.vulkanContext.graphicQueue, 1, &submitInfo, VK_NULL_HANDLE);
 	vkQueueWaitIdle(engine.vulkanContext.graphicQueue); // here we just wait, but could do multiple operations in // and use a fence to wait them all
 	vkFreeCommandBuffers(engine.vulkanContext.device, engine.vulkanContext.bufferCopyCommandPool, 1, &commandBuffer);
-
-	return VK_SUCCESS;
 }
 
 
