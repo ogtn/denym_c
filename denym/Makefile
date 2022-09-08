@@ -2,7 +2,7 @@ include ../common.mk
 
 LFLAGS = -fPIC
 
-INC = -I$(DIR_INC) -I$(DIR_CGLM)
+INC = -I$(DIR_INC) -I$(DIR_CGLM) -I$(DIR_STB)
 
 SRC = $(wildcard $(DIR_SRC)/*.c)
 OBJ = $(patsubst $(DIR_SRC)/%.c, $(DIR_BIN)/%.o, $(SRC))

@@ -4,6 +4,7 @@ DIR_BIN = bin
 DIR_DEP = dep
 
 DIR_CGLM = ../dependancies/cglm/include/
+DIR_STB = ../dependancies/stb/
 
 LIB_NAME = libdenym.so
 
@@ -21,10 +22,14 @@ CFLAGS = -Wall -Wextra -fno-common -Wdeclaration-after-statement \
 -Wnested-externs -Wold-style-definition -Wredundant-decls \
 -Wsign-compare -Wstrict-aliasing=2 -Wstrict-prototypes -Wswitch \
 -Wundef -Wunreachable-code -Wwrite-strings -Wconversion \
- -Wenum-compare -Wpadded -pedantic \
---std=c17 -O0 -g\
--Wno-missing-field-initializers -Wno-unused-parameter\
--Werror=implicit-function-declaration -Werror=return-type \
+-Wenum-compare -Wpadded -pedantic #-Weverything
+
+CFLAGS += -Werror=implicit-function-declaration -Werror=return-type -Werror=incompatible-pointer-types
+
+CFLAGS += -Wno-missing-field-initializers -Wno-unused-parameter
+
+CFLAGS += --std=c17 -O0 -g
+
 
 $(DIR_BIN):
 	@mkdir $@

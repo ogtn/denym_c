@@ -5,7 +5,8 @@
             "includePath": [
                 "${workspaceFolder}/include/",
                 "${workspaceFolder}/denym/include/",
-                "${workspaceFolder}/dependancies/cglm/include/"
+                "${workspaceFolder}/dependancies/cglm/include/",
+                "${workspaceFolder}/dependancies/stb/"
             ],
             "defines": [
                 "_DEBUG"
