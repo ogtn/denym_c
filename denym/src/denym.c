@@ -1,6 +1,7 @@
 #include "denym_private.h"
 #include "shader.h"
 #include "renderable.h"
+#include "texture.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,6 +28,7 @@ int denymInit(int window_width, int window_height)
 		!createRenderPass(&engine.vulkanContext) &&
 		!createFramebuffer(&engine.vulkanContext) &&
 		!createCommandPool(&engine.vulkanContext) &&
+		!textureCreate() &&
 		!createCommandBuffers() &&
 		!createSynchronizationObjects(&engine.vulkanContext))
 	{
