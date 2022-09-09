@@ -50,6 +50,8 @@ int makeReady(renderable renderable)
 void denymDestroyRenderable(renderable renderable)
 {
 	// TODO clean a shitload of stuff here !!!
+	vkDeviceWaitIdle(engine.vulkanContext.device);
+
 	vkDestroyDescriptorPool(engine.vulkanContext.device, renderable->uniformDescriptorPool, NULL);
 	vkDestroyDescriptorSetLayout(engine.vulkanContext.device, renderable->uniformDescriptorSetLayout, NULL);
 

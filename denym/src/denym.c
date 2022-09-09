@@ -578,11 +578,15 @@ int getSwapchainCapabilities(vulkanContext* context)
 
 int createSwapchain(vulkanContext* context)
 {
-	// TODO: case max = 0 for unlimited
-	uint32_t imageCount = clamp(
-		context->surfaceCapabilities.minImageCount + 1,
-		context->surfaceCapabilities.minImageCount,
-		context->surfaceCapabilities.maxImageCount);
+	uint32_t imageCount;
+
+	if(context->surfaceCapabilities.maxImageCount == 0)
+		imageCount = context->surfaceCapabilities.minImageCount + 1;
+	else
+		imageCount = clamp(
+			context->surfaceCapabilities.minImageCount + 1,
+			context->surfaceCapabilities.minImageCount,
+			context->surfaceCapabilities.maxImageCount);
 
 	if(context->surfaceCapabilities.currentExtent.width != UINT32_MAX)
 	{
@@ -792,7 +796,7 @@ int createCommandPool(vulkanContext* context)
 	// main command pool
 	VkCommandPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
 	poolInfo.queueFamilyIndex = context->graphicsQueueFamilyIndex;
-	poolInfo.flags = 0; // we don't care for this small example, with a fully static scene
+	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 	VkResult result = vkCreateCommandPool(context->device, &poolInfo, NULL, &context->commandPool);
 
@@ -801,7 +805,6 @@ int createCommandPool(vulkanContext* context)
 
 	// dedicated to buffer copies
 	poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-
 	result = vkCreateCommandPool(context->device, &poolInfo, NULL, &context->bufferCopyCommandPool);
 
 	if (result != VK_SUCCESS)
@@ -906,20 +909,19 @@ int createSynchronizationObjects(vulkanContext* context)
 			return -1;
 		}
 
-		/*
+		// TODO: maybe overload some vk functions and use this to inject __LINE__ __FILE__ ?
 		#ifdef _DEBUG
 		VkDebugUtilsObjectNameInfoEXT objectNameInfo = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
 		objectNameInfo.objectType = VK_OBJECT_TYPE_SEMAPHORE;
 
 		objectNameInfo.pObjectName = "Image available semaphore";
-		objectNameInfo.objectHandle = (uint64_t)context->imageAvailableSemaphore;
+		objectNameInfo.objectHandle = (uint64_t)context->imageAvailableSemaphore[i];
 		context->SetDebugUtilsObjectNameEXT(context->device, &objectNameInfo);
 
 		objectNameInfo.pObjectName = "Render finished semaphore";
-		objectNameInfo.objectHandle = (uint64_t)context->renderFinishedSemaphore;
+		objectNameInfo.objectHandle = (uint64_t)context->renderFinishedSemaphore[i];
 		context->SetDebugUtilsObjectNameEXT(context->device, &objectNameInfo);
 		#endif
-		*/
 	}
 
 	return 0;
@@ -1034,6 +1036,7 @@ void destroyVulkanContext(vulkanContext* context)
 
 		vkFreeCommandBuffers(engine.vulkanContext.device, engine.vulkanContext.commandPool, MAX_FRAMES_IN_FLIGHT, engine.vulkanContext.commandBuffers);
 		vkDestroyCommandPool(engine.vulkanContext.device, engine.vulkanContext.commandPool, NULL);
+		vkDestroyCommandPool(engine.vulkanContext.device, engine.vulkanContext.bufferCopyCommandPool, NULL);
 		vkDestroyDevice(context->device, NULL);
 	}
 
