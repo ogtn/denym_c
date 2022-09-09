@@ -6,11 +6,11 @@
 #include <string.h>
 
 
-int textureCreate(void)
+int textureCreate(const char *filename, VkImage *image, VkDeviceMemory *imageMemory)
 {
     char fullName[FILENAME_MAX];
 
-	snprintf(fullName, FILENAME_MAX, "resources/textures/%s", "lena.jpg");
+	snprintf(fullName, FILENAME_MAX, "resources/textures/%s", filename);
 
     int width, height;
     int channelCount;
@@ -48,11 +48,10 @@ int textureCreate(void)
     vkUnmapMemory(engine.vulkanContext.device, stagingBufferMemory);
     stbi_image_free(pixels);
 
-    VkImage textureImage;
-    VkDeviceMemory textureImageMemory;
+
     VkExtent3D textureExtent = { .width = (uint32_t)width, .height = (uint32_t)height, .depth = 1 };
 
-    createImageRGBA_2D(textureExtent, stagingBuffer, &textureImage, &textureImageMemory);
+    createImageRGBA_2D(textureExtent, stagingBuffer, image, imageMemory);
     vkDestroyBuffer(engine.vulkanContext.device, stagingBuffer, NULL);
     vkFreeMemory(engine.vulkanContext.device, stagingBufferMemory, NULL);
 
@@ -188,6 +187,66 @@ void imageLayoutTransition(VkImage image, VkImageLayout oldLayout, VkImageLayout
         1, &barrier);   // image barrier
 
     terminateCopyCommandBuffer(commandBuffer);
+}
+
+
+// TODO : factorize with denym.c
+int textureCreateImageView(VkImage image, VkImageView *imageView)
+{
+	VkImageViewCreateInfo createInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+	createInfo.image = image;
+	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	createInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+	createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	createInfo.subresourceRange.baseMipLevel = 0;
+	createInfo.subresourceRange.levelCount = 1;
+	createInfo.subresourceRange.baseArrayLayer = 0;
+	createInfo.subresourceRange.layerCount = 1;
+
+	if (vkCreateImageView(engine.vulkanContext.device, &createInfo, NULL, imageView))
+	{
+		fprintf(stderr, "Failed to create image view for texture.\n");
+
+		return -1;
+	}
+
+	return VK_SUCCESS;
+}
+
+
+int textureCreateSampler(VkSampler *sampler)
+{
+    VkSamplerCreateInfo samplerParams = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
+    samplerParams.minFilter = VK_FILTER_LINEAR;
+    samplerParams.magFilter = VK_FILTER_LINEAR;
+
+    samplerParams.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerParams.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerParams.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK; // used with VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER
+
+    samplerParams.anisotropyEnable = engine.vulkanContext.physicalDeviceFeatures.samplerAnisotropy;
+    samplerParams.maxAnisotropy = engine.vulkanContext.physicalDeviceProperties.limits.maxSamplerAnisotropy;
+
+    samplerParams.unnormalizedCoordinates = VK_FALSE; // whe true, texture coordinates in pixels instead of [0;1]
+
+    // TODO Usefull for shadowmapping, see https://developer.nvidia.com/gpugems/GPUGems/gpugems_ch11.html
+    samplerParams.compareEnable = VK_FALSE;
+    samplerParams.compareOp = VK_COMPARE_OP_ALWAYS;
+
+    // mipmapping
+    samplerParams.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerParams.minLod = 0;
+    samplerParams.maxLod = 0;
+    samplerParams.mipLodBias = 0;
+
+    if(vkCreateSampler(engine.vulkanContext.device, &samplerParams, NULL, sampler))
+    {
+        fprintf(stderr, "Failed to create texture sampler\n");
+
+        return -1;
+    }
+
+    return VK_SUCCESS;
 }
 
 // TODO : in the future, place all copy operations in a single command buffer, to speed things up

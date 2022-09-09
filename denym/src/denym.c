@@ -28,9 +28,9 @@ int denymInit(int window_width, int window_height)
 		!createRenderPass(&engine.vulkanContext) &&
 		!createFramebuffer(&engine.vulkanContext) &&
 		!createCommandPool(&engine.vulkanContext) &&
-		!textureCreate() &&
 		!createCommandBuffers() &&
-		!createSynchronizationObjects(&engine.vulkanContext))
+		!createSynchronizationObjects(&engine.vulkanContext) &&
+		!textureCreateSampler(&engine.vulkanContext.textureSampler))
 	{
 		result = 0;
 		engine.vulkanContext.currentFrame = 0;
@@ -282,6 +282,7 @@ int getPhysicalDevice(vulkanContext* context)
 	VkPhysicalDevice* physicalDevices = malloc(sizeof * physicalDevices * count);
 	vkEnumeratePhysicalDevices(context->instance, &count, physicalDevices);
 
+	// TODO : clean this horrifying mess
 	for (uint32_t i = 0; i < count; i++)
 	{
 		VkPhysicalDeviceProperties physicalDeviceProperties;
@@ -376,8 +377,7 @@ void getPhysicalDeviceCapabilities(vulkanContext* context)
 
 	free(queueFamilyProperties);
 
-	// TODO: use or discard this
-	//vkGetPhysicalDeviceFeatures(context->physicalDevice, &context->physicalDeviceFeatures);
+	vkGetPhysicalDeviceFeatures(context->physicalDevice, &context->physicalDeviceFeatures);
 	vkGetPhysicalDeviceMemoryProperties(context->physicalDevice, &context->physicalDeviceMemoryProperties);
 }
 
@@ -432,6 +432,11 @@ int getDevice(vulkanContext *context)
 	deviceInfo.pQueueCreateInfos = queues,
 	deviceInfo.enabledExtensionCount = sizeof extensions / sizeof extensions[0];
 	deviceInfo.ppEnabledExtensionNames = extensions;
+
+	// TODO : check this, many interesting stuff there
+	//engine.vulkanContext.physicalDeviceFeatures.samplerAnisotropy = VK_TRUE;
+	deviceInfo.pEnabledFeatures = &engine.vulkanContext.physicalDeviceFeatures;
+
 	// Use validation layers if this is a debug build
 #if defined(_DEBUG)
 	const char* layers[] = { "VK_LAYER_LUNARG_standard_validation" };
@@ -680,7 +685,7 @@ int createImageViews(vulkanContext* context)
 		createInfo.image = context->images[i];
 		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		createInfo.format = context->surfaceFormat.format;
-		// unnecessary for IDENTITY, but better be explicit to remember this feature
+		// TODO : unnecessary for IDENTITY, but better be explicit to remember this feature, possible to remap channels !
 		createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 		createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -1018,6 +1023,7 @@ void destroyVulkanContext(vulkanContext* context)
 		vkDeviceWaitIdle(context->device);
 		cleanSwapchain(context);
 		vkDestroyRenderPass(context->device, context->renderPass, NULL);
+		vkDestroySampler(engine.vulkanContext.device, engine.vulkanContext.textureSampler, NULL);
 
 		for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{

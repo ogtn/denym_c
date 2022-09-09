@@ -16,7 +16,7 @@ typedef struct vulkanContext
 	VkPhysicalDevice physicalDevice;
 	VkPhysicalDeviceProperties physicalDeviceProperties;
 	VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties;
-	//VkPhysicalDeviceFeatures physicalDeviceFeatures;
+	VkPhysicalDeviceFeatures physicalDeviceFeatures;
 	uint32_t graphicsQueueFamilyIndex;
 	uint32_t presentQueueFamilyIndex;
 
@@ -53,6 +53,9 @@ typedef struct vulkanContext
 	VkBool32 needRecreatePipeline;
 	uint32_t __padding;
 
+	// texture samplers
+	VkSampler textureSampler; // TODO: find a better place
+
 	// instance extension functions
 	DECL_VK_PFN(GetDeviceProcAddr);
 	DECL_VK_PFN(GetPhysicalDeviceSurfaceSupportKHR);
@@ -78,6 +81,7 @@ typedef struct denym
 	vulkanContext vulkanContext;
 	GLFWwindow *window;
 
+	// TODO: add moar metrics : fps, render time etc.
 	struct timespec uptime;
 	uint64_t frameCount;
 } denym;

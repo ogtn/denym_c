@@ -3,6 +3,7 @@
 #include "shader.h"
 #include "buffer.h"
 #include "core.h"
+#include "texture.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -33,7 +34,9 @@ int makeReady(renderable renderable)
 		!createDescriptorSets(renderable) &&
 		!loadShaders(renderable) &&
 		!createPipelineLayout(renderable) &&
-		!createPipeline(renderable))
+		!createPipeline(renderable) &&
+		!textureCreate("lena.jpg", &renderable->textureImage, &renderable->textureImageMemory) &&
+		!textureCreateImageView(renderable->textureImage, &renderable->textureImageView))
 	{
 		renderable->isReady = VK_TRUE;
 
@@ -62,6 +65,12 @@ void denymDestroyRenderable(renderable renderable)
 	}
 
 	geometryDestroy(renderable->geometry);
+
+	// texture
+	vkDestroyImageView(engine.vulkanContext.device, renderable->textureImageView, NULL);
+	vkDestroyImage(engine.vulkanContext.device, renderable->textureImage, NULL);
+	vkFreeMemory(engine.vulkanContext.device, renderable->textureImageMemory, NULL);
+
 	free(renderable);
 }
 

@@ -33,6 +33,11 @@ typedef struct renderable_t
 	// pipeline
 	VkPipelineLayout pipelineLayout;
 	VkPipeline pipeline;
+
+	// texture
+	VkImage textureImage;
+	VkDeviceMemory textureImageMemory;
+	VkImageView textureImageView;
 } renderable_t;
 
 
