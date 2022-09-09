@@ -7,11 +7,11 @@
 
 geometry geometryCreate(const geometryCreateInfo *createInfo)
 {
-	if((createInfo->indiceCount != 0 && createInfo->indices == NULL) ||
-		(createInfo->indiceCount == 0 && createInfo->indices != NULL))
+	if((createInfo->indexCount != 0 && createInfo->indices == NULL) ||
+		(createInfo->indexCount == 0 && createInfo->indices != NULL))
 	{
-		fprintf(stderr, "geometryCreate() failed (indiceCount=%i)(indices=%p)\n",
-			createInfo->indiceCount, (void*)createInfo->indices);
+		fprintf(stderr, "geometryCreate() failed (indexCount=%i)(indices=%p)\n",
+			createInfo->indexCount, (void*)createInfo->indices);
 
 		return NULL;
 	}
@@ -19,14 +19,16 @@ geometry geometryCreate(const geometryCreateInfo *createInfo)
 	geometry geometry = calloc(1, sizeof(*geometry));
 
 	geometry->vertexCount = createInfo->vertexCount;
-	geometry->indiceCount = createInfo->indiceCount;
+	geometry->indexCount = createInfo->indexCount;
 	geometry->attribCount =
 		!!createInfo->colors +
 		!!createInfo->positions +
+		!!createInfo->texCoords +
 		!!createInfo->indices;
 
 	geometry->positions = createInfo->positions;
 	geometry->colors = createInfo->colors;
+	geometry->texCoords = createInfo->texCoords;
 	geometry->indices = createInfo->indices;
 
 	if(geometryCreateBuffers(geometry))
@@ -36,6 +38,8 @@ geometry geometryCreate(const geometryCreateInfo *createInfo)
 
 		return NULL;
 	}
+
+	geometryFillPipelineVertexInputStateCreateInfo(geometry);
 
 	return geometry;
 }
@@ -55,12 +59,20 @@ void geometryDestroy(geometry geometry)
 		vkDestroyBuffer(engine.vulkanContext.device, geometry->bufferColors, NULL);
 	}
 
+	if(geometry->texCoords)
+	{
+		vkFreeMemory(engine.vulkanContext.device, geometry->memoryTexCoords, NULL);
+		vkDestroyBuffer(engine.vulkanContext.device, geometry->bufferTexCoords, NULL);
+	}
+
 	if(geometry->indices)
 	{
 		vkFreeMemory(engine.vulkanContext.device, geometry->memoryIndices, NULL);
 		vkDestroyBuffer(engine.vulkanContext.device, geometry->bufferIndices, NULL);
 	}
 
+	free(geometry->vertexAttributeDescriptions);
+	free(geometry->vertexBindingDescriptions);
 	free(geometry);
 }
 
@@ -81,9 +93,16 @@ int geometryCreateBuffers(geometry geometry)
 			&geometry->memoryColors,
 			geometry->colors);
 
+	if(geometry->texCoords)
+		createVertexBufferWithStaging(
+			sizeof * geometry->texCoords * geometry->vertexCount * 2,
+			&geometry->bufferTexCoords,
+			&geometry->memoryTexCoords,
+			geometry->texCoords);
+
 	if(geometry->indices)
 		createIndexBufferWithStaging(
-			sizeof * geometry->indices * geometry->indiceCount,
+			sizeof * geometry->indices * geometry->indexCount,
 			&geometry->bufferIndices,
 			&geometry->memoryIndices,
 			geometry->indices);
@@ -92,62 +111,50 @@ int geometryCreateBuffers(geometry geometry)
 }
 
 
-void geometryFillPipelineVertexInputStateCreateInfo(geometry geometry, VkPipelineVertexInputStateCreateInfo *createInfo)
+void addVertexDescription(geometry geometry, uint32_t binding, VkFormat format, uint32_t stride)
 {
-	memset(createInfo, 0, sizeof *createInfo);
-	createInfo->sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	geometry->vertexAttributeDescriptions[binding].binding = binding;
+	geometry->vertexAttributeDescriptions[binding].format = format;
+	geometry->vertexAttributeDescriptions[binding].location = binding;
+	geometry->vertexAttributeDescriptions[binding].offset = 0; // because only one type of data in this array (indices), no interleaving
 
-	if(geometry->attribCount == 0)
-		return;
+	geometry->vertexBindingDescriptions[binding].binding = binding;
+	geometry->vertexBindingDescriptions[binding].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	geometry->vertexBindingDescriptions[binding].stride = stride;
+}
 
-	createInfo->vertexBindingDescriptionCount = geometry->attribCount;
-	createInfo->vertexAttributeDescriptionCount = geometry->attribCount;
 
-	// TODO: free those at some point
-	VkVertexInputAttributeDescription *vertextAttributeDescriptions = malloc(sizeof * vertextAttributeDescriptions * geometry->attribCount);
-	VkVertexInputBindingDescription *vertexBindingDescriptions = malloc(sizeof * vertexBindingDescriptions * geometry->attribCount);
+void geometryFillPipelineVertexInputStateCreateInfo(geometry geometry)
+{
+	geometry->vertexAttributeDescriptions = malloc(sizeof * geometry->vertexAttributeDescriptions * geometry->attribCount);
+	geometry->vertexBindingDescriptions = malloc(sizeof * geometry->vertexBindingDescriptions * geometry->attribCount);
 
-	// TODO: here we could have had positions, colors and indices in the same array
-	// in this case, only one vertexBindingDescriptions, and two vertextAttributeDescriptions
+	// TODO: here we could have had all attributes in the same array
+	// in this case, only one vertexBindingDescriptions, and one vertextAttributeDescription per attribute
 
-	// TODO: index is fucked up, should not be hardcoded (position + index with no color would break)
+	uint32_t currentBinding = 0;
 
-	if(geometry->positions)
+	if(geometry->positions) // vec2
 	{
-		vertextAttributeDescriptions[0].binding = 0;
-		vertextAttributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT; // vec2
-		vertextAttributeDescriptions[0].location = 0;
-		vertextAttributeDescriptions[0].offset = 0; // because only one type of data in this array (positions), no interleaving
-
-		vertexBindingDescriptions[0].binding = 0;
-		vertexBindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		vertexBindingDescriptions[0].stride = sizeof(float) * 2;
+		addVertexDescription(geometry, currentBinding, VK_FORMAT_R32G32_SFLOAT, sizeof(float) * 2);
+		currentBinding++;
 	}
 
-	if(geometry->colors)
+	if(geometry->colors) // vec3
 	{
-		vertextAttributeDescriptions[1].binding = 1;
-		vertextAttributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT; // vec3
-		vertextAttributeDescriptions[1].location = 1;
-		vertextAttributeDescriptions[1].offset = 0; // because only one type of data in this array (colors), no interleaving
-
-		vertexBindingDescriptions[1].binding = 1;
-		vertexBindingDescriptions[1].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		vertexBindingDescriptions[1].stride = sizeof(float) * 3;
+		addVertexDescription(geometry, currentBinding, VK_FORMAT_R32G32B32_SFLOAT, sizeof(float) * 3);
+		currentBinding++;
 	}
 
-	if(geometry->indices)
+	if(geometry->texCoords) // vec2
 	{
-		vertextAttributeDescriptions[2].binding = 2;
-		vertextAttributeDescriptions[2].format = VK_FORMAT_R16_UINT; // uint16_t
-		vertextAttributeDescriptions[2].location = 2;
-		vertextAttributeDescriptions[2].offset = 0; // because only one type of data in this array (indices), no interleaving
-
-		vertexBindingDescriptions[2].binding = 2;
-		vertexBindingDescriptions[2].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		vertexBindingDescriptions[2].stride = sizeof(uint16_t);
+		addVertexDescription(geometry, currentBinding, VK_FORMAT_R32G32_SFLOAT, sizeof(float) * 2);
+		currentBinding++;
 	}
 
-	createInfo->pVertexAttributeDescriptions = vertextAttributeDescriptions;
-	createInfo->pVertexBindingDescriptions = vertexBindingDescriptions;
+	if(geometry->indices) // uint16_t
+	{
+		addVertexDescription(geometry, currentBinding, VK_FORMAT_R16_UINT, sizeof(uint16_t));
+		currentBinding++;
+	}
 }

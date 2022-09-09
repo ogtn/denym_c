@@ -15,10 +15,12 @@ typedef struct renderable_t
 	VkShaderModule fragShader;
 	VkPipelineShaderStageCreateInfo shaderStages[2];
 
+	// descriptors
+	VkDescriptorPool descriptorPool;
+	VkDescriptorSetLayout descriptorSetLayout;
+	VkDescriptorSet descriptorSets[MAX_FRAMES_IN_FLIGHT];
+
 	// uniforms
-	VkDescriptorPool uniformDescriptorPool;
-	VkDescriptorSetLayout uniformDescriptorSetLayout;
-	VkDescriptorSet uniformDescriptorSets[MAX_FRAMES_IN_FLIGHT];
 	VkBuffer uniformBuffers[MAX_FRAMES_IN_FLIGHT];
 	VkDeviceMemory uniformBuffersMemory[MAX_FRAMES_IN_FLIGHT];
 	VkBool32 useUniforms;
@@ -38,6 +40,7 @@ typedef struct renderable_t
 	VkImage textureImage;
 	VkDeviceMemory textureImageMemory;
 	VkImageView textureImageView;
+	VkBool32 useTexture;
 } renderable_t;
 
 

@@ -24,10 +24,11 @@ typedef struct modelViewProj
 typedef struct geometryCreateInfo
 {
 	uint32_t vertexCount;
-	uint16_t indiceCount;
+	uint16_t indexCount;
 	uint16_t __padding;
 	float *positions;
 	float *colors;
+	float *texCoords;
 	uint16_t *indices;
 } geometryCreateInfo;
 

@@ -230,7 +230,7 @@ int createVulkanInstance(vulkanContext* context)
 	debugMessengerCreateInfo.messageSeverity =
 		VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
 		// VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | // too verbose, but could be usefull
-		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | 
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
 		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 	debugMessengerCreateInfo.messageType =
 		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
@@ -531,7 +531,7 @@ int getSwapchainCapabilities(vulkanContext* context)
 
 	for (uint32_t i = 0; i < formatCount; i++)
 	{
-		if (formats[i].format == VK_FORMAT_B8G8R8A8_UNORM && 
+		if (formats[i].format == VK_FORMAT_B8G8R8A8_UNORM &&
 			formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 		{
 			fprintf(stderr, "Found : %#010x Color space : %#010x\n", formats[i].format, formats[i].colorSpace);

@@ -3,7 +3,7 @@
 #include <math.h>
 
 
-static renderable makeSquare(void)
+static renderable makeSquare(const char *vertShader, const char *fragShader)
 {
     // clip coordinates
 	float positions[] =
@@ -22,6 +22,14 @@ static renderable makeSquare(void)
 		1, 1, 1
 	};
 
+    float texCoords[] =
+	{
+		0, 1,
+		0, 0,
+		1, 0,
+		1, 1,
+	};
+
     uint16_t indices[] =
     {
         0, 1, 2,
@@ -32,15 +40,12 @@ static renderable makeSquare(void)
 		.vertexCount = 4,
 		.positions = positions,
 		.colors = colors,
+        .texCoords = texCoords,
 		.indices = indices,
 		.indexCount = sizeof indices / sizeof *indices };
 
 	geometry geometry = geometryCreate(&geometryCreateInfo);
-	renderable square = denymCreateRenderable(
-		geometry,
-		"mvp_ubo_position_color_attribute.vert.spv",
-		"basic_color_interp.frag.spv");
-
+	renderable square = denymCreateRenderable(geometry,	vertShader,	fragShader);
     useUniforms(square);
 
     return square;
@@ -55,9 +60,9 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 
-    renderable square1 = makeSquare();
-    renderable square = makeSquare();
-    renderable renderables[] = { square1, square };
+    renderable coloredSquare = makeSquare("mvp_ubo_position_color_attribute.vert.spv", "basic_color_interp.frag.spv");
+    renderable texturedSquare = makeSquare("texture.vert.spv", "texture.frag.spv");
+    renderable renderables[] = { coloredSquare, texturedSquare };
 
 	modelViewProj mvp;
 	vec3 axis = {0, 0, 1};
@@ -76,18 +81,18 @@ int main(void)
 	    glm_mat4_identity(mvp.model);
 		glm_translate(mvp.model, down);
 		glm_rotate(mvp.model, -glm_rad(elapsed_since_start * 100), axis);
-        updateUniformsBuffer(square1, &mvp);
+        updateUniformsBuffer(coloredSquare, &mvp);
 
 		glm_mat4_identity(mvp.model);
 		glm_rotate(mvp.model, glm_rad(elapsed_since_start * 100), axis);
-		updateUniformsBuffer(square, &mvp);
+		updateUniformsBuffer(texturedSquare, &mvp);
 
 		denymRender(renderables, 2);
 		denymWaitForNextFrame();
 	}
 
-    denymDestroyRenderable(square1);
-	denymDestroyRenderable(square);
+    denymDestroyRenderable(texturedSquare);
+	denymDestroyRenderable(coloredSquare);
 	denymTerminate();
 
 	return EXIT_SUCCESS;

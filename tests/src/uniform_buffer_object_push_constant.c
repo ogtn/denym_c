@@ -35,11 +35,11 @@ int main(void)
 		return EXIT_FAILURE;
 
 	geometryCreateInfo geometryCreateInfo = {
-		.vertexCount = 6,
+		.vertexCount = 4,
 		.positions = positions,
 		.colors = colors,
 		.indices = indices,
-		.indiceCount = sizeof indices / sizeof *indices };
+		.indexCount = sizeof indices / sizeof *indices };
 
 	geometry geometry = geometryCreate(&geometryCreateInfo);
 	renderable square = denymCreateRenderable(
