@@ -1,6 +1,7 @@
 #include "denym_private.h"
 #include "shader.h"
 #include "renderable.h"
+#include "image.h"
 #include "texture.h"
 
 #include <stdio.h>
