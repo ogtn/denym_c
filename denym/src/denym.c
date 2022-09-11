@@ -531,7 +531,7 @@ int getSwapchainCapabilities(vulkanContext* context)
 
 	for (uint32_t i = 0; i < formatCount; i++)
 	{
-		if (formats[i].format == VK_FORMAT_B8G8R8A8_UNORM &&
+		if (formats[i].format == VK_FORMAT_B8G8R8A8_SRGB &&
 			formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 		{
 			fprintf(stderr, "Found : %#010x Color space : %#010x\n", formats[i].format, formats[i].colorSpace);
@@ -684,29 +684,8 @@ int createImageViews(vulkanContext* context)
 	context->GetSwapchainImagesKHR(context->device, context->swapchain, &context->imageCount, context->images);
 
 	for (uint32_t i = 0; i < context->imageCount; i++)
-	{
-		VkImageViewCreateInfo createInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-		createInfo.image = context->images[i];
-		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		createInfo.format = context->surfaceFormat.format;
-		// TODO : unnecessary for IDENTITY, but better be explicit to remember this feature, possible to remap channels !
-		createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		createInfo.subresourceRange.baseMipLevel = 0;
-		createInfo.subresourceRange.levelCount = 1;
-		createInfo.subresourceRange.baseArrayLayer = 0;
-		createInfo.subresourceRange.layerCount = 1;
-
-		if (vkCreateImageView(context->device, &createInfo, NULL, &context->imageViews[i]))
-		{
-			fprintf(stderr, "Failed to create image view.\n");
-
+		if(createImageView2D(context->images[i], context->surfaceFormat.format, &context->imageViews[i]))
 			return -1;
-		}
-	}
 
 	return 0;
 }
@@ -851,7 +830,7 @@ int updateCommandBuffers(renderable *renderables, uint32_t renderablesCount)
 	renderPassInfo.renderArea.extent = engine.vulkanContext.swapchainExtent;
 
 	// clear color (see VK_ATTACHMENT_LOAD_OP_CLEAR)
-	VkClearColorValue clearColor = {{ 0.2f, 0.2f, 0.2f, 1.0f }};
+	VkClearColorValue clearColor = {{ 0.03f, 0.03f, 0.03f, 1.0f }};
 	VkClearValue clearValue = { clearColor };
 	renderPassInfo.clearValueCount = 1;
 	renderPassInfo.pClearValues = &clearValue;

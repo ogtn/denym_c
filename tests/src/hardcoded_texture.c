@@ -66,7 +66,7 @@ int main(void)
 
 	modelViewProj mvp;
 	vec3 axis = {0, 0, 1};
-	vec3 eye = {2, 2, 2};
+	vec3 eye = {1, 1, 2};
 	vec3 center = { 0, 0, 0};
 	vec3 up = { 0, 0, 1 };
 	glm_lookat(eye, center, up, mvp.view);
@@ -84,7 +84,7 @@ int main(void)
         updateUniformsBuffer(coloredSquare, &mvp);
 
 		glm_mat4_identity(mvp.model);
-		glm_rotate(mvp.model, glm_rad(elapsed_since_start * 100), axis);
+		glm_rotate(mvp.model, glm_rad(elapsed_since_start * 50), axis);
 		updateUniformsBuffer(texturedSquare, &mvp);
 
 		denymRender(renderables, 2);

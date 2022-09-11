@@ -29,8 +29,8 @@ int makeReady(renderable renderable)
 	if(renderable->isReady)
 		return 0;
 
-	if(!textureCreate("lena.jpg", &renderable->textureImage, &renderable->textureImageMemory) &&
-		!textureCreateImageView(renderable->textureImage, &renderable->textureImageView) &&
+	if(!textureCreate("holes.png", &renderable->textureImage, &renderable->textureImageMemory) &&
+		!createImageView2D(renderable->textureImage, VK_FORMAT_R8G8B8A8_SRGB, &renderable->textureImageView) &&
 		!createDescriptorSetLayout(renderable) &&
 		!createDescriptorPool(renderable) &&
 		!createUniformsBuffer(renderable) &&

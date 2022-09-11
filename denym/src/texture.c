@@ -51,7 +51,13 @@ int textureCreate(const char *filename, VkImage *image, VkDeviceMemory *imageMem
 
     VkExtent3D textureExtent = { .width = (uint32_t)width, .height = (uint32_t)height, .depth = 1 };
 
-    createImageRGBA_2D(textureExtent, stagingBuffer, image, imageMemory);
+    createImage2D(textureExtent.width, textureExtent.height, VK_FORMAT_R8G8B8A8_SRGB, image, imageMemory);
+    // transition needed before writing to
+    imageLayoutTransition(*image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    imageCopyFromBuffer(*image, stagingBuffer, textureExtent);
+
+    // transition needed before accessing it from shaders
+    imageLayoutTransition(*image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     vkDestroyBuffer(engine.vulkanContext.device, stagingBuffer, NULL);
     vkFreeMemory(engine.vulkanContext.device, stagingBufferMemory, NULL);
 
@@ -59,12 +65,14 @@ int textureCreate(const char *filename, VkImage *image, VkDeviceMemory *imageMem
 }
 
 
-int createImageRGBA_2D(VkExtent3D imageExtent, VkBuffer src, VkImage *image, VkDeviceMemory *imageMemory)
+int createImage2D(uint32_t width, uint32_t height, VkFormat format, VkImage *image, VkDeviceMemory *imageMemory)
 {
     VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageCreateInfo.extent = imageExtent;
-    imageCreateInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+    imageCreateInfo.extent.width = width;
+    imageCreateInfo.extent.height = height;
+    imageCreateInfo.extent.depth = 1;
+    imageCreateInfo.format = format;
     imageCreateInfo.mipLevels = 1;
     imageCreateInfo.arrayLayers = 1;
 
@@ -101,13 +109,6 @@ int createImageRGBA_2D(VkExtent3D imageExtent, VkBuffer src, VkImage *image, VkD
 	// only one image that takes all the memory, so offset is 0
 	if(vkBindImageMemory(engine.vulkanContext.device, *image, *imageMemory, 0))
 		return -1;
-
-    // transition needed before writing to
-    imageLayoutTransition(*image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    imageCopyFromBuffer(*image, src, imageExtent);
-
-    // transition needed before accessing it from shaders
-    imageLayoutTransition(*image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     return VK_SUCCESS;
 }
@@ -190,14 +191,25 @@ void imageLayoutTransition(VkImage image, VkImageLayout oldLayout, VkImageLayout
 }
 
 
-// TODO : factorize with denym.c
-int textureCreateImageView(VkImage image, VkImageView *imageView)
+int createImageView2D(VkImage image, VkFormat format, VkImageView *imageView)
+{
+    return createImageView(image, format, VK_IMAGE_ASPECT_COLOR_BIT, imageView);
+}
+
+
+int createDepthImageView(VkImage image, VkFormat format, VkImageView *imageView)
+{
+    return createImageView(image, format, VK_IMAGE_ASPECT_DEPTH_BIT, imageView);
+}
+
+
+int createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspect, VkImageView *imageView)
 {
 	VkImageViewCreateInfo createInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
 	createInfo.image = image;
-	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	createInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
-	createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	createInfo.viewType = VK_IMAGE_TYPE_2D;
+	createInfo.format = format;
+	createInfo.subresourceRange.aspectMask = aspect;
 	createInfo.subresourceRange.baseMipLevel = 0;
 	createInfo.subresourceRange.levelCount = 1;
 	createInfo.subresourceRange.baseArrayLayer = 0;
@@ -205,7 +217,7 @@ int textureCreateImageView(VkImage image, VkImageView *imageView)
 
 	if (vkCreateImageView(engine.vulkanContext.device, &createInfo, NULL, imageView))
 	{
-		fprintf(stderr, "Failed to create image view for texture.\n");
+		fprintf(stderr, "Failed to create image view.\n");
 
 		return -1;
 	}

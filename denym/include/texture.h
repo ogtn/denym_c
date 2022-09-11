@@ -7,13 +7,17 @@
 
 int textureCreate(const char *filename, VkImage *image, VkDeviceMemory *imageMemory);
 
-int createImageRGBA_2D(VkExtent3D imageExtent, VkBuffer src, VkImage *image, VkDeviceMemory *imageMemory);
+int createImage2D(uint32_t width, uint32_t height, VkFormat format, VkImage *image, VkDeviceMemory *imageMemory);
 
 void imageCopyFromBuffer(VkImage dst, VkBuffer src, VkExtent3D imageExtent);
 
 void imageLayoutTransition(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
 
-int textureCreateImageView(VkImage image, VkImageView *imageView);
+int createImageView2D(VkImage image, VkFormat format, VkImageView *imageView);
+
+int createDepthImageView(VkImage image, VkFormat format, VkImageView *imageView);
+
+int createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspect, VkImageView *imageView);
 
 int textureCreateSampler(VkSampler *sampler);
 
