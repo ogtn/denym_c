@@ -12,4 +12,8 @@ layout(location = 0) out vec4 outColor;
 void main()
 {
     outColor = texture(textureSampler, texCoord);
+
+    // no write to depth buffer
+    if(outColor.a == 0)
+        discard;
 }

@@ -6,7 +6,10 @@
 #include <string.h>
 
 
-int textureCreate(const char *filename, VkImage *image, VkDeviceMemory *imageMemory)
+static const VkFormat TEXTURE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
+
+
+int textureCreate(const char *filename, VkImage *image, VkDeviceMemory *imageMemory, VkImageView *imageView)
 {
     char fullName[FILENAME_MAX];
 
@@ -51,7 +54,7 @@ int textureCreate(const char *filename, VkImage *image, VkDeviceMemory *imageMem
 
     VkExtent3D textureExtent = { .width = (uint32_t)width, .height = (uint32_t)height, .depth = 1 };
 
-    createImage2D(textureExtent.width, textureExtent.height, VK_FORMAT_R8G8B8A8_SRGB, image, imageMemory);
+    createImageTexture2D(textureExtent.width, textureExtent.height, image, imageMemory);
     // transition needed before writing to
     imageLayoutTransition(*image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     imageCopyFromBuffer(*image, stagingBuffer, textureExtent);
@@ -61,11 +64,29 @@ int textureCreate(const char *filename, VkImage *image, VkDeviceMemory *imageMem
     vkDestroyBuffer(engine.vulkanContext.device, stagingBuffer, NULL);
     vkFreeMemory(engine.vulkanContext.device, stagingBufferMemory, NULL);
 
-    return 0;
+    return createImageView2D(*image, TEXTURE_FORMAT, imageView);
 }
 
 
-int createImage2D(uint32_t width, uint32_t height, VkFormat format, VkImage *image, VkDeviceMemory *imageMemory)
+int createImageTexture2D(uint32_t width, uint32_t height, VkImage *image, VkDeviceMemory *imageMemory)
+{
+    return createImage2D(
+        width, height, TEXTURE_FORMAT,
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        image, imageMemory);
+}
+
+
+int createImageDepth(uint32_t width, uint32_t height, VkFormat format, VkImage *image, VkDeviceMemory *imageMemory)
+{
+    return createImage2D(
+        width, height, format,
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        image, imageMemory);
+}
+
+
+int createImage2D(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkImage *image, VkDeviceMemory *imageMemory)
 {
     VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -81,7 +102,7 @@ int createImage2D(uint32_t width, uint32_t height, VkFormat format, VkImage *ima
 
     // we don't care about the initial state because we're writing to it from the buffer
     imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    imageCreateInfo.usage = usage;
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageCreateInfo.flags = 0;
@@ -197,7 +218,7 @@ int createImageView2D(VkImage image, VkFormat format, VkImageView *imageView)
 }
 
 
-int createDepthImageView(VkImage image, VkFormat format, VkImageView *imageView)
+int createImageViewDepth(VkImage image, VkFormat format, VkImageView *imageView)
 {
     return createImageView(image, format, VK_IMAGE_ASPECT_DEPTH_BIT, imageView);
 }
@@ -207,7 +228,7 @@ int createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspect, V
 {
 	VkImageViewCreateInfo createInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
 	createInfo.image = image;
-	createInfo.viewType = VK_IMAGE_TYPE_2D;
+	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 	createInfo.format = format;
 	createInfo.subresourceRange.aspectMask = aspect;
 	createInfo.subresourceRange.baseMipLevel = 0;

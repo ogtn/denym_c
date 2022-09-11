@@ -62,7 +62,7 @@ int main(void)
 
     renderable coloredSquare = makeSquare("mvp_ubo_position_color_attribute.vert.spv", "basic_color_interp.frag.spv");
     renderable texturedSquare = makeSquare("texture.vert.spv", "texture.frag.spv");
-    renderable renderables[] = { coloredSquare, texturedSquare };
+    renderable renderables[] = { texturedSquare, coloredSquare };
 
 	modelViewProj mvp;
 	vec3 axis = {0, 0, 1};

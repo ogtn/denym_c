@@ -40,6 +40,13 @@ typedef struct vulkanContext
 	VkCommandPool commandPool;
 	VkCommandPool bufferCopyCommandPool;
 
+	// depth buffer
+	VkBool32 usDepthBuffer;
+	VkImage depthImage;
+	VkDeviceMemory depthImageMemory;
+	VkImageView depthImageView;
+	VkFormat depthFormat;
+
 	VkSemaphore imageAvailableSemaphore[MAX_FRAMES_IN_FLIGHT];
 	VkSemaphore renderFinishedSemaphore[MAX_FRAMES_IN_FLIGHT];
     VkFence inFlightFences[MAX_FRAMES_IN_FLIGHT];

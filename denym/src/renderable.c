@@ -29,8 +29,7 @@ int makeReady(renderable renderable)
 	if(renderable->isReady)
 		return 0;
 
-	if(!textureCreate("holes.png", &renderable->textureImage, &renderable->textureImageMemory) &&
-		!createImageView2D(renderable->textureImage, VK_FORMAT_R8G8B8A8_SRGB, &renderable->textureImageView) &&
+	if(!textureCreate("holes.png", &renderable->textureImage, &renderable->textureImageMemory, &renderable->textureImageView) &&
 		!createDescriptorSetLayout(renderable) &&
 		!createDescriptorPool(renderable) &&
 		!createUniformsBuffer(renderable) &&
@@ -227,6 +226,16 @@ int createPipeline(renderable renderable)
 	dynamicState.pDynamicStates = dynamicStates;
 	*/
 
+	VkPipelineDepthStencilStateCreateInfo depthStencilInfo = { VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
+	depthStencilInfo.stencilTestEnable = VK_FALSE;
+	depthStencilInfo.depthTestEnable = VK_TRUE;
+	depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+	depthStencilInfo.depthWriteEnable = VK_TRUE;
+	// allows to only emit fragments on a specific range
+	depthStencilInfo.depthBoundsTestEnable = VK_FALSE;
+	//depthStencilInfo.minDepthBounds = 0;
+	//depthStencilInfo.maxDepthBounds = 1;
+
 	VkGraphicsPipelineCreateInfo pipelineInfo = { VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
 	pipelineInfo.stageCount = sizeof renderable->shaderStages / sizeof renderable->shaderStages[0];
 	pipelineInfo.pStages = renderable->shaderStages;
@@ -236,7 +245,12 @@ int createPipeline(renderable renderable)
 	pipelineInfo.pViewportState = &viewportState;
 	pipelineInfo.pRasterizationState = &rasterizer;
 	pipelineInfo.pMultisampleState = &multisampling;
-	pipelineInfo.pDepthStencilState = NULL;
+
+	if(engine.vulkanContext.usDepthBuffer)
+		pipelineInfo.pDepthStencilState = &depthStencilInfo;
+	else
+		pipelineInfo.pDepthStencilState = NULL;
+
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = NULL; // TODO &dynamicState;
 	pipelineInfo.layout = renderable->pipelineLayout;

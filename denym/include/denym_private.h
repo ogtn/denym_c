@@ -51,6 +51,8 @@ int createFramebuffer(vulkanContext* context);
 
 int createCommandPool(vulkanContext* context);
 
+int createDepthBufferResources(void);
+
 int createCommandBuffers(void);
 
 int updateCommandBuffers(renderable *renderables, uint32_t renderablesCount);
@@ -68,6 +70,8 @@ void destroyVulkanContext(vulkanContext* context);
 void cleanSwapchain(vulkanContext* context);
 
 void cleanImageViews(void);
+
+void cleanDepthBufferResources(void);
 
 void cleanFrameBuffer(void);
 
