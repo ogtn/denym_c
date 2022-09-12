@@ -48,6 +48,8 @@ int createBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory*
 	// buffer on device side, faster, and usable as a dst for buffer transfert
 	createBuffer(size, buffer, bufferMemory, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, bufferUsage | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 	copyBuffer(stagingBuffer, *buffer, size);
+	vkDestroyBuffer(engine.vulkanContext.device, stagingBuffer, NULL);
+	vkFreeMemory(engine.vulkanContext.device, stagingBufferMemory, NULL);
 
 	return 0;
 }

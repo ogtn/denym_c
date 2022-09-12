@@ -10,6 +10,8 @@
 #include <stdio.h>
 
 
+static uint32_t MAX_BINDINGS = 2;
+
 renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, const char *fragShaderName)
 {
 	renderable renderable = calloc(1, sizeof(*renderable));
@@ -316,7 +318,7 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 			index++;
 		}
 
-		if(renderable->geometry->indices)
+		if(renderable->geometry->useIndices)
 		{
 			vkCmdBindVertexBuffers(commandBuffer, 0, renderable->geometry->attribCount - 1, buffers, offsets);
 			vkCmdBindIndexBuffer(commandBuffer, renderable->geometry->bufferIndices, 0, VK_INDEX_TYPE_UINT16);
@@ -333,7 +335,7 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 	if(renderable->usePushConstant)
 		vkCmdPushConstants(commandBuffer, renderable->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &renderable->pushConstantAlpha);
 
-	if(renderable->geometry->indices)
+	if(renderable->geometry->useIndices)
 		vkCmdDrawIndexed(commandBuffer, renderable->geometry->indexCount, 1, 0, 0, 0);
 	else
 		vkCmdDraw(commandBuffer, renderable->geometry->vertexCount, 1, 0, 0);
@@ -353,8 +355,12 @@ int useUniforms(renderable renderable)
 
 int createUniformsBuffer(renderable renderable)
 {
-	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-		createBuffer(sizeof(modelViewProj), &renderable->uniformBuffers[i], &renderable->uniformBuffersMemory[i], VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+	if(renderable->useUniforms)
+	{
+		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+			createBuffer(sizeof(modelViewProj), &renderable->uniformBuffers[i], &renderable->uniformBuffersMemory[i],
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+	}
 
 	return 0;
 }
@@ -379,25 +385,42 @@ int updateUniformsBuffer(renderable renderable, const modelViewProj *mvp)
 
 int createDescriptorSetLayout(renderable renderable)
 {
-	VkDescriptorSetLayoutBinding vertexAttributesLayoutBinding;
-	vertexAttributesLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	vertexAttributesLayoutBinding.binding = 0;
-	vertexAttributesLayoutBinding.descriptorCount = 1; // number of element, > 1 if we pass an array
-	vertexAttributesLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; // * shader stage
-	vertexAttributesLayoutBinding.pImmutableSamplers = NULL; // for images
+	VkDescriptorSetLayoutBinding bindings[MAX_BINDINGS];
+	uint32_t bindingCount = 0;
 
-	VkDescriptorSetLayoutBinding textureSamplerLayoutBinding;
-	textureSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	textureSamplerLayoutBinding.binding = 1;
-	textureSamplerLayoutBinding.descriptorCount = 1; // number of element, > 1 if we pass an array
-	textureSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT; // * shader stage
-	textureSamplerLayoutBinding.pImmutableSamplers = NULL;
+	if(renderable->useUniforms)
+	{
+		VkDescriptorSetLayoutBinding vertexAttributesLayoutBinding;
+		vertexAttributesLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		vertexAttributesLayoutBinding.binding = 0;
+		vertexAttributesLayoutBinding.descriptorCount = 1; // number of element, > 1 if we pass an array
+		vertexAttributesLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; // * shader stage
+		vertexAttributesLayoutBinding.pImmutableSamplers = NULL; // for images
 
-	// TODO: this has to be dynamically filled
-	VkDescriptorSetLayoutBinding bindings[2] = { vertexAttributesLayoutBinding, textureSamplerLayoutBinding };
+		bindings[bindingCount++ % MAX_BINDINGS] = vertexAttributesLayoutBinding;
+	}
+
+	if(renderable->useTexture)
+	{
+		VkDescriptorSetLayoutBinding textureSamplerLayoutBinding;
+		textureSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		textureSamplerLayoutBinding.binding = 1;
+		textureSamplerLayoutBinding.descriptorCount = 1; // number of element, > 1 if we pass an array
+		textureSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT; // * shader stage
+		textureSamplerLayoutBinding.pImmutableSamplers = NULL;
+
+		bindings[bindingCount++ % MAX_BINDINGS] = textureSamplerLayoutBinding;
+	}
+
+	if(bindingCount > MAX_BINDINGS)
+	{
+		fprintf(stderr, "createDescriptorSetLayout() reached MAX_BINDINGS\n");
+
+		return -1;
+	}
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-	layoutInfo.bindingCount = sizeof bindings / sizeof *bindings;
+	layoutInfo.bindingCount = bindingCount;
 	layoutInfo.pBindings = bindings;
 
 	if(vkCreateDescriptorSetLayout(engine.vulkanContext.device, &layoutInfo, NULL, &renderable->descriptorSetLayout))
@@ -409,17 +432,33 @@ int createDescriptorSetLayout(renderable renderable)
 
 int createDescriptorPool(renderable renderable)
 {
-	// TODO: this has to be dynamically filled
-	VkDescriptorPoolSize poolSize[2];
-	poolSize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize[0].descriptorCount = MAX_FRAMES_IN_FLIGHT;
+	VkDescriptorPoolSize poolSizes[MAX_BINDINGS];
+	uint32_t poolSizeCount = 0;
 
-	poolSize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	poolSize[1].descriptorCount = MAX_FRAMES_IN_FLIGHT;
+	if(renderable->useUniforms)
+	{
+		poolSizes[poolSizeCount].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSizes[poolSizeCount].descriptorCount = MAX_FRAMES_IN_FLIGHT;
+		poolSizeCount++;
+	}
+
+	if(renderable->useTexture)
+	{
+		poolSizes[poolSizeCount].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		poolSizes[poolSizeCount].descriptorCount = MAX_FRAMES_IN_FLIGHT;
+		poolSizeCount++;
+	}
+
+	if(poolSizeCount > MAX_BINDINGS)
+	{
+		fprintf(stderr, "createDescriptorPool() reached MAX_BINDINGS\n");
+
+		return -1;
+	}
 
 	VkDescriptorPoolCreateInfo descriptorPoolInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
-	descriptorPoolInfo.poolSizeCount = sizeof poolSize / sizeof *poolSize;
-	descriptorPoolInfo.pPoolSizes = poolSize;
+	descriptorPoolInfo.poolSizeCount = poolSizeCount;
+	descriptorPoolInfo.pPoolSizes = poolSizes;
 	descriptorPoolInfo.maxSets = MAX_FRAMES_IN_FLIGHT; // maximum number of descriptor sets that can be allocated from the pool
 
 	if(vkCreateDescriptorPool(engine.vulkanContext.device, &descriptorPoolInfo, NULL, &renderable->descriptorPool))
@@ -456,38 +495,45 @@ int createDescriptorSets(renderable renderable)
 
 	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		// TODO: this has to be dynamically filled
-		VkWriteDescriptorSet writeDescriptorSets[2] = {0};
+		VkWriteDescriptorSet descriptorWrites[MAX_BINDINGS];
+		memset(descriptorWrites, 0, sizeof descriptorWrites);
+		uint32_t descriptorWriteCount = 0;
 
-		VkDescriptorBufferInfo bufferInfo;
-		bufferInfo.buffer = renderable->uniformBuffers[i];
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(modelViewProj); // could use VK_WHOLE_SIZE here
+		if(renderable->useUniforms)
+		{
+			VkDescriptorBufferInfo bufferInfo;
+			bufferInfo.buffer = renderable->uniformBuffers[i];
+			bufferInfo.offset = 0;
+			bufferInfo.range = sizeof(modelViewProj); // could use VK_WHOLE_SIZE here
 
-		memset(&writeDescriptorSets[0], 0, sizeof writeDescriptorSets[0]);
-		writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		writeDescriptorSets[0].dstSet = renderable->descriptorSets[i];
-		writeDescriptorSets[0].dstBinding = 0;	// * here is the binding that matches the glsl code
-		writeDescriptorSets[0].dstArrayElement = 0; // * this is an offset, here 0 because we're not sending an array
-		writeDescriptorSets[0].descriptorCount = 1; // * only one element to transfer
-		writeDescriptorSets[0].pBufferInfo = &bufferInfo;
+			descriptorWrites[descriptorWriteCount].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[descriptorWriteCount].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrites[descriptorWriteCount].dstSet = renderable->descriptorSets[i];
+			descriptorWrites[descriptorWriteCount].dstBinding = 0;	// * here is the binding that matches the glsl code
+			descriptorWrites[descriptorWriteCount].dstArrayElement = 0; // * this is an offset, here 0 because we're not sending an array
+			descriptorWrites[descriptorWriteCount].descriptorCount = 1; // * only one element to transfer
+			descriptorWrites[descriptorWriteCount].pBufferInfo = &bufferInfo;
+			descriptorWriteCount++;
+		}
 
-		VkDescriptorImageInfo imageInfo;
-		imageInfo.sampler = engine.vulkanContext.textureSampler;
-		imageInfo.imageView = renderable->textureImageView;
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		if(renderable->useTexture)
+		{
+			VkDescriptorImageInfo imageInfo;
+			imageInfo.sampler = engine.vulkanContext.textureSampler;
+			imageInfo.imageView = renderable->textureImageView;
+			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		memset(&writeDescriptorSets[1], 0, sizeof writeDescriptorSets[1]);
-		writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		writeDescriptorSets[1].dstSet = renderable->descriptorSets[i];
-		writeDescriptorSets[1].dstBinding = 1;	// * here is the binding that matches the glsl code
-		writeDescriptorSets[1].dstArrayElement = 0; // * this is an offset, here 0 because we're not sending an array
-		writeDescriptorSets[1].descriptorCount = 1; // * only one element to transfer
-		writeDescriptorSets[1].pImageInfo = &imageInfo;
+			descriptorWrites[descriptorWriteCount].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[descriptorWriteCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[descriptorWriteCount].dstSet = renderable->descriptorSets[i];
+			descriptorWrites[descriptorWriteCount].dstBinding = 1;	// * here is the binding that matches the glsl code
+			descriptorWrites[descriptorWriteCount].dstArrayElement = 0; // * this is an offset, here 0 because we're not sending an array
+			descriptorWrites[descriptorWriteCount].descriptorCount = 1; // * only one element to transfer
+			descriptorWrites[descriptorWriteCount].pImageInfo = &imageInfo;
+			descriptorWriteCount++;
+		}
 
-		vkUpdateDescriptorSets(engine.vulkanContext.device, sizeof writeDescriptorSets / sizeof *writeDescriptorSets, writeDescriptorSets, 0, NULL);
+		vkUpdateDescriptorSets(engine.vulkanContext.device, descriptorWriteCount, descriptorWrites, 0, NULL);
 	}
 
 	return result;

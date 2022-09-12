@@ -29,6 +29,7 @@ int textureCreate(const char *filename, VkImage *image, VkDeviceMemory *imageMem
         return -1;
     }
 
+    // TODO: fix leak when error
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
 
