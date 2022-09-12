@@ -1142,7 +1142,7 @@ void cleanSwapchain(vulkanContext* context)
 {
 	cleanFrameBuffer();
 	cleanImageViews();
-	void cleanDepthBufferResources(void);
+	cleanDepthBufferResources();
 	context->DestroySwapchainKHR(context->device, context->swapchain, NULL);
 }
 

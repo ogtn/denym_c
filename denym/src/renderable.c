@@ -60,10 +60,13 @@ void denymDestroyRenderable(renderable renderable)
 	vkDestroyShaderModule(engine.vulkanContext.device, renderable->vertShader, NULL);
 	vkDestroyPipelineLayout(engine.vulkanContext.device, renderable->pipelineLayout, NULL);
 
-	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	if(renderable->useUniforms)
 	{
-		vkDestroyBuffer(engine.vulkanContext.device, renderable->uniformBuffers[i], NULL);
-		vkFreeMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory[i], NULL);
+		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		{
+			vkDestroyBuffer(engine.vulkanContext.device, renderable->uniformBuffers[i], NULL);
+			vkFreeMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory[i], NULL);
+		}
 	}
 
 	geometryDestroy(renderable->geometry);
