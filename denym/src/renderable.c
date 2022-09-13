@@ -488,9 +488,10 @@ int createDescriptorSets(renderable renderable)
 		memset(descriptorWrites, 0, sizeof descriptorWrites);
 		uint32_t descriptorWriteCount = 0;
 
+		VkDescriptorBufferInfo bufferInfo;
+
 		if(renderable->useUniforms)
 		{
-			VkDescriptorBufferInfo bufferInfo;
 			bufferInfo.buffer = renderable->uniformBuffers[i];
 			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(modelViewProj); // could use VK_WHOLE_SIZE here
@@ -505,9 +506,10 @@ int createDescriptorSets(renderable renderable)
 			descriptorWriteCount++;
 		}
 
+		VkDescriptorImageInfo imageInfo;
+
 		if(renderable->useTexture)
 		{
-			VkDescriptorImageInfo imageInfo;
 			imageInfo.sampler = engine.vulkanContext.textureSampler;
 			imageInfo.imageView = renderable->textureImageView;
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
