@@ -8,7 +8,7 @@ int main(void)
 	const int height = 640;
 
 	// clip coordinates
-	float positions[] = 
+	float positions[] =
 	{
 		-0.5f, 0.5f,
 		-0.5f, -0.5f,
@@ -33,23 +33,24 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 
-	geometryCreateInfo geometryCreateInfo = {
+	geometryCreateParams geometryParams = {
 		.vertexCount = 6,
-		.positions = positions,
+		.positions2D = positions,
 		.colors = colors };
 
-	geometry geometry = geometryCreate(&geometryCreateInfo);
-	renderable square = denymCreateRenderable(
-		geometry,
-		"basic_position_color_attribute.vert.spv",
-		"basic_color_interp.frag.spv");
+	renderableCreateParams renderableParams = {
+		.geometry = geometryCreate(&geometryParams),
+		.vertShaderName = "basic_position_color_attribute.vert.spv",
+		.fragShaderName = "basic_color_interp.frag.spv"
+	};
+	renderable square = denymCreateRenderable(&renderableParams);
 
 	while (denymKeepRunning())
 	{
 		denymRender(&square, 1);
 		denymWaitForNextFrame();
 	}
-	
+
 	denymDestroyRenderable(square);
 	denymTerminate();
 

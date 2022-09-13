@@ -28,22 +28,21 @@ static renderable makeSquare(void)
         2, 3, 0
     };
 
-	geometryCreateInfo geometryCreateInfo = {
+	geometryCreateParams geometryParams = {
 		.vertexCount = 4,
-		.positions = positions,
+		.positions2D = positions,
 		.colors = colors,
 		.indices = indices,
 		.indexCount = sizeof indices / sizeof *indices };
 
-	geometry geometry = geometryCreate(&geometryCreateInfo);
-	renderable square = denymCreateRenderable(
-		geometry,
-		"mvp_ubo_position_color_attribute.vert.spv",
-		"basic_color_interp.frag.spv");
+	renderableCreateParams renderableParams = {
+		.geometry = geometryCreate(&geometryParams),
+		.vertShaderName = "mvp_ubo_position_color_attribute.vert.spv",
+		.fragShaderName = "basic_color_interp.frag.spv",
+		.useUniforms = 1
+	};
 
-    useUniforms(square);
-
-    return square;
+    return denymCreateRenderable(&renderableParams);
 }
 
 

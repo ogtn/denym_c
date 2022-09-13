@@ -5,17 +5,17 @@
 #include <string.h>
 
 
-geometry geometryCreate(const geometryCreateInfo *createInfo)
+geometry geometryCreate(const geometryCreateParams *params)
 {
 	geometry geometry = calloc(1, sizeof(*geometry));
 
-	geometry->vertexCount = createInfo->vertexCount;
-	geometry->indexCount = createInfo->indexCount;
+	geometry->vertexCount = params->vertexCount;
+	geometry->indexCount = params->indexCount;
 
-	if(!geometryAddPositions(geometry, createInfo) &&
-		!geometryAddColors(geometry, createInfo) &&
-		!geometryAddTexCoods(geometry, createInfo) &&
-		!geometryAddIndices(geometry, createInfo))
+	if(!geometryAddPositions(geometry, params) &&
+		!geometryAddColors(geometry, params) &&
+		!geometryAddTexCoods(geometry, params) &&
+		!geometryAddIndices(geometry, params))
 	{
 		geometryFillPipelineVertexInputStateCreateInfo(geometry);
 		return geometry;
@@ -30,7 +30,7 @@ geometry geometryCreate(const geometryCreateInfo *createInfo)
 
 void geometryDestroy(geometry geometry)
 {
-	if(geometry->usePositions)
+	if(geometry->usePositions2D || geometry->usePositions3D)
 	{
 		vkFreeMemory(engine.vulkanContext.device, geometry->memoryPositions, NULL);
 		vkDestroyBuffer(engine.vulkanContext.device, geometry->bufferPositions, NULL);
@@ -60,27 +60,45 @@ void geometryDestroy(geometry geometry)
 }
 
 
-int geometryAddPositions(geometry geometry, const geometryCreateInfo *createInfo)
+int geometryAddPositions(geometry geometry, const geometryCreateParams *params)
 {
-	if(createInfo->positions)
+	if(params->positions2D && params->positions3D)
+	{
+		fprintf(stderr, "geometryAddPositions() failed: cant' use both 2D and 3D\n");
+
+		return -1;
+	}
+
+	float *positions = NULL;
+	uint32_t size = sizeof(float) * geometry->vertexCount;
+
+	if(params->positions2D)
+	{
+		size *= 2;
+		geometry->usePositions2D = VK_TRUE;
+		positions = params->positions2D;
+	}
+	else
+	{
+		size *= 3;
+		geometry->usePositions3D = VK_TRUE;
+		positions = params->positions3D;
+	}
+
+	if(positions)
 	{
 		geometry->attribCount++;
-		geometry->usePositions = VK_TRUE;
 
-		return createVertexBufferWithStaging(
-			sizeof(float) * geometry->vertexCount * 2,
-			&geometry->bufferPositions,
-			&geometry->memoryPositions,
-			createInfo->positions);
+		return createVertexBufferWithStaging(size, &geometry->bufferPositions, &geometry->memoryPositions, positions);
 	}
 
 	return 0;
 }
 
 
-int geometryAddColors(geometry geometry, const geometryCreateInfo *createInfo)
+int geometryAddColors(geometry geometry, const geometryCreateParams *params)
 {
-	if(createInfo->colors)
+	if(params->colors)
 	{
 		geometry->attribCount++;
 		geometry->useColors = VK_TRUE;
@@ -89,16 +107,16 @@ int geometryAddColors(geometry geometry, const geometryCreateInfo *createInfo)
 			sizeof(float) * geometry->vertexCount * 3,
 			&geometry->bufferColors,
 			&geometry->memoryColors,
-			createInfo->colors);
+			params->colors);
 	}
 
 	return 0;
 }
 
 
-int geometryAddTexCoods(geometry geometry, const geometryCreateInfo *createInfo)
+int geometryAddTexCoods(geometry geometry, const geometryCreateParams *params)
 {
-	if(createInfo->texCoords)
+	if(params->texCoords)
 	{
 		geometry->attribCount++;
 		geometry->useTexCoords = VK_TRUE;
@@ -107,24 +125,24 @@ int geometryAddTexCoods(geometry geometry, const geometryCreateInfo *createInfo)
 			sizeof(float) * geometry->vertexCount * 2,
 			&geometry->bufferTexCoords,
 			&geometry->memoryTexCoords,
-			createInfo->texCoords);
+			params->texCoords);
 	}
 
 	return 0;
 }
 
-int geometryAddIndices(geometry geometry, const geometryCreateInfo *createInfo)
+int geometryAddIndices(geometry geometry, const geometryCreateParams *params)
 {
-	if((createInfo->indexCount != 0 && createInfo->indices == NULL) ||
-	(createInfo->indexCount == 0 && createInfo->indices != NULL))
+	if((params->indexCount != 0 && params->indices == NULL) ||
+	(params->indexCount == 0 && params->indices != NULL))
 	{
 		fprintf(stderr, "geometryAddIndices() failed (indexCount=%i)(indices=%p)\n",
-			createInfo->indexCount, (void*)createInfo->indices);
+			params->indexCount, (void*)params->indices);
 
 		return -1;
 	}
 
-	if(createInfo->indices)
+	if(params->indices)
 	{
 		geometry->attribCount++;
 		geometry->useIndices = VK_TRUE;
@@ -133,7 +151,7 @@ int geometryAddIndices(geometry geometry, const geometryCreateInfo *createInfo)
 			sizeof(uint16_t) * geometry->indexCount,
 			&geometry->bufferIndices,
 			&geometry->memoryIndices,
-			createInfo->indices);
+			params->indices);
 	}
 
 	return 0;
@@ -163,9 +181,15 @@ void geometryFillPipelineVertexInputStateCreateInfo(geometry geometry)
 
 	uint32_t currentBinding = 0;
 
-	if(geometry->usePositions) // vec2
+	if(geometry->usePositions2D) // vec2
 	{
 		addVertexDescription(geometry, currentBinding, VK_FORMAT_R32G32_SFLOAT, sizeof(float) * 2);
+		currentBinding++;
+	}
+
+	if(geometry->usePositions3D) // vec3
+	{
+		addVertexDescription(geometry, currentBinding, VK_FORMAT_R32G32B32_SFLOAT, sizeof(float) * 3);
 		currentBinding++;
 	}
 

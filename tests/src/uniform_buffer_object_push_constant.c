@@ -34,21 +34,22 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 
-	geometryCreateInfo geometryCreateInfo = {
+	geometryCreateParams geometryCreateParams = {
 		.vertexCount = 4,
-		.positions = positions,
+		.positions2D = positions,
 		.colors = colors,
 		.indices = indices,
 		.indexCount = sizeof indices / sizeof *indices };
 
-	geometry geometry = geometryCreate(&geometryCreateInfo);
-	renderable square = denymCreateRenderable(
-		geometry,
-		"mvp_ubo_position_color_attribute.vert.spv",
-		"basic_color_with_alpha_cst.frag.spv");
+	renderableCreateParams renderableParams = {
+		.geometry = geometryCreate(&geometryCreateParams),
+		.vertShaderName = "mvp_ubo_position_color_attribute.vert.spv",
+		.fragShaderName = "basic_color_with_alpha_cst.frag.spv",
+		.useUniforms = 1,
+		.usePushConstant = 1
+	};
 
-    usePushConstants(square);
-    useUniforms(square);
+	renderable square = denymCreateRenderable(&renderableParams);
 
 	modelViewProj mvp;
 	vec3 axis = {0, 0, 1};

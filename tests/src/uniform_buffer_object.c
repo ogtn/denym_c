@@ -8,7 +8,7 @@ int main(void)
 	const int height = 640;
 
 	// clip coordinates
-	float positions[] = 
+	float positions[] =
 	{
 		-0.5f, 0.5f,
 		-0.5f, -0.5f,
@@ -33,20 +33,20 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 
-	geometryCreateInfo geometryCreateInfo = {
+	geometryCreateParams geometryParams = {
 		.vertexCount = 4,
-		.positions = positions,
+		.positions2D = positions,
 		.colors = colors,
 		.indices = indices,
 		.indexCount = sizeof indices / sizeof *indices };
 
-	geometry geometry = geometryCreate(&geometryCreateInfo);
-	renderable square = denymCreateRenderable(
-		geometry,
-		"mvp_ubo_position_color_attribute.vert.spv",
-		"basic_color_interp.frag.spv");
-
-	useUniforms(square);
+	renderableCreateParams renderableParams = {
+		.geometry = geometryCreate(&geometryParams),
+		.vertShaderName = "mvp_ubo_position_color_attribute.vert.spv",
+		.fragShaderName = "basic_color_interp.frag.spv",
+		.useUniforms = 1
+	};
+	renderable square = denymCreateRenderable(&renderableParams);
 
 	modelViewProj mvp;
 	vec3 axis = {0, 0, 1};
@@ -69,7 +69,7 @@ int main(void)
 		denymRender(&square, 1);
 		denymWaitForNextFrame();
 	}
-	
+
 	denymDestroyRenderable(square);
 	denymTerminate();
 

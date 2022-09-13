@@ -36,19 +36,23 @@ static renderable makeSquare(const char *vertShader, const char *fragShader)
         2, 3, 0
     };
 
-	geometryCreateInfo geometryCreateInfo = {
+	geometryCreateParams geometryParams = {
 		.vertexCount = 4,
-		.positions = positions,
+		.positions2D = positions,
 		.colors = colors,
         .texCoords = texCoords,
 		.indices = indices,
 		.indexCount = sizeof indices / sizeof *indices };
 
-	geometry geometry = geometryCreate(&geometryCreateInfo);
-	renderable square = denymCreateRenderable(geometry,	vertShader,	fragShader);
-    useUniforms(square);
+	renderableCreateParams renderableParams = {
+		.vertShaderName = vertShader,
+		.fragShaderName = fragShader,
+		.geometry = geometryCreate(&geometryParams),
+		.textureName = "lena.jpg",
+		.useUniforms = 1
+	};
 
-    return square;
+    return denymCreateRenderable(&renderableParams);
 }
 
 

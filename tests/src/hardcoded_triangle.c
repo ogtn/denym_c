@@ -9,13 +9,14 @@ int main(void)
 
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
-	
-	geometryCreateInfo geometryCreateInfo = { .vertexCount = 3 };
-	geometry geometry = geometryCreate(&geometryCreateInfo);
-	renderable triangle = denymCreateRenderable(
-		geometry,
-		"hardcoded_triangle.vert.spv",
-		"basic_color_interp.frag.spv");
+
+	geometryCreateParams geometryParams = { .vertexCount = 3 };
+	renderableCreateParams renderableParams = {
+		.geometry = geometryCreate(&geometryParams),
+		.vertShaderName = "hardcoded_triangle.vert.spv",
+		.fragShaderName = "basic_color_interp.frag.spv"
+	};
+	renderable triangle = denymCreateRenderable(&renderableParams);
 
 	while (denymKeepRunning())
 	{

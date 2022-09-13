@@ -21,16 +21,28 @@ typedef struct modelViewProj
 } modelViewProj;
 
 
-typedef struct geometryCreateInfo
+typedef struct geometryCreateParams
 {
 	uint32_t vertexCount;
 	uint16_t indexCount;
 	uint16_t __padding;
-	float *positions;
+	float *positions2D;
+	float *positions3D;
 	float *colors;
 	float *texCoords;
 	uint16_t *indices;
-} geometryCreateInfo;
+} geometryCreateParams;
+
+
+typedef struct renderableCreateParams
+{
+	const char *textureName;
+	const char *vertShaderName;
+	const char *fragShaderName;
+	geometry geometry;
+	uint32_t useUniforms;
+	uint32_t usePushConstant;
+} renderableCreateParams;
 
 
 int denymInit(int window_width, int window_height);
@@ -43,19 +55,15 @@ void denymRender(renderable *renderables, uint32_t renderablesCount);
 
 void denymWaitForNextFrame(void);
 
-geometry geometryCreate(const geometryCreateInfo *createInfo);
+geometry geometryCreate(const geometryCreateParams *createParams);
 
 void geometryDestroy(geometry geometry);
 
-renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, const char *fragShaderName);
+renderable denymCreateRenderable(const renderableCreateParams *createParams);
 
 void denymDestroyRenderable(renderable renderable);
 
-int useUniforms(renderable renderable);
-
 int updateUniformsBuffer(renderable renderable, const modelViewProj *mvp);
-
-int usePushConstants(renderable renderable);
 
 int updatePushConstants(renderable renderable, float alpha);
 

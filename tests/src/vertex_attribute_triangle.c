@@ -8,7 +8,7 @@ int main(void)
 	const int height = 480;
 
 	// clip coordinates
-	float positions[] = 
+	float positions[] =
 	{
 		0.0f, -0.5f,
 		0.5f, 0.5f,
@@ -25,13 +25,17 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 
-	geometryCreateInfo geometryCreateInfo = {
+	geometryCreateParams geometryCreateParams = {
 		.vertexCount = 3,
-		.positions = positions,
+		.positions2D = positions,
 		.colors = colors };
 
-	geometry geometry = geometryCreate(&geometryCreateInfo);
-	renderable triangle = denymCreateRenderable(geometry, "basic_position_color_attribute.vert.spv", "basic_color_interp.frag.spv");
+	renderableCreateParams renderableParams = {
+		.geometry = geometryCreate(&geometryCreateParams),
+		.vertShaderName = "basic_position_color_attribute.vert.spv",
+		.fragShaderName = "basic_color_interp.frag.spv"
+	};
+	renderable triangle = denymCreateRenderable(&renderableParams);
 
 	while (denymKeepRunning())
 	{

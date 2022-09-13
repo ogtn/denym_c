@@ -68,9 +68,6 @@ int denymKeepRunning(void)
 
 void denymRender(renderable *renderables, uint32_t renderablesCount)
 {
-	for(uint32_t i = 0; i < renderablesCount; i++)
-		makeReady(renderables[i]);
-
 	if(engine.vulkanContext.needRecreatePipeline)
 	{
 		for(uint32_t i = 0; i < renderablesCount; i++)

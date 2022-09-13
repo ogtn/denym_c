@@ -9,8 +9,8 @@ typedef struct renderable_t
 	geometry geometry;
 
 	// shaders
-	const char *vertShaderName;
-	const char *fragShaderName;
+	char vertShaderName[FILENAME_MAX];
+	char fragShaderName[FILENAME_MAX];
 	VkShaderModule vertShader;
 	VkShaderModule fragShader;
 	VkPipelineShaderStageCreateInfo shaderStages[2];
@@ -29,9 +29,6 @@ typedef struct renderable_t
 	VkBool32 usePushConstant;
 	float pushConstantAlpha;
 
-	// state
-	VkBool32 isReady;
-
 	// pipeline
 	VkPipelineLayout pipelineLayout;
 	VkPipeline pipeline;
@@ -44,9 +41,7 @@ typedef struct renderable_t
 } renderable_t;
 
 
-renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, const char *fragShaderName);
-
-int makeReady(renderable renderable);
+renderable denymCreateRenderable(const renderableCreateParams *params);
 
 void denymDestroyRenderable(renderable renderable);
 

@@ -12,27 +12,26 @@
 
 static uint32_t MAX_BINDINGS = 2;
 
-renderable denymCreateRenderable(geometry geometry, const char *vertShaderName, const char *fragShaderName)
+
+renderable denymCreateRenderable(const renderableCreateParams *params)
 {
 	renderable renderable = calloc(1, sizeof(*renderable));
 
-	renderable->vertShaderName = vertShaderName;
-	renderable->fragShaderName = fragShaderName;
-	renderable->geometry = geometry;
-	renderable->isReady = VK_FALSE;
-	renderable->useTexture = VK_TRUE;
+	strncpy(renderable->vertShaderName, params->vertShaderName, sizeof renderable->vertShaderName);
+	strncpy(renderable->fragShaderName, params->fragShaderName, sizeof renderable->fragShaderName);
+	renderable->geometry = params->geometry;
+	renderable->useUniforms = params->useUniforms;
+	renderable->usePushConstant = params->usePushConstant;
 
-	return renderable;
-}
+	if(params->textureName)
+	{
+		if(textureCreate(params->textureName, &renderable->textureImage, &renderable->textureImageMemory, &renderable->textureImageView))
+			goto error;
+		else
+			renderable->useTexture = VK_TRUE;
+	}
 
-
-int makeReady(renderable renderable)
-{
-	if(renderable->isReady)
-		return 0;
-
-	if(!textureCreate("holes.png", &renderable->textureImage, &renderable->textureImageMemory, &renderable->textureImageView) &&
-		!createDescriptorSetLayout(renderable) &&
+	if(	!createDescriptorSetLayout(renderable) &&
 		!createDescriptorPool(renderable) &&
 		!createUniformsBuffer(renderable) &&
 		!createDescriptorSets(renderable) &&
@@ -40,12 +39,13 @@ int makeReady(renderable renderable)
 		!createPipelineLayout(renderable) &&
 		!createPipeline(renderable))
 	{
-		renderable->isReady = VK_TRUE;
-
-		return 0;
+		return renderable;
 	}
 
-	return -1;
+	error:
+	denymDestroyRenderable(renderable);
+
+	return NULL;
 }
 
 
@@ -342,17 +342,6 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 }
 
 
-int useUniforms(renderable renderable)
-{
-	if(renderable->isReady)
-		return -1;
-
-	renderable->useUniforms = VK_TRUE;
-
-	return 0;
-}
-
-
 int createUniformsBuffer(renderable renderable)
 {
 	if(renderable->useUniforms)
@@ -368,7 +357,7 @@ int createUniformsBuffer(renderable renderable)
 
 int updateUniformsBuffer(renderable renderable, const modelViewProj *mvp)
 {
-	if(renderable->isReady == VK_FALSE || renderable->useUniforms == VK_FALSE)
+	if(renderable->useUniforms == VK_FALSE)
 		return -1;
 
 	void *dest;
@@ -540,19 +529,9 @@ int createDescriptorSets(renderable renderable)
 }
 
 
-int usePushConstants(renderable renderable)
-{
-	if(renderable->isReady)
-		return -1;
-
-	renderable->usePushConstant = VK_TRUE;
-
-	return 0;
-}
-
 int updatePushConstants(renderable renderable, float alpha)
 {
-	if(renderable->isReady == VK_FALSE || renderable->usePushConstant == VK_FALSE)
+	if(renderable->usePushConstant == VK_FALSE)
 		return -1;
 
 	renderable->pushConstantAlpha = alpha;
