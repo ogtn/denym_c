@@ -958,20 +958,6 @@ int createSynchronizationObjects(vulkanContext* context)
 
 			return -1;
 		}
-
-		// TODO: maybe overload some vk functions and use this to inject __LINE__ __FILE__ ?
-		#ifdef _DEBUG
-		VkDebugUtilsObjectNameInfoEXT objectNameInfo = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
-		objectNameInfo.objectType = VK_OBJECT_TYPE_SEMAPHORE;
-
-		objectNameInfo.pObjectName = "Image available semaphore";
-		objectNameInfo.objectHandle = (uint64_t)context->imageAvailableSemaphore[i];
-		context->SetDebugUtilsObjectNameEXT(context->device, &objectNameInfo);
-
-		objectNameInfo.pObjectName = "Render finished semaphore";
-		objectNameInfo.objectHandle = (uint64_t)context->renderFinishedSemaphore[i];
-		context->SetDebugUtilsObjectNameEXT(context->device, &objectNameInfo);
-		#endif
 	}
 
 	return 0;

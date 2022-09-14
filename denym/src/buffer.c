@@ -83,6 +83,20 @@ int createBuffer(VkDeviceSize size, VkBuffer *buffer, VkDeviceMemory *bufferMemo
 	if(vkBindBufferMemory(engine.vulkanContext.device, *buffer, *bufferMemory, 0))
 		return -1;
 
+	// TODO: maybe overload some vk functions and use this to inject __LINE__ __FILE__ ?
+#ifdef _DEBUG
+	static int cpt;
+	VkDebugUtilsObjectNameInfoEXT objectNameInfo = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+	objectNameInfo.objectType = VK_OBJECT_TYPE_BUFFER;
+
+	char name[16];
+	snprintf(name, sizeof name, "buffer_%d", cpt++);
+	fprintf(stderr, "createBuffer(%s)\n", name);
+	objectNameInfo.pObjectName = name;
+	objectNameInfo.objectHandle = (uint64_t)*buffer;
+	engine.vulkanContext.SetDebugUtilsObjectNameEXT(engine.vulkanContext.device, &objectNameInfo);
+#endif
+
 	return 0;
 }
 
