@@ -17,6 +17,8 @@ void glfwErrorCallback(int error, const char* description);
 
 void glfwFramebufferResizeCallback(GLFWwindow* window, int width, int height);
 
+void glfwKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
+
 VKAPI_ATTR VkBool32 VKAPI_CALL vulkanErrorCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType,

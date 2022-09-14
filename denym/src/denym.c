@@ -88,7 +88,7 @@ void denymWaitForNextFrame(void)
 {
 	struct timespec duration;
 	duration.tv_sec = 0;
-	duration.tv_nsec = 2000000;
+	duration.tv_nsec = 1660000;
 
 	thrd_sleep(&duration, NULL);
 }
@@ -104,6 +104,29 @@ void glfwFramebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
 	engine.vulkanContext.framebufferResized = VK_TRUE;
 	glfwGetFramebufferSize(engine.window, &width, &height);
+}
+
+
+void glfwKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+	if(key == GLFW_KEY_F && action == GLFW_PRESS)
+	{
+		if(engine.isFullScreen)
+		{
+			glfwSetWindowMonitor(engine.window, NULL, engine.windowPosX, engine.windowPosY, engine.windowWidth, engine.windowHeight, GLFW_DONT_CARE);
+			engine.isFullScreen = VK_FALSE;
+		}
+		else
+		{
+			int width, height;
+			GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+			glfwGetMonitorWorkarea(monitor, NULL, NULL, &width, &height);
+			glfwGetWindowPos(engine.window, &engine.windowPosX, &engine.windowPosY);
+			glfwGetWindowSize(engine.window, &engine.windowWidth, &engine.windowHeight);
+			glfwSetWindowMonitor(engine.window, monitor, 0, 0, width, height, GLFW_DONT_CARE);
+			engine.isFullScreen = VK_TRUE;
+		}
+	}
 }
 
 
@@ -147,6 +170,7 @@ GLFWwindow* createWindow(int width, int height)
 
 	// set callbacks
 	glfwSetFramebufferSizeCallback(window, glfwFramebufferResizeCallback);
+	glfwSetKeyCallback(window, glfwKeyCallback);
 
 	return window;
 }

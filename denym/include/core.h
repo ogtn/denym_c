@@ -86,7 +86,13 @@ typedef struct vulkanContext
 typedef struct denym
 {
 	vulkanContext vulkanContext;
+
 	GLFWwindow *window;
+	int windowWidth;
+	int windowHeight;
+	int windowPosX;
+	int windowPosY;
+	VkBool32 isFullScreen;
 
 	// TODO: add moar metrics : fps, render time etc.
 	struct timespec uptime;
