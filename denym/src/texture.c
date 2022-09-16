@@ -5,6 +5,7 @@
 
 #include <stb_image.h>
 #include <string.h>
+#include <math.h>
 
 
 static const VkFormat TEXTURE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
@@ -53,28 +54,29 @@ int textureCreate(const char *filename, VkImage *image, VkDeviceMemory *imageMem
     vkUnmapMemory(engine.vulkanContext.device, stagingBufferMemory);
     stbi_image_free(pixels);
 
-
     VkExtent3D textureExtent = { .width = (uint32_t)width, .height = (uint32_t)height, .depth = 1 };
+    uint32_t mipLevels = (uint32_t)floor(log2(fmax((double)width, (double)(height))));
 
-    textureCreateImage2D(textureExtent.width, textureExtent.height, image, imageMemory);
+    textureCreateImage2D(textureExtent.width, textureExtent.height, mipLevels, image, imageMemory);
     // transition needed before writing to
-    imageLayoutTransition(*image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    imageLayoutTransition(*image, mipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     imageCopyFromBuffer(*image, stagingBuffer, textureExtent);
 
     // transition needed before accessing it from shaders
-    imageLayoutTransition(*image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    imageGenerateMipMaps(*image, width, height, mipLevels);
+
     vkDestroyBuffer(engine.vulkanContext.device, stagingBuffer, NULL);
     vkFreeMemory(engine.vulkanContext.device, stagingBufferMemory, NULL);
 
-    return createImageView2D(*image, TEXTURE_FORMAT, imageView);
+    return createImageView2D(*image, mipLevels, TEXTURE_FORMAT, imageView);
 }
 
 
-int textureCreateImage2D(uint32_t width, uint32_t height, VkImage *image, VkDeviceMemory *imageMemory)
+int textureCreateImage2D(uint32_t width, uint32_t height, uint32_t mipLevels, VkImage *image, VkDeviceMemory *imageMemory)
 {
     return createImage2D(
-        width, height, TEXTURE_FORMAT,
-        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        width, height, mipLevels, TEXTURE_FORMAT,
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         image, imageMemory);
 }
 
@@ -101,7 +103,7 @@ int textureCreateSampler(VkSampler *sampler)
     // mipmapping
     samplerParams.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     samplerParams.minLod = 0;
-    samplerParams.maxLod = 0;
+    samplerParams.maxLod = VK_LOD_CLAMP_NONE;
     samplerParams.mipLodBias = 0;
 
     if(vkCreateSampler(engine.vulkanContext.device, &samplerParams, NULL, sampler))

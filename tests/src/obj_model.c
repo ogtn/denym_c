@@ -299,7 +299,7 @@ int main(void)
 	vec3 center = { 0, 0, 0.5};
 	vec3 up = { 0, 0, 1 };
 	glm_lookat(eye, center, up, mvp.view);
-	glm_perspective(glm_rad(45), width / height, 0.01f, 1000, mvp.projection);
+	glm_perspective(glm_rad(45), (float)width / height, 0.01f, 1000, mvp.projection);
 	mvp.projection[1][1] *= -1;
 
 	while (denymKeepRunning())

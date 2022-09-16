@@ -7,7 +7,7 @@
 
 int textureCreate(const char *filename, VkImage *image, VkDeviceMemory *imageMemory, VkImageView *imageView);
 
-int textureCreateImage2D(uint32_t width, uint32_t height, VkImage *image, VkDeviceMemory *imageMemory);
+int textureCreateImage2D(uint32_t width, uint32_t height, uint32_t mipLevels, VkImage *image, VkDeviceMemory *imageMemory);
 
 int textureCreateSampler(VkSampler *sampler);
 

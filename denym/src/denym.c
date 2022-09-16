@@ -708,7 +708,7 @@ int createImageViews(vulkanContext* context)
 	context->GetSwapchainImagesKHR(context->device, context->swapchain, &context->imageCount, context->images);
 
 	for (uint32_t i = 0; i < context->imageCount; i++)
-		if(createImageView2D(context->images[i], context->surfaceFormat.format, &context->imageViews[i]))
+		if(createImageView2D(context->images[i], 1, context->surfaceFormat.format, &context->imageViews[i]))
 			return -1;
 
 	return 0;
