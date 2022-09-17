@@ -3,16 +3,16 @@
 #include "core.h"
 
 
-int createImageDepth(uint32_t width, uint32_t height, VkFormat format, VkImage *image, VkDeviceMemory *imageMemory)
+int createImageDepth(uint32_t width, uint32_t height, VkFormat format, VkSampleCountFlagBits samples, VkImage *image, VkDeviceMemory *imageMemory)
 {
     return createImage2D(
-        width, height, 1, format,
+        width, height, 1, format, samples,
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
         image, imageMemory);
 }
 
 
-int createImage2D(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageUsageFlags usage, VkImage *image, VkDeviceMemory *imageMemory)
+int createImage2D(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImage *image, VkDeviceMemory *imageMemory)
 {
     VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -30,7 +30,7 @@ int createImage2D(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat 
     imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageCreateInfo.usage = usage;
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.samples = samples;
     imageCreateInfo.flags = 0;
 
     if(vkCreateImage(engine.vulkanContext.device, &imageCreateInfo, NULL, image))

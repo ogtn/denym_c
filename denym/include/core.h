@@ -20,6 +20,12 @@ typedef struct vulkanContext
 	uint32_t graphicsQueueFamilyIndex;
 	uint32_t presentQueueFamilyIndex;
 
+	// MSAA
+	VkSampleCountFlagBits maxMSAA;
+	VkImage colorImage;
+	VkDeviceMemory colorImageMemory;
+	VkImageView colorImageView;
+
 	VkDevice device;
 	VkSurfaceKHR surface;
 	VkSurfaceFormatKHR surfaceFormat;
@@ -42,10 +48,10 @@ typedef struct vulkanContext
 
 	// depth buffer
 	VkBool32 usDepthBuffer;
+	VkFormat depthFormat;
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
-	VkFormat depthFormat;
 
 	VkSemaphore imageAvailableSemaphore[MAX_FRAMES_IN_FLIGHT];
 	VkSemaphore renderFinishedSemaphore[MAX_FRAMES_IN_FLIGHT];

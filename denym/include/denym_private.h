@@ -29,6 +29,8 @@ GLFWwindow* createWindow(int width, int height);
 
 int getPhysicalDevice(vulkanContext* context);
 
+void getMsaaCapabilities(void);
+
 void getPhysicalDeviceCapabilities(vulkanContext* context);
 
 int getDevice(vulkanContext* context);
@@ -53,6 +55,8 @@ int createFramebuffer(vulkanContext* context);
 
 int createCommandPool(vulkanContext* context);
 
+int createColorResources(void);
+
 int createDepthBufferResources(void);
 
 int createCommandBuffers(void);
@@ -72,6 +76,8 @@ void destroyVulkanContext(vulkanContext* context);
 void cleanSwapchain(vulkanContext* context);
 
 void cleanImageViews(void);
+
+void cleanColorResources(void);
 
 void cleanDepthBufferResources(void);
 
