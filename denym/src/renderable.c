@@ -251,7 +251,7 @@ int createPipeline(renderable renderable)
 	pipelineInfo.pRasterizationState = &rasterizer;
 	pipelineInfo.pMultisampleState = &multisampling;
 
-	if(engine.vulkanContext.usDepthBuffer)
+	if(engine.vulkanContext.useDepthBuffer)
 		pipelineInfo.pDepthStencilState = &depthStencilInfo;
 	else
 		pipelineInfo.pDepthStencilState = NULL;

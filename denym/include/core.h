@@ -47,7 +47,7 @@ typedef struct vulkanContext
 	VkCommandPool bufferCopyCommandPool;
 
 	// depth buffer
-	VkBool32 usDepthBuffer;
+	VkBool32 useDepthBuffer;
 	VkFormat depthFormat;
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;

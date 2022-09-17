@@ -747,7 +747,7 @@ int createRenderPass(vulkanContext* context)
 	const uint32_t colorAttachmentCount = 2; // color attachment + color attachment resolve for MSAA
 	uint32_t attachmentCount = colorAttachmentCount;
 
-	if(engine.vulkanContext.usDepthBuffer)
+	if(engine.vulkanContext.useDepthBuffer)
 		attachmentCount++;
 
 	VkAttachmentDescription *attachments = malloc(sizeof *attachments * attachmentCount);
@@ -792,9 +792,24 @@ int createRenderPass(vulkanContext* context)
 	attachments[0] = colorAttachment;
 	attachments[1] = resolveAttachment;
 
+	// first and single subpass, containing one single color attachment reference, referencing our unique attachment
+	VkSubpassDescription subpass = { 0 };
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // graphics, no compute or RT
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &colorAttachmentRef;
+	subpass.pResolveAttachments = &resolveAttachmentRef;
+
+	// Implicit dependency
+	VkSubpassDependency dependency = { 0 };
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.srcAccessMask = 0;
+	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
 	VkAttachmentReference depthAttachmentRef;
 
-	if(engine.vulkanContext.usDepthBuffer)
+	if(engine.vulkanContext.useDepthBuffer)
 	{
 		VkAttachmentDescription depthAttachment = { 0 };
 		depthAttachment.format = engine.vulkanContext.depthFormat;
@@ -810,28 +825,9 @@ int createRenderPass(vulkanContext* context)
 
 		depthAttachmentRef.attachment = colorAttachmentCount;
 		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	}
 
-	// first and single subpass, containing one single color attachment reference, referencing our unique attachment
-	VkSubpassDescription subpass = { 0 };
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // graphics, no compute or RT
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colorAttachmentRef;
-	subpass.pResolveAttachments = &resolveAttachmentRef;
-
-	if(engine.vulkanContext.usDepthBuffer)
 		subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
-	// Implicit dependency
-	VkSubpassDependency dependency = { 0 };
-	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.srcAccessMask = 0;
-	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-	if(engine.vulkanContext.usDepthBuffer)
-	{
 		dependency.srcStageMask |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		dependency.dstStageMask |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		dependency.dstAccessMask |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
@@ -867,7 +863,7 @@ int createFramebuffer(vulkanContext* context)
 	framebufferInfo.height = context->swapchainExtent.height;
 	framebufferInfo.layers = 1;
 
-	if(engine.vulkanContext.usDepthBuffer)
+	if(engine.vulkanContext.useDepthBuffer)
 		framebufferInfo.attachmentCount++;
 
 	for (uint32_t i = 0; i < context->imageCount; i++)
@@ -937,7 +933,7 @@ int createColorResources(void)
 
 int createDepthBufferResources(void)
 {
-	engine.vulkanContext.usDepthBuffer = VK_TRUE;
+	engine.vulkanContext.useDepthBuffer = VK_TRUE;
 	engine.vulkanContext.depthFormat = VK_FORMAT_D32_SFLOAT;
 
 	createImageDepth(
@@ -1000,7 +996,7 @@ int updateCommandBuffers(renderable *renderables, uint32_t renderablesCount)
 	renderPassInfo.clearValueCount = 2;
 	renderPassInfo.pClearValues = clearValues; // follow the same order as attachments
 
-	if(engine.vulkanContext.usDepthBuffer)
+	if(engine.vulkanContext.useDepthBuffer)
 		renderPassInfo.clearValueCount++;
 
 	for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -1217,7 +1213,7 @@ void cleanColorResources(void)
 
 void cleanDepthBufferResources(void)
 {
-	if(engine.vulkanContext.usDepthBuffer)
+	if(engine.vulkanContext.useDepthBuffer)
 	{
 		vkDestroyImageView(engine.vulkanContext.device, engine.vulkanContext.depthImageView, NULL);
 		vkDestroyImage(engine.vulkanContext.device, engine.vulkanContext.depthImage, NULL);
