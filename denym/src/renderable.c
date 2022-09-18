@@ -298,21 +298,21 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 
 		int index = 0;
 
-		if(renderable->geometry->bufferPositions)
+		if(renderable->geometry->usePositions2D || renderable->geometry->usePositions3D)
 		{
 			buffers[index] = renderable->geometry->bufferPositions;
 			offsets[index] = 0;
 			index++;
 		}
 
-		if(renderable->geometry->bufferColors)
+		if(renderable->geometry->useColors)
 		{
 			buffers[index] = renderable->geometry->bufferColors;
 			offsets[index] = 0;
 			index++;
 		}
 
-		if(renderable->geometry->bufferTexCoords)
+		if(renderable->geometry->useTexCoords)
 		{
 			buffers[index] = renderable->geometry->bufferTexCoords;
 			offsets[index] = 0;
