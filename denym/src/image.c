@@ -63,18 +63,19 @@ int createImage2D(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat 
 
 void imageCopyFromBuffer(VkImage dst, VkBuffer src, VkExtent3D imageExtent)
 {
-    VkBufferImageCopy copyParams;
-    copyParams.bufferOffset = 0;
-    copyParams.bufferImageHeight = 0;
-    copyParams.bufferRowLength = 0;
-    copyParams.imageExtent = imageExtent;
-    copyParams.imageOffset.x = 0;
-    copyParams.imageOffset.y = 0;
-    copyParams.imageOffset.z = 0;
-    copyParams.imageSubresource.mipLevel = 0;
-    copyParams.imageSubresource.layerCount = 1;
-    copyParams.imageSubresource.baseArrayLayer = 0;
-    copyParams.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    VkBufferImageCopy copyParams = {
+        .bufferOffset = 0,
+        .bufferImageHeight = 0,
+        .bufferRowLength = 0,
+        .imageExtent = imageExtent,
+        .imageOffset.x = 0,
+        .imageOffset.y = 0,
+        .imageOffset.z = 0,
+        .imageSubresource.mipLevel = 0,
+        .imageSubresource.layerCount = 1,
+        .imageSubresource.baseArrayLayer = 0,
+        .imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT
+    };
 
     VkCommandBuffer commandBuffer;
     initiateCopyCommandBuffer(&commandBuffer);

@@ -35,8 +35,8 @@ static int loadOBJ(const char *filename, float **out_positions, float **out_texC
     float start = getUptime();
     float last = start;
 
-    #ifdef _MSC_VER
-	fopen_s(&file, filename, "rb");
+#ifdef _MSC_VER
+	fopen_s(&file, fullName, "rb");
 #else
     file = fopen(fullName, "r");
 #endif

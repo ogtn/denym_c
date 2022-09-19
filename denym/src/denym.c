@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <threads.h>
+//#include <threads.h>
 
 
 denym engine;
@@ -87,11 +87,9 @@ void denymRender(renderable *renderables, uint32_t renderablesCount)
 
 void denymWaitForNextFrame(void)
 {
-	struct timespec duration;
-	duration.tv_sec = 0;
-	duration.tv_nsec = 1660000;
+	struct timespec duration = { .tv_nsec = 1660000 };
 
-	thrd_sleep(&duration, NULL);
+	//thrd_sleep(&duration, NULL);
 }
 
 
@@ -673,10 +671,10 @@ int createSwapchain(vulkanContext* context)
 	else
 	{
 		// we need a bit more work as the image needs to be shared by two distinct queues
-		uint32_t queueFamilyIndices[2];
-
-		queueFamilyIndices[0] = context->graphicsQueueFamilyIndex;
-		queueFamilyIndices[1] = context->presentQueueFamilyIndex;
+		uint32_t queueFamilyIndices[2] = {
+			context->graphicsQueueFamilyIndex,
+			context->presentQueueFamilyIndex
+		};
 
 		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		createInfo.queueFamilyIndexCount = sizeof queueFamilyIndices / sizeof *queueFamilyIndices;
@@ -1138,10 +1136,10 @@ uint32_t clamp(uint32_t n, uint32_t min, uint32_t max)
 
 VkExtent2D clampExtent2D(VkExtent2D e, VkExtent2D min, VkExtent2D max)
 {
-	VkExtent2D res;
-
-	res.height = clamp(e.height, min.height, max.height);
-	res.width = clamp(e.width, min.width, max.width);
+	VkExtent2D res = {
+		.height = clamp(e.height, min.height, max.height),
+		.width = clamp(e.width, min.width, max.width)
+	};
 
 	return res;
 }

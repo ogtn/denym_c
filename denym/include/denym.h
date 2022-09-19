@@ -4,9 +4,12 @@
 
 #include <stdint.h>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
 #define CGLM_FORCE_LEFT_HANDED
 #define CGLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <cglm/cglm.h>
+#pragma clang diagnostic pop
 
 
 typedef struct geometry_t* geometry;

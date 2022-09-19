@@ -10,7 +10,8 @@
 #include <stdio.h>
 
 
-static uint32_t MAX_BINDINGS = 2;
+#define MAX_BINDINGS 2
+#define MAX_ATTRIBS  4
 
 
 renderable denymCreateRenderable(const renderableCreateParams *params)
@@ -292,8 +293,8 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 	// bind vertex attributes, except indices
 	if(renderable->geometry->attribCount)
 	{
-		VkBuffer buffers[renderable->geometry->attribCount];
-		VkDeviceSize offsets[renderable->geometry->attribCount];
+		VkBuffer buffers[MAX_ATTRIBS];
+		VkDeviceSize offsets[MAX_ATTRIBS];
 
 		int index = 0;
 
@@ -379,24 +380,26 @@ int createDescriptorSetLayout(renderable renderable)
 
 	if(renderable->useUniforms)
 	{
-		VkDescriptorSetLayoutBinding vertexAttributesLayoutBinding;
-		vertexAttributesLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		vertexAttributesLayoutBinding.binding = 0;
-		vertexAttributesLayoutBinding.descriptorCount = 1; // number of element, > 1 if we pass an array
-		vertexAttributesLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; // * shader stage
-		vertexAttributesLayoutBinding.pImmutableSamplers = NULL; // for images
+		VkDescriptorSetLayoutBinding vertexAttributesLayoutBinding = {
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.binding = 0,
+			.descriptorCount = 1, // number of element, > 1 if we pass an array
+			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, // * shader stage
+			.pImmutableSamplers = NULL // for images
+		};
 
 		bindings[bindingCount++ % MAX_BINDINGS] = vertexAttributesLayoutBinding;
 	}
 
 	if(renderable->useTexture)
 	{
-		VkDescriptorSetLayoutBinding textureSamplerLayoutBinding;
-		textureSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		textureSamplerLayoutBinding.binding = 1;
-		textureSamplerLayoutBinding.descriptorCount = 1; // number of element, > 1 if we pass an array
-		textureSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT; // * shader stage
-		textureSamplerLayoutBinding.pImmutableSamplers = NULL;
+		VkDescriptorSetLayoutBinding textureSamplerLayoutBinding = {
+			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.binding = 1,
+			.descriptorCount = 1, // number of element, > 1 if we pass an array
+			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, // * shader stage
+			.pImmutableSamplers = NULL
+		};
 
 		bindings[bindingCount++ % MAX_BINDINGS] = textureSamplerLayoutBinding;
 	}
