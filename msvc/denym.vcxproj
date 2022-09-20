@@ -71,7 +71,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LibraryPath>$(SolutionDir)/lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(VULKAN_SDK)\lib;$(SolutionDir)\denym\include;$(SolutionDir)\dependancies\cglm\include;$(SolutionDir)\dependancies\stb;$(IncludePath)</IncludePath>
+    <IncludePath>$(VULKAN_SDK)\lib;$(SolutionDir)\denym\include;$(SolutionDir)\dependencies\cglm\include;$(SolutionDir)\dependencies\stb;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)msvc\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

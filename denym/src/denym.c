@@ -836,7 +836,7 @@ int createRenderPass(vulkanContext* context)
 	renderPassInfo.pAttachments = attachments;
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
-	// list dependancies in case of multiple passes
+	// list dependencies in case of multiple passes
 	renderPassInfo.dependencyCount = 1;
 	renderPassInfo.pDependencies = &dependency;
 

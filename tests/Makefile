@@ -55,7 +55,6 @@ debug/%: $(DIR_BIN)/% shaders
 	LD_LIBRARY_PATH=$(DIR_DENYM)/$(DIR_BIN) $(DBG) ./$<
 
 win_debug/%: $(WIN_DIR_BIN)/%.exe shaders
-	@echo there
 	$(WIN_DBG) ./$<
 
 $(LIB_DENYM) $(WIN_LIB_DENYM): FORCE
@@ -68,6 +67,7 @@ $(DIR_BIN)/%: $(DIR_SRC)/%.c $(LIB_DENYM) | $(DIR_BIN) $(DIR_DEP)
 
 $(WIN_DIR_BIN)/%.exe: $(DIR_SRC)/%.c $(WIN_LIB_DENYM) | $(WIN_DIR_BIN) $(DIR_DEP)
 	$(WIN_CC) $(CFLAGS) $(WIN_LFLAGS) $(INC) $< -o $@
+	@chmod u+x $@
 
 $(DIR_SHADERS)/%.spv: $(DIR_SHADERS)/%
 	glslangValidator.exe -V $< -o $@

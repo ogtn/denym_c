@@ -6,8 +6,8 @@ WIN_DIR_BIN = bin/win
 WIN_DIR_VULKAN = "C:\VulkanSDK\1.3.224.1\Include"
 WIN_DIR_VULKAN_ = "$(cmd.exe /c echo %VULKAN_SDK% | tr -d '\r')"
 
-DIR_CGLM = ../dependancies/cglm/include/
-DIR_STB = ../dependancies/stb/
+DIR_CGLM = ../dependencies/cglm/include/
+DIR_STB = ../dependencies/stb/
 DIR_GLFW = ../lib
 
 SO_NAME = libdenym.so
@@ -37,7 +37,7 @@ CFLAGS += -Werror=implicit-function-declaration -Werror=return-type \
 
 CFLAGS += -Wno-missing-field-initializers -Wno-unused-parameter
 
-CFLAGS += --std=c17 -m64 -O0 -g
+CFLAGS += -std=c17 -m64 -O0 -g
 
 print_dbg:
 	@echo $(WIN_DIR_VULKAN)

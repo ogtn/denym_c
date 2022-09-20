@@ -1,6 +1,6 @@
-[submodule "dependancies/cglm"]
-	path = dependancies/cglm
+[submodule "dependencies/cglm"]
+	path = dependencies/cglm
 	url = git@github.com:recp/cglm.git
-[submodule "dependancies/stb"]
-	path = dependancies/stb
+[submodule "dependencies/stb"]
+	path = dependencies/stb
 	url = git@github.com:nothings/stb.git
