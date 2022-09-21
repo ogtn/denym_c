@@ -145,79 +145,94 @@ int createPipelineLayout(renderable renderable)
 int createPipeline(renderable renderable)
 {
 	// vertex attributes
-	VkPipelineVertexInputStateCreateInfo vertexInputInfo = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
-	vertexInputInfo.vertexBindingDescriptionCount = renderable->geometry->attribCount;
-	vertexInputInfo.vertexAttributeDescriptionCount = renderable->geometry->attribCount;
-	vertexInputInfo.pVertexAttributeDescriptions = renderable->geometry->vertexAttributeDescriptions;
-	vertexInputInfo.pVertexBindingDescriptions = renderable->geometry->vertexBindingDescriptions;
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+		.vertexBindingDescriptionCount = renderable->geometry->attribCount,
+		.vertexAttributeDescriptionCount = renderable->geometry->attribCount,
+		.pVertexAttributeDescriptions = renderable->geometry->vertexAttributeDescriptions,
+		.pVertexBindingDescriptions = renderable->geometry->vertexBindingDescriptions
+	};
 
 	// type of geometry we want to draw
-	VkPipelineInputAssemblyStateCreateInfo inputAssembly = { VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
-	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	inputAssembly.primitiveRestartEnable = VK_FALSE;
+	VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+		.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+		.primitiveRestartEnable = VK_FALSE
+	};
 
 	// viewport taking all the space available
-	VkViewport viewport = { 0 };
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = (float)engine.vulkanContext.swapchainExtent.width;
-	viewport.height = (float)engine.vulkanContext.swapchainExtent.height;
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
+	VkViewport viewport = {
+		.x = 0.0f,
+		.y = 0.0f,
+		.width = (float)engine.vulkanContext.swapchainExtent.width,
+		.height = (float)engine.vulkanContext.swapchainExtent.height,
+		.minDepth = 0.0f,
+		.maxDepth = 1.0f
+	};
 
 	// no scissoring
-	VkRect2D scissor = { 0 };
-	scissor.offset.x = 0;
-	scissor.offset.y = 0;
-	scissor.extent = engine.vulkanContext.swapchainExtent;
+	VkRect2D scissor = {
+		.offset.x = 0,
+		.offset.y = 0,
+		.extent = engine.vulkanContext.swapchainExtent
+	};
 
 	// aggregate viewport and scissor
-	VkPipelineViewportStateCreateInfo viewportState = { VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
-	viewportState.viewportCount = 1;
-	viewportState.pViewports = &viewport;
-	viewportState.scissorCount = 1;
-	viewportState.pScissors = &scissor;
+	VkPipelineViewportStateCreateInfo viewportState = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+		.viewportCount = 1,
+		.pViewports = &viewport,
+		.scissorCount = 1,
+		.pScissors = &scissor
+	};
 
 	// rasterizer
-	VkPipelineRasterizationStateCreateInfo rasterizer = { VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
-	rasterizer.depthClampEnable = VK_FALSE; // if enabled, clamp depth instead of discarding fragments
-	rasterizer.rasterizerDiscardEnable = VK_FALSE; // https://stackoverflow.com/questions/42470669/when-does-it-make-sense-to-turn-off-the-rasterization-step
-	rasterizer.polygonMode = VK_POLYGON_MODE_FILL; // lines/points/rectangles
-	rasterizer.lineWidth = 1; // needed
-	// culling
-	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
-	rasterizer.depthBiasEnable = VK_FALSE; // see rasterizer.depth* for moar depth control
+	VkPipelineRasterizationStateCreateInfo rasterizer = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+		.depthClampEnable = VK_FALSE, // if enabled, clamp depth instead of discarding fragments
+		.rasterizerDiscardEnable = VK_FALSE, // https://stackoverflow.com/questions/42470669/when-does-it-make-sense-to-turn-off-the-rasterization-step
+		.polygonMode = VK_POLYGON_MODE_FILL, // lines/points/rectangles
+		.lineWidth = 1, // needed
+		// culling
+		.cullMode = VK_CULL_MODE_BACK_BIT,
+		.frontFace = VK_FRONT_FACE_CLOCKWISE,
+		.depthBiasEnable = VK_FALSE // see rasterizer.depth* for moar depth control
+	};
 
 	// multisampling disabled
-	VkPipelineMultisampleStateCreateInfo multisampling = { VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
-	multisampling.rasterizationSamples = engine.vulkanContext.maxMSAA;
-	multisampling.sampleShadingEnable = VK_TRUE;
-	multisampling.minSampleShading = 0.2f; // Optional
-	multisampling.pSampleMask = NULL; // Optional
-	multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
-	multisampling.alphaToOneEnable = VK_FALSE; // Optional
+	VkPipelineMultisampleStateCreateInfo multisampling = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+		.rasterizationSamples = engine.vulkanContext.maxMSAA,
+		.sampleShadingEnable = VK_TRUE,
+		.minSampleShading = 0.2f, // Optional
+		.pSampleMask = NULL, // Optional
+		.alphaToCoverageEnable = VK_FALSE, // Optional
+		.alphaToOneEnable = VK_FALSE // Optional
+	};
 
 	// depth and stencil buffer
 	//VkPipelineDepthStencilStateCreateInfo depthStencil = { VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO}
 
 	// Basic color blending for one framebuffer
-	VkPipelineColorBlendAttachmentState colorBlendAttachment = { 0 };
-	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	colorBlendAttachment.blendEnable = VK_TRUE;
-	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+	VkPipelineColorBlendAttachmentState colorBlendAttachment = {
+		.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+		.blendEnable = VK_TRUE,
+		.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+		.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+		.colorBlendOp = VK_BLEND_OP_ADD,
+		.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+		.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+		.alphaBlendOp = VK_BLEND_OP_ADD
+	};
 
-	VkPipelineColorBlendStateCreateInfo colorBlending = { VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
-	// if true, almost all of colorBlendAttachment is ignored, and colorBlending.logicOp specifies the blend operation
-	colorBlending.logicOpEnable = VK_FALSE;
-	colorBlending.attachmentCount = 1; // Only one framebuffer
-	colorBlending.pAttachments = &colorBlendAttachment;
-	// colorBlending.blendConstants to fix the constants of some blend operations (e.g. VK_BLEND_FACTOR_CONSTANT_COLOR)
+	VkPipelineColorBlendStateCreateInfo colorBlending = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+		// if true, almost all of colorBlendAttachment is ignored, and colorBlending.logicOp specifies the blend operation
+		.logicOpEnable = VK_FALSE,
+		.attachmentCount = 1, // Only one framebuffer
+		.pAttachments = &colorBlendAttachment,
+		// .blendConstants to fix the constants of some blend operations (e.g. VK_BLEND_FACTOR_CONSTANT_COLOR)
+	};
 
 	/* If we list some of the previous stages here, they'll become dynamic and we'll
 	be able to change their value throughout the life of the pipeline
@@ -232,39 +247,42 @@ int createPipeline(renderable renderable)
 	dynamicState.pDynamicStates = dynamicStates;
 	*/
 
-	VkPipelineDepthStencilStateCreateInfo depthStencilInfo = { VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
-	depthStencilInfo.stencilTestEnable = VK_FALSE;
-	depthStencilInfo.depthTestEnable = VK_TRUE;
-	depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
-	depthStencilInfo.depthWriteEnable = VK_TRUE;
-	// allows to only emit fragments on a specific range
-	depthStencilInfo.depthBoundsTestEnable = VK_FALSE;
-	//depthStencilInfo.minDepthBounds = 0;
-	//depthStencilInfo.maxDepthBounds = 1;
+	VkPipelineDepthStencilStateCreateInfo depthStencilInfo = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+		.stencilTestEnable = VK_FALSE,
+		.depthTestEnable = VK_TRUE,
+		.depthCompareOp = VK_COMPARE_OP_LESS,
+		.depthWriteEnable = VK_TRUE,
+		// allows to only emit fragments on a specific range
+		.depthBoundsTestEnable = VK_FALSE,
+		//.minDepthBounds = 0;
+		//.maxDepthBounds = 1;
+	};
 
-	VkGraphicsPipelineCreateInfo pipelineInfo = { VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
-	pipelineInfo.stageCount = sizeof renderable->shaderStages / sizeof renderable->shaderStages[0];
-	pipelineInfo.pStages = renderable->shaderStages;
-	pipelineInfo.pVertexInputState = &vertexInputInfo;
-	pipelineInfo.pInputAssemblyState = &inputAssembly;
-	pipelineInfo.pTessellationState = NULL;
-	pipelineInfo.pViewportState = &viewportState;
-	pipelineInfo.pRasterizationState = &rasterizer;
-	pipelineInfo.pMultisampleState = &multisampling;
+	VkGraphicsPipelineCreateInfo pipelineInfo = {
+		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+		.stageCount = sizeof renderable->shaderStages / sizeof renderable->shaderStages[0],
+		.pStages = renderable->shaderStages,
+		.pVertexInputState = &vertexInputInfo,
+		.pInputAssemblyState = &inputAssembly,
+		.pTessellationState = NULL,
+		.pViewportState = &viewportState,
+		.pRasterizationState = &rasterizer,
+		.pMultisampleState = &multisampling,
+		.pColorBlendState = &colorBlending,
+		.pDynamicState = NULL, // TODO &dynamicState
+		.layout = renderable->pipelineLayout,
+		.renderPass = engine.vulkanContext.renderPass,
+		.subpass = 0, // index of our only subpass
+		// TODO those two are needed only when re-using another existing pipeline
+		.basePipelineHandle = VK_NULL_HANDLE,
+		.basePipelineIndex = -1
+	};
 
 	if(engine.vulkanContext.useDepthBuffer)
 		pipelineInfo.pDepthStencilState = &depthStencilInfo;
 	else
 		pipelineInfo.pDepthStencilState = NULL;
-
-	pipelineInfo.pColorBlendState = &colorBlending;
-	pipelineInfo.pDynamicState = NULL; // TODO &dynamicState;
-	pipelineInfo.layout = renderable->pipelineLayout;
-	pipelineInfo.renderPass = engine.vulkanContext.renderPass;
-	pipelineInfo.subpass = 0; // index of our only subpass
-	// TODO those two are needed only when re-using another existing pipeline
-	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE ;
-	pipelineInfo.basePipelineIndex = -1;
 
 	// TODO interesting second parameter : pipeline cache can be used to speedup all this, even across runs, through a file !
 	if (vkCreateGraphicsPipelines(engine.vulkanContext.device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &renderable->pipeline))
@@ -411,9 +429,11 @@ int createDescriptorSetLayout(renderable renderable)
 		return -1;
 	}
 
-	VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-	layoutInfo.bindingCount = bindingCount;
-	layoutInfo.pBindings = bindings;
+	VkDescriptorSetLayoutCreateInfo layoutInfo = {
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+		.bindingCount = bindingCount,
+		.pBindings = bindings
+	};
 
 	if(vkCreateDescriptorSetLayout(engine.vulkanContext.device, &layoutInfo, NULL, &renderable->descriptorSetLayout))
 		return -1;
@@ -448,10 +468,12 @@ int createDescriptorPool(renderable renderable)
 		return -1;
 	}
 
-	VkDescriptorPoolCreateInfo descriptorPoolInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
-	descriptorPoolInfo.poolSizeCount = poolSizeCount;
-	descriptorPoolInfo.pPoolSizes = poolSizes;
-	descriptorPoolInfo.maxSets = MAX_FRAMES_IN_FLIGHT; // maximum number of descriptor sets that can be allocated from the pool
+	VkDescriptorPoolCreateInfo descriptorPoolInfo = {
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+		.poolSizeCount = poolSizeCount,
+		.pPoolSizes = poolSizes,
+		.maxSets = MAX_FRAMES_IN_FLIGHT // maximum number of descriptor sets that can be allocated from the pool
+	};
 
 	if(vkCreateDescriptorPool(engine.vulkanContext.device, &descriptorPoolInfo, NULL, &renderable->descriptorPool))
 	{
@@ -471,10 +493,12 @@ int createDescriptorSets(renderable renderable)
 	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		layouts[i] = renderable->descriptorSetLayout;
 
-	VkDescriptorSetAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
-	allocInfo.descriptorPool = renderable->descriptorPool;
-	allocInfo.pSetLayouts = layouts;
-	allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
+	VkDescriptorSetAllocateInfo allocInfo = {
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		.descriptorPool = renderable->descriptorPool,
+		.pSetLayouts = layouts,
+		.descriptorSetCount = MAX_FRAMES_IN_FLIGHT
+	};
 
 	VkResult result = vkAllocateDescriptorSets(engine.vulkanContext.device, &allocInfo, renderable->descriptorSets);
 

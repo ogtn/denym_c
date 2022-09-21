@@ -78,7 +78,7 @@ int geometryAddPositions(geometry geometry, const geometryCreateParams *params)
 		geometry->usePositions2D = VK_TRUE;
 		positions = params->positions2D;
 	}
-	else
+	else if(params->positions3D)
 	{
 		size *= 3;
 		geometry->usePositions3D = VK_TRUE;
