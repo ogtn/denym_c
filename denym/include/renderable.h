@@ -34,9 +34,7 @@ typedef struct renderable_t
 	VkPipeline pipeline;
 
 	// texture
-	VkImage textureImage;
-	VkDeviceMemory textureImageMemory;
-	VkImageView textureImageView;
+	texture texture;
 	VkBool32 useTexture;
 } renderable_t;
 

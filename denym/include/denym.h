@@ -14,6 +14,7 @@
 
 typedef struct geometry_t* geometry;
 typedef struct renderable_t* renderable;
+typedef struct texture_t* texture;
 
 
 typedef struct modelViewProj

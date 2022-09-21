@@ -139,7 +139,7 @@ void imageLayoutTransition(VkImage image, uint32_t mipLevels, VkImageLayout oldL
 }
 
 
-void imageGenerateMipMaps(VkImage image, uint32_t width, uint32_t height, uint32_t mipLevels)
+void imageGenerateMipMaps(VkImage image, int32_t width, int32_t height, uint32_t mipLevels)
 {
     VkImageMemoryBarrier barrier = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,

@@ -5,9 +5,21 @@
 #include "denym_common.h"
 
 
-int textureCreate(const char *filename, VkImage *image, VkDeviceMemory *imageMemory, VkImageView *imageView);
+typedef struct texture_t
+{
+	VkImage image;
+	VkDeviceMemory imageMemory;
+	VkImageView imageView;
+	VkExtent3D extent;
+	uint32_t mipLevelCount;
+} texture_t;
 
-int textureCreateImage2D(uint32_t width, uint32_t height, uint32_t mipLevels, VkImage *image, VkDeviceMemory *imageMemory);
+
+int textureCreate(const char *filename, texture *texture);
+
+void textureDestroy(texture texture);
+
+int textureCreateImage2D(texture texture);
 
 int textureCreateSampler(VkSampler *sampler);
 

@@ -26,7 +26,7 @@ renderable denymCreateRenderable(const renderableCreateParams *params)
 
 	if(params->textureName)
 	{
-		if(textureCreate(params->textureName, &renderable->textureImage, &renderable->textureImageMemory, &renderable->textureImageView))
+		if(textureCreate(params->textureName, &renderable->texture))
 			goto error;
 		else
 			renderable->useTexture = VK_TRUE;
@@ -73,11 +73,7 @@ void denymDestroyRenderable(renderable renderable)
 	}
 
 	geometryDestroy(renderable->geometry);
-
-	// texture
-	vkDestroyImageView(engine.vulkanContext.device, renderable->textureImageView, NULL);
-	vkDestroyImage(engine.vulkanContext.device, renderable->textureImage, NULL);
-	vkFreeMemory(engine.vulkanContext.device, renderable->textureImageMemory, NULL);
+	textureDestroy(renderable->texture);
 
 	free(renderable);
 }
@@ -538,7 +534,7 @@ int createDescriptorSets(renderable renderable)
 		if(renderable->useTexture)
 		{
 			imageInfo.sampler = engine.vulkanContext.textureSampler;
-			imageInfo.imageView = renderable->textureImageView;
+			imageInfo.imageView = renderable->texture->imageView;
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			descriptorWrites[descriptorWriteCount].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

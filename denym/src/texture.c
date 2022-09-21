@@ -11,7 +11,7 @@
 static const VkFormat TEXTURE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
 
 
-int textureCreate(const char *filename, VkImage *image, VkDeviceMemory *imageMemory, VkImageView *imageView)
+int textureCreate(const char *filename, texture *txtr)
 {
     char fullName[FILENAME_MAX];
 
@@ -54,30 +54,43 @@ int textureCreate(const char *filename, VkImage *image, VkDeviceMemory *imageMem
     vkUnmapMemory(engine.vulkanContext.device, stagingBufferMemory);
     stbi_image_free(pixels);
 
-    VkExtent3D textureExtent = { .width = (uint32_t)width, .height = (uint32_t)height, .depth = 1 };
-    uint32_t mipLevels = (uint32_t)floor(log2(fmax((double)width, (double)(height))));
+    texture newTexture = calloc(1, sizeof *newTexture);
+    newTexture->extent.width = (uint32_t)width;
+    newTexture->extent.height = (uint32_t)height;
+    newTexture->extent.depth = 1;
+    newTexture->mipLevelCount = (uint32_t)floor(log2(fmax((double)width, (double)(height))));
 
-    textureCreateImage2D(textureExtent.width, textureExtent.height, mipLevels, image, imageMemory);
+    textureCreateImage2D(newTexture);
     // transition needed before writing to
-    imageLayoutTransition(*image, mipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    imageCopyFromBuffer(*image, stagingBuffer, textureExtent);
+    imageLayoutTransition(newTexture->image, newTexture->mipLevelCount, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    imageCopyFromBuffer(newTexture->image, stagingBuffer, newTexture->extent);
 
     // transition needed before accessing it from shaders
-    imageGenerateMipMaps(*image, width, height, mipLevels);
+    imageGenerateMipMaps(newTexture->image, width, height, newTexture->mipLevelCount);
 
     vkDestroyBuffer(engine.vulkanContext.device, stagingBuffer, NULL);
     vkFreeMemory(engine.vulkanContext.device, stagingBufferMemory, NULL);
 
-    return createImageView2D(*image, mipLevels, TEXTURE_FORMAT, imageView);
+    *txtr = newTexture;
+    return createImageView2D(newTexture->image, newTexture->mipLevelCount, TEXTURE_FORMAT, &newTexture->imageView);
 }
 
 
-int textureCreateImage2D(uint32_t width, uint32_t height, uint32_t mipLevels, VkImage *image, VkDeviceMemory *imageMemory)
+void textureDestroy(texture texture)
+{
+    vkDestroyImageView(engine.vulkanContext.device, texture->imageView, NULL);
+	vkDestroyImage(engine.vulkanContext.device, texture->image, NULL);
+	vkFreeMemory(engine.vulkanContext.device, texture->imageMemory, NULL);
+}
+
+
+int textureCreateImage2D(texture texture)
 {
     return createImage2D(
-        width, height, mipLevels, TEXTURE_FORMAT, VK_SAMPLE_COUNT_1_BIT,
+        texture->extent.width, texture->extent.height,
+        texture->mipLevelCount, TEXTURE_FORMAT, VK_SAMPLE_COUNT_1_BIT,
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-        image, imageMemory);
+        &texture->image, &texture->imageMemory);
 }
 
 
