@@ -74,7 +74,7 @@ void denymRender(renderable *renderables, uint32_t renderablesCount)
 		for(uint32_t i = 0; i < renderablesCount; i++)
 			recreatePipeline(renderables[i]);
 
-		fprintf(stderr, "frame %ld: recreatePipeline()\n", engine.frameCount);
+		fprintf(stderr, "frame %lu: recreatePipeline()\n", engine.frameCount);
 		engine.vulkanContext.needRecreatePipeline = VK_FALSE;
 	}
 
@@ -974,7 +974,7 @@ int updateCommandBuffers(renderable *renderables, uint32_t renderablesCount)
 	if(engine.vulkanContext.needCommandBufferUpdate == VK_FALSE)
 		return result;
 
-	fprintf(stderr, "frame %ld: updateCommandBuffers()\n", engine.frameCount);
+	fprintf(stderr, "frame %lu: updateCommandBuffers()\n", engine.frameCount);
 
 	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;

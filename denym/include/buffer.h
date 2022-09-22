@@ -9,7 +9,7 @@ int createBuffer(VkDeviceSize size, VkBuffer *buffer, VkDeviceMemory *bufferMemo
 
 int createVertexBuffer(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* bufferMemory, void* src);
 
-int createBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkBufferUsageFlagBits bufferUsage, void* src);
+int createBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkBufferUsageFlags bufferUsage, void* src);
 
 int createVertexBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* bufferMemory, void* src);
 

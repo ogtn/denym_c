@@ -31,7 +31,7 @@ int createIndexBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceMe
 }
 
 
-int createBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkBufferUsageFlagBits bufferUsage, void* src)
+int createBufferWithStaging(VkDeviceSize size, VkBuffer* buffer, VkDeviceMemory* bufferMemory, VkBufferUsageFlags bufferUsage, void* src)
 {
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
