@@ -187,7 +187,7 @@ int createPipeline(renderable renderable)
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 		.depthClampEnable = VK_FALSE, // if enabled, clamp depth instead of discarding fragments
 		.rasterizerDiscardEnable = VK_FALSE, // https://stackoverflow.com/questions/42470669/when-does-it-make-sense-to-turn-off-the-rasterization-step
-		.polygonMode = VK_POLYGON_MODE_FILL, // lines/points/rectangles
+		.polygonMode = VK_POLYGON_MODE_FILL, // lines/points/fill
 		.lineWidth = 1, // needed
 		// culling
 		.cullMode = VK_CULL_MODE_BACK_BIT,

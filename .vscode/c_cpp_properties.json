@@ -6,7 +6,8 @@
                 "${workspaceFolder}/include/",
                 "${workspaceFolder}/denym/include/",
                 "${workspaceFolder}/dependencies/cglm/include/",
-                "${workspaceFolder}/dependencies/stb/"
+                "${workspaceFolder}/dependencies/stb/",
+                "${workspaceFolder}/dependencies/fast_obj/"
             ],
             "defines": [
                 "_DEBUG"

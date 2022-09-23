@@ -8,6 +8,7 @@ WIN_DIR_VULKAN_ = "$(cmd.exe /c echo %VULKAN_SDK% | tr -d '\r')"
 
 DIR_CGLM = ../dependencies/cglm/include/
 DIR_STB = ../dependencies/stb/
+DIR_FASTOBJ = ../dependencies/fast_obj
 DIR_GLFW = ../lib
 
 SO_NAME = libdenym.so

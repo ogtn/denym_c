@@ -73,5 +73,7 @@ int updatePushConstants(renderable renderable, float alpha);
 
 float getUptime(void);
 
+renderable modelLoad(const char *objFile, const char *texture, const char *vertShader, const char *fragShader);
+
 
 #endif

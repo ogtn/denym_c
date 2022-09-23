@@ -4,3 +4,6 @@
 [submodule "dependencies/stb"]
 	path = dependencies/stb
 	url = git@github.com:nothings/stb.git
+[submodule "dependencies/fast_obj"]
+	path = dependencies/fast_obj
+	url = git@github.com:thisistherk/fast_obj.git

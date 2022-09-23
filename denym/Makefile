@@ -3,7 +3,7 @@ include ../common.mk
 LFLAGS = -fPIC
 WIN_LFLAGS =
 
-INC = -I$(DIR_INC) -I$(DIR_CGLM) -I$(DIR_STB)
+INC = -I$(DIR_INC) -I$(DIR_CGLM) -I$(DIR_STB) -I$(DIR_FASTOBJ)
 
 SRC = $(wildcard $(DIR_SRC)/*.c)
 OBJ = $(patsubst $(DIR_SRC)/%.c, $(DIR_BIN)/%.o, $(SRC))
