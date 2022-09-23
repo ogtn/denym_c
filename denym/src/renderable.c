@@ -158,30 +158,11 @@ int createPipeline(renderable renderable)
 		.primitiveRestartEnable = VK_FALSE
 	};
 
-	// viewport taking all the space available
-	VkViewport viewport = {
-		.x = 0.0f,
-		.y = 0.0f,
-		.width = (float)engine.vulkanContext.swapchainExtent.width,
-		.height = (float)engine.vulkanContext.swapchainExtent.height,
-		.minDepth = 0.0f,
-		.maxDepth = 1.0f
-	};
-
-	// no scissoring
-	VkRect2D scissor = {
-		.offset.x = 0,
-		.offset.y = 0,
-		.extent = engine.vulkanContext.swapchainExtent
-	};
-
-	// aggregate viewport and scissor
+	// even though they are dynamically set, we need to specify their count here
 	VkPipelineViewportStateCreateInfo viewportState = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
 		.viewportCount = 1,
-		.pViewports = &viewport,
-		.scissorCount = 1,
-		.pScissors = &scissor
+		.scissorCount = 1
 	};
 
 	// rasterizer
@@ -232,18 +213,18 @@ int createPipeline(renderable renderable)
 		// .blendConstants to fix the constants of some blend operations (e.g. VK_BLEND_FACTOR_CONSTANT_COLOR)
 	};
 
-	/* If we list some of the previous stages here, they'll become dynamic and we'll
-	be able to change their value throughout the life of the pipeline
+	// Dynamic states are specified in the command buffer instead of the pipeline
 	VkDynamicState dynamicStates[] =
 	{
 		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_LINE_WIDTH
+		VK_DYNAMIC_STATE_SCISSOR
 	};
 
-	VkPipelineDynamicStateCreateInfo dynamicState = { VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
-	dynamicState.dynamicStateCount = sizeof dynamicStates / sizeof dynamicStates[0];
-	dynamicState.pDynamicStates = dynamicStates;
-	*/
+	VkPipelineDynamicStateCreateInfo dynamicState = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+		.dynamicStateCount = sizeof dynamicStates / sizeof dynamicStates[0],
+		.pDynamicStates = dynamicStates
+	};
 
 	VkPipelineDepthStencilStateCreateInfo depthStencilInfo = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
@@ -268,7 +249,7 @@ int createPipeline(renderable renderable)
 		.pRasterizationState = &rasterizer,
 		.pMultisampleState = &multisampling,
 		.pColorBlendState = &colorBlending,
-		.pDynamicState = NULL, // TODO &dynamicState
+		.pDynamicState = &dynamicState,
 		.layout = renderable->pipelineLayout,
 		.renderPass = engine.vulkanContext.renderPass,
 		.subpass = 0, // index of our only subpass
@@ -291,14 +272,6 @@ int createPipeline(renderable renderable)
 	}
 
 	return 0;
-}
-
-
-int recreatePipeline(renderable renderable)
-{
-	vkDestroyPipeline(engine.vulkanContext.device, renderable->pipeline, NULL);
-
-	return createPipeline(renderable);
 }
 
 

@@ -55,8 +55,6 @@ int createPipelineLayout(renderable renderable);
 
 int createPipeline(renderable renderable);
 
-int recreatePipeline(renderable renderable);
-
 void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer);
 
 int createUniformsBuffer(renderable renderable);

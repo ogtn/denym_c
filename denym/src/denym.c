@@ -69,15 +69,6 @@ int denymKeepRunning(void)
 
 void denymRender(renderable *renderables, uint32_t renderablesCount)
 {
-	if(engine.vulkanContext.needRecreatePipeline)
-	{
-		for(uint32_t i = 0; i < renderablesCount; i++)
-			recreatePipeline(renderables[i]);
-
-		fprintf(stderr, "frame %lu: recreatePipeline()\n", engine.frameCount);
-		engine.vulkanContext.needRecreatePipeline = VK_FALSE;
-	}
-
 	updateCommandBuffers(renderables, renderablesCount);
 	render(&engine.vulkanContext);
 	engine.vulkanContext.currentFrame = (engine.vulkanContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -716,8 +707,6 @@ int recreateSwapChain(void)
 		&& !createFramebuffer(&engine.vulkanContext))
 	{
 		result = 0;
-
-		engine.vulkanContext.needRecreatePipeline = VK_TRUE;
 	}
 
 	return result;
@@ -986,6 +975,23 @@ int updateCommandBuffers(renderable *renderables, uint32_t renderablesCount)
 	renderPassInfo.renderArea.offset.y = 0;
 	renderPassInfo.renderArea.extent = engine.vulkanContext.swapchainExtent;
 
+	// viewport taking all the space available
+	VkViewport viewport = {
+		.x = 0.0f,
+		.y = 0.0f,
+		.width = (float)engine.vulkanContext.swapchainExtent.width,
+		.height = (float)engine.vulkanContext.swapchainExtent.height,
+		.minDepth = 0.0f,
+		.maxDepth = 1.0f
+	};
+
+	// no scissoring, we take the whole viewport
+	VkRect2D scissor = {
+		.offset.x = 0,
+		.offset.y = 0,
+		.extent = engine.vulkanContext.swapchainExtent
+	};
+
 	// clear color (see VK_ATTACHMENT_LOAD_OP_CLEAR)
 	VkClearColorValue clearColor = {{ 0.03f, 0.03f, 0.03f, 1.0f }};
 	VkClearDepthStencilValue clearDepth = { 1.f };
@@ -1007,6 +1013,9 @@ int updateCommandBuffers(renderable *renderables, uint32_t renderablesCount)
 
 			return result;
 		}
+
+		vkCmdSetViewport(engine.vulkanContext.commandBuffers[i], 0, 1, &viewport);
+		vkCmdSetScissor(engine.vulkanContext.commandBuffers[i], 0, 1, &scissor);
 
 		renderPassInfo.framebuffer = engine.vulkanContext.swapChainFramebuffers[i];
 		vkCmdBeginRenderPass(engine.vulkanContext.commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // VK_SUBPASS_CONTENTS_INLINE for primary
