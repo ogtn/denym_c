@@ -73,7 +73,9 @@ void denymDestroyRenderable(renderable renderable)
 	}
 
 	geometryDestroy(renderable->geometry);
-	textureDestroy(renderable->texture);
+
+	if(renderable->useTexture)
+		textureDestroy(renderable->texture);
 
 	free(renderable);
 }

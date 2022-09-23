@@ -79,7 +79,6 @@ typedef struct vulkanContext
 	DECL_VK_PFN(DestroyDebugUtilsMessengerEXT);
 
 	// device extensions functions
-	DECL_VK_PFN(DestroySurfaceKHR);
 	DECL_VK_PFN(CreateSwapchainKHR);
 	DECL_VK_PFN(DestroySwapchainKHR);
 	DECL_VK_PFN(GetSwapchainImagesKHR);

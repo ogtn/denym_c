@@ -549,7 +549,6 @@ int getDeviceExtensionsAddr(vulkanContext* context)
 {
 	int res = 0;
 
-	getDeviceProcAddr(context, DestroySurfaceKHR);
 	getDeviceProcAddr(context, CreateSwapchainKHR);
 	getDeviceProcAddr(context, DestroySwapchainKHR);
 	getDeviceProcAddr(context, GetSwapchainImagesKHR);
@@ -1169,8 +1168,7 @@ void destroyVulkanContext(vulkanContext* context)
 
 	if (context->instance)
 	{
-		if(context->DestroySurfaceKHR)
-			context->DestroySurfaceKHR(context->instance, context->surface, NULL);
+		vkDestroySurfaceKHR(context->instance, context->surface, NULL);
 
 		if(context->DestroyDebugUtilsMessengerEXT)
 			context->DestroyDebugUtilsMessengerEXT(context->instance, context->messenger, NULL);
