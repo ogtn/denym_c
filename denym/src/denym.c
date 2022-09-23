@@ -3,6 +3,7 @@
 #include "renderable.h"
 #include "image.h"
 #include "texture.h"
+#include "utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,7 +71,12 @@ int denymKeepRunning(void)
 void denymRender(renderable *renderables, uint32_t renderablesCount)
 {
 	updateCommandBuffers(renderables, renderablesCount);
+
+	struct timespec start, end;
+    timespec_get(&start, TIME_UTC);
 	render(&engine.vulkanContext);
+	timespec_get(&end, TIME_UTC);
+    timespec_diff(&start, &end, &engine.lastFrameDuration);
 	engine.vulkanContext.currentFrame = (engine.vulkanContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	engine.frameCount++;
 }
@@ -78,9 +84,10 @@ void denymRender(renderable *renderables, uint32_t renderablesCount)
 
 void denymWaitForNextFrame(void)
 {
-	struct timespec duration = { .tv_nsec = 1660000 };
-
-	//thrd_sleep(&duration, NULL);
+	struct timespec target = { .tv_nsec = 1660000 };
+	struct timespec wait;
+	timespec_diff(&target, &engine.lastFrameDuration, &wait);
+	denymSleep(&wait);
 }
 
 

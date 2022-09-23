@@ -40,6 +40,9 @@ CFLAGS += -Wno-missing-field-initializers -Wno-unused-parameter
 
 CFLAGS += -std=c17 -m64 -O0 -g
 
+#CFLAGS += -fsanitize=memory -fsanitize-address-use-after-scope -fsanitize=undefined -fsanitize-recover=memory -fno-omit-frame-pointer #-fsanitize=address
+#LFAGS = -fsanitize=memory -fsanitize-address-use-after-scope -fsanitize=undefined -fsanitize-recover=memory -fno-omit-frame-pointer #-fsanitize=address
+
 print_dbg:
 	@echo $(WIN_DIR_VULKAN)
 	@echo $(WIN_DIR_VULKAN_)

@@ -10,5 +10,7 @@
 
  float getUptime(void);
 
+ void denymSleep(const struct timespec *duration);
+
 
 #endif

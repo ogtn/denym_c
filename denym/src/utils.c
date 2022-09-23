@@ -1,6 +1,13 @@
 #include "utils.h"
 #include "core.h"
+
 #include <time.h>
+
+#ifdef _MSC_VER
+#include <windows.h>
+#else
+#include <threads.h>
+#endif
 
 
 void timespec_diff(const struct timespec *lhs, const struct timespec *rhs, struct timespec *result)
@@ -22,6 +29,29 @@ float getUptime(void)
 
     timespec_get(&now, TIME_UTC);
     timespec_diff(&now, &engine.uptime, &diff);
-    
+
     return (float)diff.tv_sec + (float)diff.tv_nsec / 1000000000.f;
+}
+
+
+// https://www.c-plusplus.net/forum/topic/109539/usleep-unter-windows
+void denymSleep(const struct timespec *duration)
+{
+    if(duration->tv_nsec < 0 || duration->tv_sec < 0)
+        return;
+
+#ifdef _MSC_VER
+    // convert to 100ns intervals
+    LARGE_INTEGER ft = {
+        .QuadPart = -(duration->tv_nsec / 100 + duration->tv_sec * 10000000)
+    };
+
+    HANDLE timer = CreateWaitableTimer(NULL, TRUE, NULL);
+    SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
+    WaitForSingleObject(timer, INFINITE);
+    CloseHandle(timer);
+
+#else
+    thrd_sleep(duration, NULL);
+#endif
 }

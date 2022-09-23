@@ -98,6 +98,7 @@ typedef struct denym
 	// TODO: add moar metrics : fps, render time etc.
 	struct timespec uptime;
 	uint64_t frameCount;
+	struct timespec lastFrameDuration;
 } denym;
 
 

@@ -1,7 +1,6 @@
 include ../common.mk
 
-LFLAGS = -fPIC
-WIN_LFLAGS =
+LFLAGS += -fPIC
 
 INC = -I$(DIR_INC) -I$(DIR_CGLM) -I$(DIR_STB) -I$(DIR_FASTOBJ)
 
@@ -10,7 +9,7 @@ OBJ = $(patsubst $(DIR_SRC)/%.c, $(DIR_BIN)/%.o, $(SRC))
 DEP = $(patsubst $(DIR_SRC)/%.c, $(DIR_DEP)/%.d, $(SRC))
 WIN_OBJ = $(patsubst $(DIR_SRC)/%.c, $(WIN_DIR_BIN)/%.o, $(SRC))
 
-#COMPIL_DB = $(patsubst $(DIR_SRC)/%.c, $(DIR_DEP)/%.o.json, $(SRC))
+COMPIL_DB = $(patsubst $(DIR_SRC)/%.c, $(DIR_DEP)/%.o.json, $(SRC))
 
 -include $(DEP)
 
@@ -28,8 +27,8 @@ $(DIR_BIN)/%.o: $(DIR_SRC)/%.c | $(DIR_BIN) $(DIR_DEP)
 $(WIN_DIR_BIN)/%.o: $(DIR_SRC)/%.c | $(WIN_DIR_BIN) $(DIR_DEP)
 	$(WIN_CC) $(CFLAGS) -D_DEBUG $(WIN_LFLAGS) $(INC) -I../include/ -I$(WIN_DIR_VULKAN) -c $< -o $@
 
-#$(DIR_DEP)/compile_commands.json: all
-#	sed -e '1s/^/[\n/' -e '$$s/,$$/\n]/' $(COMPIL_DB) > $(DIR_DEP)/compile_commands.json
+$(DIR_DEP)/compile_commands.json: all
+	sed -e '1s/^/[\n/' -e '$$s/,$$/\n]/' $(COMPIL_DB) > $(DIR_DEP)/compile_commands.json
 
 clean:
 	@rm -rf $(DIR_BIN) $(DIR_DEP) $(WIN_DIR_BIN)
