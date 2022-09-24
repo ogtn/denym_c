@@ -28,8 +28,7 @@ typedef struct modelViewProj
 typedef struct geometryCreateParams
 {
 	uint32_t vertexCount;
-	uint16_t indexCount;
-	uint16_t __padding;
+	uint32_t indexCount;
 	float *positions2D;
 	float *positions3D;
 	float *colors;
@@ -73,7 +72,7 @@ int updatePushConstants(renderable renderable, float alpha);
 
 float getUptime(void);
 
-renderable modelLoad(const char *objFile, const char *texture, const char *vertShader, const char *fragShader);
+renderable modelLoad(const char *objFile, int indexify, const char *texture, const char *vertShader, const char *fragShader);
 
 
 #endif

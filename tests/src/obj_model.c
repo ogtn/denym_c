@@ -15,12 +15,14 @@ int main(void)
 
 	renderable model = modelLoad(
 		"viking_room.obj",
+        0,
 		"viking_room.png",
 		"texture_v2.vert.spv",
 		"texture_v2.frag.spv");
 
 	renderable model2 = modelLoad(
 		"viking_room.obj",
+        1,
 		"viking_room.png",
 		"texture_v2.vert.spv",
 		"texture_v2.frag.spv");
