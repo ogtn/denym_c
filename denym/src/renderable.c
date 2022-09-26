@@ -308,10 +308,15 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 			index++;
 		}
 
-		if(renderable->geometry->useIndices)
+		if(renderable->geometry->useIndices_16)
 		{
 			vkCmdBindVertexBuffers(commandBuffer, 0, renderable->geometry->attribCount - 1, buffers, offsets);
 			vkCmdBindIndexBuffer(commandBuffer, renderable->geometry->bufferIndices, 0, VK_INDEX_TYPE_UINT16);
+		}
+		else if(renderable->geometry->useIndices_32)
+		{
+			vkCmdBindVertexBuffers(commandBuffer, 0, renderable->geometry->attribCount - 1, buffers, offsets);
+			vkCmdBindIndexBuffer(commandBuffer, renderable->geometry->bufferIndices, 0, VK_INDEX_TYPE_UINT32);
 		}
 		else
 			vkCmdBindVertexBuffers(commandBuffer, 0, renderable->geometry->attribCount, buffers, offsets);
@@ -325,7 +330,7 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 	if(renderable->usePushConstant)
 		vkCmdPushConstants(commandBuffer, renderable->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &renderable->pushConstantAlpha);
 
-	if(renderable->geometry->useIndices)
+	if(renderable->geometry->useIndices_16 || renderable->geometry->useIndices_32)
 		vkCmdDrawIndexed(commandBuffer, renderable->geometry->indexCount, 1, 0, 0, 0);
 	else
 		vkCmdDraw(commandBuffer, renderable->geometry->vertexCount, 1, 0, 0);

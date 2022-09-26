@@ -41,7 +41,7 @@ static renderable makeSquare(const char *vertShader, const char *fragShader)
 		.positions2D = positions,
 		.colors = colors,
         .texCoords = texCoords,
-		.indices = indices,
+		.indices_16 = indices,
 		.indexCount = sizeof indices / sizeof *indices };
 
 	renderableCreateParams renderableParams = {

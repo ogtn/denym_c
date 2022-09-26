@@ -37,7 +37,7 @@ int main(void)
 		.vertexCount = 4,
 		.positions2D = positions,
 		.colors = colors,
-		.indices = indices,
+		.indices_16 = indices,
 		.indexCount = sizeof indices / sizeof *indices };
 
 	renderableCreateParams renderableParams = {

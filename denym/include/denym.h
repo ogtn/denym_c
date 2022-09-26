@@ -33,7 +33,8 @@ typedef struct geometryCreateParams
 	float *positions3D;
 	float *colors;
 	float *texCoords;
-	uint16_t *indices;
+	uint16_t *indices_16;
+	uint32_t *indices_32;
 } geometryCreateParams;
 
 

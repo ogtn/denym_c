@@ -8,14 +8,15 @@
 typedef struct geometry_t
 {
 	uint32_t vertexCount;
-	uint16_t indexCount;
+	uint32_t indexCount;
 	uint16_t attribCount;
 
 	VkBool32 usePositions2D;
 	VkBool32 usePositions3D;
 	VkBool32 useColors;
 	VkBool32 useTexCoords;
-	VkBool32 useIndices;
+	VkBool32 useIndices_16;
+	VkBool32 useIndices_32;
 
 	VkBuffer bufferPositions;
 	VkBuffer bufferColors;

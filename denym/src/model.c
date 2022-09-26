@@ -64,13 +64,14 @@ renderable modelLoad(const char *objFile, int indexify,  const char *texture, co
 
     if(indexify)
     {
+        // TODO: use 16bits indices when possible
         start = getUptime();
         uint32_t vertexCount = 0;
-        uint16_t *indices = malloc(sizeof *indices * index);
+        uint32_t *indices = malloc(sizeof *indices * index);
         float *newPositions = malloc(sizeof(float) * 3 * index);
         float *newTexCoords = malloc(sizeof(float) * 2 * index);
 
-        struct { vertex_vt key; uint16_t value; } *hash = NULL;
+        struct { vertex_vt key; uint32_t value; } *hash = NULL;
 
         for(uint32_t i = 0; i < index; i++)
         {
@@ -83,9 +84,9 @@ renderable modelLoad(const char *objFile, int indexify,  const char *texture, co
                 .texCoord.v = texCoords[i * 2 + 1]
             };
 
-            uint16_t currentVertex = (uint16_t)hmgeti(hash, vertex);
+            uint32_t currentVertex = (uint32_t)hmgeti(hash, vertex);
 
-            if(currentVertex == UINT16_MAX)
+            if(currentVertex == UINT32_MAX)
             {
                 currentVertex = vertexCount++;
                 hmput(hash, vertex, currentVertex);
@@ -97,7 +98,7 @@ renderable modelLoad(const char *objFile, int indexify,  const char *texture, co
                 newTexCoords[currentVertex * 2] = vertex.texCoord.u;
                 newTexCoords[currentVertex * 2 + 1] = vertex.texCoord.v;
 
-                if(vertexCount == UINT16_MAX)
+                if(vertexCount == UINT32_MAX)
                 {
                     fprintf(stderr, "MAX INDICES reached\n");
 
@@ -108,11 +109,17 @@ renderable modelLoad(const char *objFile, int indexify,  const char *texture, co
             indices[i] = currentVertex;
         }
 
+        size_t initialSize = index * (sizeof(float) * 3 + sizeof(float) * 2);
+        size_t finalSize = index * sizeof(uint32_t) + vertexCount * (sizeof(float) * 3 + sizeof(float) * 2);
+        float gain = (float)(initialSize - finalSize) / initialSize * 100;
+        printf("Initial size : %ld, indexified size  : %ld. Gain : %.2f%%\n",
+            initialSize, finalSize, gain);
+
         geometryCreateParams geometryParams = {
             .positions3D = newPositions,
             .texCoords = newTexCoords,
             .indexCount = index,
-            .indices = indices,
+            .indices_32 = indices,
             .vertexCount = vertexCount
         };
 

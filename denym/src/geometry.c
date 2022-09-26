@@ -48,7 +48,7 @@ void geometryDestroy(geometry geometry)
 		vkDestroyBuffer(engine.vulkanContext.device, geometry->bufferTexCoords, NULL);
 	}
 
-	if(geometry->useIndices)
+	if(geometry->useIndices_16 || geometry->useIndices_32)
 	{
 		vkFreeMemory(engine.vulkanContext.device, geometry->memoryIndices, NULL);
 		vkDestroyBuffer(engine.vulkanContext.device, geometry->bufferIndices, NULL);
@@ -131,27 +131,39 @@ int geometryAddTexCoods(geometry geometry, const geometryCreateParams *params)
 	return 0;
 }
 
+
 int geometryAddIndices(geometry geometry, const geometryCreateParams *params)
 {
-	if((params->indexCount != 0 && params->indices == NULL) ||
-	(params->indexCount == 0 && params->indices != NULL))
+	if((params->indexCount != 0 && params->indices_16 == NULL && params->indices_32 == NULL) ||
+		(params->indexCount == 0 && (params->indices_16 != NULL && params->indices_32 != NULL)))
 	{
-		fprintf(stderr, "geometryAddIndices() failed (indexCount=%i)(indices=%p)\n",
-			params->indexCount, (void*)params->indices);
+		fprintf(stderr, "geometryAddIndices() failed (indexCount=%i)(indices_16=%p)(indices_32=%p)\n",
+			params->indexCount, (void*)params->indices_16, (void*)params->indices_16);
 
 		return -1;
 	}
 
-	if(params->indices)
+	if(params->indices_16)
 	{
 		geometry->attribCount++;
-		geometry->useIndices = VK_TRUE;
+		geometry->useIndices_16 = VK_TRUE;
 
 		return createIndexBufferWithStaging(
 			sizeof(uint16_t) * geometry->indexCount,
 			&geometry->bufferIndices,
 			&geometry->memoryIndices,
-			params->indices);
+			params->indices_16);
+	}
+	else if(params->indices_32)
+	{
+		geometry->attribCount++;
+		geometry->useIndices_32 = VK_TRUE;
+
+		return createIndexBufferWithStaging(
+			sizeof(uint32_t) * geometry->indexCount,
+			&geometry->bufferIndices,
+			&geometry->memoryIndices,
+			params->indices_32);
 	}
 
 	return 0;
@@ -205,9 +217,15 @@ void geometryFillPipelineVertexInputStateCreateInfo(geometry geometry)
 		currentBinding++;
 	}
 
-	if(geometry->useIndices) // uint16_t
+	if(geometry->useIndices_16)
 	{
 		addVertexDescription(geometry, currentBinding, VK_FORMAT_R16_UINT, sizeof(uint16_t));
+		currentBinding++;
+	}
+
+	if(geometry->useIndices_32)
+	{
+		addVertexDescription(geometry, currentBinding, VK_FORMAT_R32_UINT, sizeof(uint32_t));
 		currentBinding++;
 	}
 }
