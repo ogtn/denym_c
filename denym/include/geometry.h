@@ -28,27 +28,10 @@ typedef struct geometry_t
 	uint32_t indexCount;
 	uint32_t attribCount;
 
+	// TODO: here we could have had all attributes and indices in the same array
 	VkBuffer buffers[GEOMETRY_MAX_ATTRIBS + 1];
 	VkDeviceMemory bufferMemories[GEOMETRY_MAX_ATTRIBS + 1];
-	VkBool32 useV2;
 	VkIndexType indexType;
-
-	VkBool32 usePositions2D;
-	VkBool32 usePositions3D;
-	VkBool32 useColors;
-	VkBool32 useTexCoords;
-	VkBool32 useIndices_16;
-	VkBool32 useIndices_32;
-
-	VkBuffer bufferPositions;
-	VkBuffer bufferColors;
-	VkBuffer bufferTexCoords;
-	VkBuffer bufferIndices;
-
-	VkDeviceMemory memoryPositions;
-	VkDeviceMemory memoryColors;
-	VkDeviceMemory memoryTexCoords;
-	VkDeviceMemory memoryIndices;
 
 	VkVertexInputAttributeDescription vertexAttributeDescriptions[GEOMETRY_MAX_ATTRIBS];
 	VkVertexInputBindingDescription vertexBindingDescriptions[GEOMETRY_MAX_ATTRIBS];
@@ -57,7 +40,7 @@ typedef struct geometry_t
 
 geometryParams geometryCreateParameters(uint32_t vertexCount, uint32_t indexCount);
 
-int geometryParamsAddAttribute(geometryParams params, uint32_t index, void *data, VkFormat format, uint32_t elementSize, uint32_t elementCount);
+int geometryParamsAddAttribute(geometryParams params, void *data, VkFormat format, uint32_t elementSize, uint32_t elementCount);
 
 int geometryParamsAddIndices16(geometryParams params, uint16_t *indices);
 
@@ -71,23 +54,11 @@ int geometryParamsAddColorsRGB(geometryParams params, float *colors);
 
 int geometryParamsAddTexCoords(geometryParams params, float *texCoords);
 
-geometry geometryCreate(const geometryCreateParams *params);
-
-geometry geometryCreate2(const geometryParams params);
+geometry geometryCreate(const geometryParams params);
 
 void geometryDestroy(geometry geometry);
 
-int geometryAddPositions(geometry geometry, const geometryCreateParams *params);
-
-int geometryAddColors(geometry geometry, const geometryCreateParams *params);
-
-int geometryAddTexCoods(geometry geometry, const geometryCreateParams *params);
-
-int geometryAddIndices(geometry geometry, const geometryCreateParams *params);
-
 void addVertexDescription(geometry geometry, uint32_t binding, VkFormat format, uint32_t stride);
-
-void geometryFillPipelineVertexInputStateCreateInfo(geometry geometry);
 
 
 #endif

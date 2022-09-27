@@ -281,57 +281,15 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 	// bind vertex attributes, except indices
 	if(renderable->geometry->attribCount)
 	{
-		VkBuffer buffers[GEOMETRY_MAX_ATTRIBS];
 		VkDeviceSize offsets[GEOMETRY_MAX_ATTRIBS] = { 0 };
 
-		if(renderable->geometry->useV2)
+		if(renderable->geometry->indexCount)
 		{
-			if(renderable->geometry->indexCount)
-			{
-				vkCmdBindVertexBuffers(commandBuffer, 0, renderable->geometry->attribCount, renderable->geometry->buffers, offsets);
-				vkCmdBindIndexBuffer(commandBuffer, renderable->geometry->buffers[renderable->geometry->attribCount], 0, renderable->geometry->indexType);
-			}
-			else
-				vkCmdBindVertexBuffers(commandBuffer, 0, renderable->geometry->attribCount, renderable->geometry->buffers, offsets);
+			vkCmdBindVertexBuffers(commandBuffer, 0, renderable->geometry->attribCount, renderable->geometry->buffers, offsets);
+			vkCmdBindIndexBuffer(commandBuffer, renderable->geometry->buffers[renderable->geometry->attribCount], 0, renderable->geometry->indexType);
 		}
 		else
-		{
-			int index = 0;
-
-			if(renderable->geometry->usePositions2D || renderable->geometry->usePositions3D)
-			{
-				buffers[index] = renderable->geometry->bufferPositions;
-				offsets[index] = 0;
-				index++;
-			}
-
-			if(renderable->geometry->useColors)
-			{
-				buffers[index] = renderable->geometry->bufferColors;
-				offsets[index] = 0;
-				index++;
-			}
-
-			if(renderable->geometry->useTexCoords)
-			{
-				buffers[index] = renderable->geometry->bufferTexCoords;
-				offsets[index] = 0;
-				index++;
-			}
-
-			if(renderable->geometry->useIndices_16)
-			{
-				vkCmdBindVertexBuffers(commandBuffer, 0, renderable->geometry->attribCount, buffers, offsets);
-				vkCmdBindIndexBuffer(commandBuffer, renderable->geometry->bufferIndices, 0, VK_INDEX_TYPE_UINT16);
-			}
-			else if(renderable->geometry->useIndices_32)
-			{
-				vkCmdBindVertexBuffers(commandBuffer, 0, renderable->geometry->attribCount, buffers, offsets);
-				vkCmdBindIndexBuffer(commandBuffer, renderable->geometry->bufferIndices, 0, VK_INDEX_TYPE_UINT32);
-			}
-			else
-				vkCmdBindVertexBuffers(commandBuffer, 0, renderable->geometry->attribCount, buffers, offsets);
-		}
+			vkCmdBindVertexBuffers(commandBuffer, 0, renderable->geometry->attribCount, renderable->geometry->buffers, offsets);
 	}
 
 	// bind descriptor set to send uniforms
@@ -342,7 +300,7 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 	if(renderable->usePushConstant)
 		vkCmdPushConstants(commandBuffer, renderable->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &renderable->pushConstantAlpha);
 
-	if(renderable->geometry->useIndices_16 || renderable->geometry->useIndices_32 || renderable->geometry->indexCount)
+	if(renderable->geometry->indexCount)
 		vkCmdDrawIndexed(commandBuffer, renderable->geometry->indexCount, 1, 0, 0, 0);
 	else
 		vkCmdDraw(commandBuffer, renderable->geometry->vertexCount, 1, 0, 0);

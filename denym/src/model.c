@@ -120,7 +120,7 @@ renderable modelLoad(const char *objFile, int indexify,  const char *texture, co
         geometryParamsAddTexCoords(geometryParams, newTexCoords);
         geometryParamsAddIndices32(geometryParams, indices);
 
-        geometry = geometryCreate2(geometryParams);
+        geometry = geometryCreate(geometryParams);
 
         free(indices);
         free(newPositions);
@@ -134,7 +134,7 @@ renderable modelLoad(const char *objFile, int indexify,  const char *texture, co
         geometryParams geometryParams = geometryCreateParameters(index, 0);
         geometryParamsAddPositions3D(geometryParams, positions);
         geometryParamsAddTexCoords(geometryParams, texCoords);
-        geometry = geometryCreate2(geometryParams);
+        geometry = geometryCreate(geometryParams);
     }
 
     renderableCreateParams renderableParams = {

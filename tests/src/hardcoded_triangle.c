@@ -12,7 +12,7 @@ int main(void)
 
 	geometryParams geometryParams = geometryCreateParameters(3, 0);
 	renderableCreateParams renderableParams = {
-		.geometry = geometryCreate2(geometryParams),
+		.geometry = geometryCreate(geometryParams),
 		.vertShaderName = "hardcoded_triangle.vert.spv",
 		.fragShaderName = "basic_color_interp.frag.spv"
 	};

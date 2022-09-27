@@ -74,9 +74,7 @@ int geometryParamsAddColorsRGB(geometryParams params, float *colors);
 
 int geometryParamsAddTexCoords(geometryParams params, float *texCoords);
 
-geometry geometryCreate(const geometryCreateParams *params);
-
-geometry geometryCreate2(const geometryParams params);
+geometry geometryCreate(const geometryParams params);
 
 void geometryDestroy(geometry geometry);
 

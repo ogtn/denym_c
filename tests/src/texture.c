@@ -45,7 +45,7 @@ static renderable makeSquare(const char *vertShader, const char *fragShader)
 	renderableCreateParams renderableParams = {
 		.vertShaderName = vertShader,
 		.fragShaderName = fragShader,
-		.geometry = geometryCreate2(geometryParams),
+		.geometry = geometryCreate(geometryParams),
 		.textureName = "lena.jpg",
 		.useUniforms = 1
 	};

@@ -39,7 +39,7 @@ int main(void)
 	geometryParamsAddIndices16(geometryParams, indices);
 
 	renderableCreateParams renderableParams = {
-		.geometry = geometryCreate2(geometryParams),
+		.geometry = geometryCreate(geometryParams),
 		.vertShaderName = "mvp_ubo_position_color_attribute.vert.spv",
 		.fragShaderName = "basic_color_interp.frag.spv",
 		.useUniforms = 1
