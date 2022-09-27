@@ -34,15 +34,13 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 
-	geometryCreateParams geometryCreateParams = {
-		.vertexCount = 4,
-		.positions2D = positions,
-		.colors = colors,
-		.indices_16 = indices,
-		.indexCount = sizeof indices / sizeof *indices };
+	geometryParams geometryParams = geometryCreateParameters(4, sizeof indices / sizeof *indices);
+	geometryParamsAddPositions2D(geometryParams, positions);
+	geometryParamsAddColorsRGB(geometryParams, colors);
+	geometryParamsAddIndices16(geometryParams, indices);
 
 	renderableCreateParams renderableParams = {
-		.geometry = geometryCreate(&geometryCreateParams),
+		.geometry = geometryCreate2(geometryParams),
 		.vertShaderName = "mvp_ubo_position_color_attribute.vert.spv",
 		.fragShaderName = "basic_color_with_alpha_cst.frag.spv",
 		.useUniforms = 1,

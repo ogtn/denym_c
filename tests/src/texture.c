@@ -36,18 +36,16 @@ static renderable makeSquare(const char *vertShader, const char *fragShader)
         2, 3, 0
     };
 
-	geometryCreateParams geometryParams = {
-		.vertexCount = 4,
-		.positions2D = positions,
-		.colors = colors,
-        .texCoords = texCoords,
-		.indices_16 = indices,
-		.indexCount = sizeof indices / sizeof *indices };
+	geometryParams geometryParams = geometryCreateParameters(4, sizeof indices / sizeof *indices);
+	geometryParamsAddPositions2D(geometryParams, positions);
+	geometryParamsAddColorsRGB(geometryParams, colors);
+	geometryParamsAddTexCoords(geometryParams, texCoords);
+	geometryParamsAddIndices16(geometryParams, indices);
 
 	renderableCreateParams renderableParams = {
 		.vertShaderName = vertShader,
 		.fragShaderName = fragShader,
-		.geometry = geometryCreate(&geometryParams),
+		.geometry = geometryCreate2(geometryParams),
 		.textureName = "lena.jpg",
 		.useUniforms = 1
 	};

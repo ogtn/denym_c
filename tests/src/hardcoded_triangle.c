@@ -10,9 +10,9 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 
-	geometryCreateParams geometryParams = { .vertexCount = 3 };
+	geometryParams geometryParams = geometryCreateParameters(3, 0);
 	renderableCreateParams renderableParams = {
-		.geometry = geometryCreate(&geometryParams),
+		.geometry = geometryCreate2(geometryParams),
 		.vertShaderName = "hardcoded_triangle.vert.spv",
 		.fragShaderName = "basic_color_interp.frag.spv"
 	};

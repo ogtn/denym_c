@@ -81,6 +81,7 @@ void textureDestroy(texture texture)
     vkDestroyImageView(engine.vulkanContext.device, texture->imageView, NULL);
 	vkDestroyImage(engine.vulkanContext.device, texture->image, NULL);
 	vkFreeMemory(engine.vulkanContext.device, texture->imageMemory, NULL);
+    free(texture);
 }
 
 

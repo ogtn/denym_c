@@ -5,6 +5,84 @@
 #include <string.h>
 
 
+geometryParams geometryCreateParameters(uint32_t vertexCount, uint32_t indexCount)
+{
+	geometryParams params = calloc(1, sizeof *params);
+
+	params->vertexCount = vertexCount;
+	params->indexCount = indexCount;
+
+	if(indexCount == 0)
+		params->indexType = VK_INDEX_TYPE_NONE_KHR;
+
+	return params;
+}
+
+
+int geometryParamsAddAttribute(geometryParams params, uint32_t index, void *data, VkFormat format, uint32_t elementSize, uint32_t elementCount)
+{
+	if(!params || !data || params->attribCount == GEOMETRY_MAX_ATTRIBS)
+		return -1;
+
+	params->data[index] = data;
+	params->formats[index] = format;
+	params->strides[index] = elementSize * elementCount;
+	params->attribCount++;
+
+	return 0;
+}
+
+
+int geometryParamsAddIndices16(geometryParams params, uint16_t *indices)
+{
+	if(!params || !indices || !params->indexCount)
+		return -1;
+
+	params->indices = indices;
+	params->indexType = VK_INDEX_TYPE_UINT16;
+	params->indexSize = params->indexCount * sizeof *indices;
+
+	return 0;
+}
+
+
+int geometryParamsAddIndices32(geometryParams params, uint32_t *indices)
+{
+	if(!params || !indices || !params->indexCount)
+		return -1;
+
+	params->indices = indices;
+	params->indexType = VK_INDEX_TYPE_UINT32;
+	params->indexSize = params->indexCount * sizeof *indices;
+
+	return 0;
+}
+
+
+int geometryParamsAddPositions2D(geometryParams params, float *positions)
+{
+	return geometryParamsAddAttribute(params, params->attribCount, positions, VK_FORMAT_R32G32_SFLOAT, sizeof(float), 2);
+}
+
+
+int geometryParamsAddPositions3D(geometryParams params, float *positions)
+{
+	return geometryParamsAddAttribute(params, params->attribCount, positions, VK_FORMAT_R32G32B32_SFLOAT, sizeof(float), 3);
+}
+
+
+int geometryParamsAddColorsRGB(geometryParams params, float *colors)
+{
+	return geometryParamsAddAttribute(params, params->attribCount, colors, VK_FORMAT_R32G32B32_SFLOAT, sizeof(float), 3);
+}
+
+
+int geometryParamsAddTexCoords(geometryParams params, float *texCoords)
+{
+	return geometryParamsAddAttribute(params, params->attribCount, texCoords, VK_FORMAT_R32G32_SFLOAT, sizeof(float), 2);
+}
+
+
 geometry geometryCreate(const geometryCreateParams *params)
 {
 	geometry geometry = calloc(1, sizeof(*geometry));
@@ -18,8 +96,8 @@ geometry geometryCreate(const geometryCreateParams *params)
 		!geometryAddIndices(geometry, params))
 	{
 		geometryFillPipelineVertexInputStateCreateInfo(geometry);
-		return geometry;
 
+		return geometry;
 	}
 
 	fprintf(stderr, "geometryCreateBuffers() failed to create buffers\n");
@@ -28,34 +106,104 @@ geometry geometryCreate(const geometryCreateParams *params)
 }
 
 
+geometry geometryCreate2(const geometryParams params)
+{
+	if(params->vertexCount == 0)
+	{
+		fprintf(stderr, "geometryCreate2() vertexCount can't be 0\n");
+
+		return NULL;
+	}
+
+	if(params->indexCount && params->data[0] == NULL)
+	{
+		fprintf(stderr, "geometryCreate2() indices are missing\n");
+
+		return NULL;
+	}
+
+	geometry geometry = calloc(1, sizeof(*geometry));
+
+	geometry->vertexCount = params->vertexCount;
+	geometry->indexCount = params->indexCount;
+	geometry->indexType = params->indexType;
+	geometry->attribCount = params->attribCount;
+	geometry->useV2 = VK_TRUE;
+
+	for(uint32_t i = 0; i < geometry->attribCount; i++)
+	{
+		VkDeviceSize size = params->strides[i] * geometry->vertexCount;
+
+		// TODO: use directly createBufferWithStaging() and delete createVertexBufferWithStaging()
+		if(createVertexBufferWithStaging(size, &geometry->buffers[i], &geometry->bufferMemories[i],	params->data[i]))
+		{
+			fprintf(stderr, "geometryCreate2() failed to create buffers for attribute %d\n", i);
+			goto error;
+		}
+
+		addVertexDescription(geometry, i, params->formats[i], params->strides[i]);
+	}
+
+	if(geometry->indexCount)
+	{
+		// TODO: use directly createBufferWithStaging() and delete createIndexBufferWithStaging()
+		if(createIndexBufferWithStaging(params->indexSize, &geometry->buffers[geometry->attribCount], &geometry->bufferMemories[geometry->attribCount],	params->indices))
+		{
+			fprintf(stderr, "geometryCreate2() failed to create buffers for indices\n");
+			goto error;
+		}
+	}
+
+	free(params);
+
+	return geometry;
+
+	error:
+	geometryDestroy(geometry);
+
+	return NULL;
+}
+
+
 void geometryDestroy(geometry geometry)
 {
-	if(geometry->usePositions2D || geometry->usePositions3D)
+	if(geometry->useV2)
 	{
-		vkFreeMemory(engine.vulkanContext.device, geometry->memoryPositions, NULL);
-		vkDestroyBuffer(engine.vulkanContext.device, geometry->bufferPositions, NULL);
+		uint32_t lastBuffer = geometry->attribCount + !!geometry->indexCount;
+
+		for(uint32_t i = 0; i < lastBuffer; i++)
+		{
+			vkFreeMemory(engine.vulkanContext.device, geometry->bufferMemories[i], NULL);
+			vkDestroyBuffer(engine.vulkanContext.device, geometry->buffers[i], NULL);
+		}
+	}
+	else
+	{
+		if(geometry->usePositions2D || geometry->usePositions3D)
+		{
+			vkFreeMemory(engine.vulkanContext.device, geometry->memoryPositions, NULL);
+			vkDestroyBuffer(engine.vulkanContext.device, geometry->bufferPositions, NULL);
+		}
+
+		if(geometry->useColors)
+		{
+			vkFreeMemory(engine.vulkanContext.device, geometry->memoryColors, NULL);
+			vkDestroyBuffer(engine.vulkanContext.device, geometry->bufferColors, NULL);
+		}
+
+		if(geometry->useTexCoords)
+		{
+			vkFreeMemory(engine.vulkanContext.device, geometry->memoryTexCoords, NULL);
+			vkDestroyBuffer(engine.vulkanContext.device, geometry->bufferTexCoords, NULL);
+		}
+
+		if(geometry->useIndices_16 || geometry->useIndices_32)
+		{
+			vkFreeMemory(engine.vulkanContext.device, geometry->memoryIndices, NULL);
+			vkDestroyBuffer(engine.vulkanContext.device, geometry->bufferIndices, NULL);
+		}
 	}
 
-	if(geometry->useColors)
-	{
-		vkFreeMemory(engine.vulkanContext.device, geometry->memoryColors, NULL);
-		vkDestroyBuffer(engine.vulkanContext.device, geometry->bufferColors, NULL);
-	}
-
-	if(geometry->useTexCoords)
-	{
-		vkFreeMemory(engine.vulkanContext.device, geometry->memoryTexCoords, NULL);
-		vkDestroyBuffer(engine.vulkanContext.device, geometry->bufferTexCoords, NULL);
-	}
-
-	if(geometry->useIndices_16 || geometry->useIndices_32)
-	{
-		vkFreeMemory(engine.vulkanContext.device, geometry->memoryIndices, NULL);
-		vkDestroyBuffer(engine.vulkanContext.device, geometry->bufferIndices, NULL);
-	}
-
-	free(geometry->vertexAttributeDescriptions);
-	free(geometry->vertexBindingDescriptions);
 	free(geometry);
 }
 
@@ -145,7 +293,7 @@ int geometryAddIndices(geometry geometry, const geometryCreateParams *params)
 
 	if(params->indices_16)
 	{
-		geometry->attribCount++;
+		//geometry->attribCount++;
 		geometry->useIndices_16 = VK_TRUE;
 
 		return createIndexBufferWithStaging(
@@ -156,7 +304,7 @@ int geometryAddIndices(geometry geometry, const geometryCreateParams *params)
 	}
 	else if(params->indices_32)
 	{
-		geometry->attribCount++;
+		//geometry->attribCount++;
 		geometry->useIndices_32 = VK_TRUE;
 
 		return createIndexBufferWithStaging(
@@ -175,7 +323,7 @@ void addVertexDescription(geometry geometry, uint32_t binding, VkFormat format, 
 	geometry->vertexAttributeDescriptions[binding].binding = binding;
 	geometry->vertexAttributeDescriptions[binding].format = format;
 	geometry->vertexAttributeDescriptions[binding].location = binding;
-	geometry->vertexAttributeDescriptions[binding].offset = 0; // because only one type of data in this array (indices), no interleaving
+	geometry->vertexAttributeDescriptions[binding].offset = 0; // because only one type of data in this array, no interleaving
 
 	geometry->vertexBindingDescriptions[binding].binding = binding;
 	geometry->vertexBindingDescriptions[binding].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
@@ -185,9 +333,6 @@ void addVertexDescription(geometry geometry, uint32_t binding, VkFormat format, 
 
 void geometryFillPipelineVertexInputStateCreateInfo(geometry geometry)
 {
-	geometry->vertexAttributeDescriptions = malloc(sizeof * geometry->vertexAttributeDescriptions * geometry->attribCount);
-	geometry->vertexBindingDescriptions = malloc(sizeof * geometry->vertexBindingDescriptions * geometry->attribCount);
-
 	// TODO: here we could have had all attributes in the same array
 	// in this case, only one vertexBindingDescriptions, and one vertextAttributeDescription per attribute
 
@@ -216,7 +361,7 @@ void geometryFillPipelineVertexInputStateCreateInfo(geometry geometry)
 		addVertexDescription(geometry, currentBinding, VK_FORMAT_R32G32_SFLOAT, sizeof(float) * 2);
 		currentBinding++;
 	}
-
+	/*
 	if(geometry->useIndices_16)
 	{
 		addVertexDescription(geometry, currentBinding, VK_FORMAT_R16_UINT, sizeof(uint16_t));
@@ -228,4 +373,5 @@ void geometryFillPipelineVertexInputStateCreateInfo(geometry geometry)
 		addVertexDescription(geometry, currentBinding, VK_FORMAT_R32_UINT, sizeof(uint32_t));
 		currentBinding++;
 	}
+	*/
 }

@@ -33,13 +33,12 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 
-	geometryCreateParams geometryParams = {
-		.vertexCount = 6,
-		.positions2D = positions,
-		.colors = colors };
+	geometryParams geometryParams = geometryCreateParameters(6, 0);
+	geometryParamsAddPositions2D(geometryParams, positions);
+	geometryParamsAddColorsRGB(geometryParams, colors);
 
 	renderableCreateParams renderableParams = {
-		.geometry = geometryCreate(&geometryParams),
+		.geometry = geometryCreate2(geometryParams),
 		.vertShaderName = "basic_position_color_attribute.vert.spv",
 		.fragShaderName = "basic_color_interp.frag.spv"
 	};

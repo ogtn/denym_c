@@ -115,15 +115,13 @@ renderable modelLoad(const char *objFile, int indexify,  const char *texture, co
         printf("Initial size : %ld, indexified size  : %ld. Gain : %.2f%%\n",
             initialSize, finalSize, gain);
 
-        geometryCreateParams geometryParams = {
-            .positions3D = newPositions,
-            .texCoords = newTexCoords,
-            .indexCount = index,
-            .indices_32 = indices,
-            .vertexCount = vertexCount
-        };
+        geometryParams geometryParams = geometryCreateParameters(vertexCount, index);
+        geometryParamsAddPositions3D(geometryParams, newPositions);
+        geometryParamsAddTexCoords(geometryParams, newTexCoords);
+        geometryParamsAddIndices32(geometryParams, indices);
 
-        geometry = geometryCreate(&geometryParams);
+        geometry = geometryCreate2(geometryParams);
+
         free(indices);
         free(newPositions);
         free(newTexCoords);
@@ -133,13 +131,10 @@ renderable modelLoad(const char *objFile, int indexify,  const char *texture, co
     }
     else
     {
-        geometryCreateParams geometryParams = {
-            .positions3D = positions,
-            .texCoords = texCoords,
-            .vertexCount = index
-        };
-
-        geometry = geometryCreate(&geometryParams);
+        geometryParams geometryParams = geometryCreateParameters(index, 0);
+        geometryParamsAddPositions3D(geometryParams, positions);
+        geometryParamsAddTexCoords(geometryParams, texCoords);
+        geometry = geometryCreate2(geometryParams);
     }
 
     renderableCreateParams renderableParams = {
@@ -153,6 +148,7 @@ renderable modelLoad(const char *objFile, int indexify,  const char *texture, co
 
     free(positions);
     free(texCoords);
+    fast_obj_destroy(mesh);
 
     return renderable;
 }

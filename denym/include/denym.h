@@ -13,6 +13,7 @@
 
 
 typedef struct geometry_t* geometry;
+typedef struct geometryParams_t *geometryParams;
 typedef struct renderable_t* renderable;
 typedef struct texture_t* texture;
 
@@ -59,7 +60,23 @@ void denymRender(renderable *renderables, uint32_t renderablesCount);
 
 void denymWaitForNextFrame(void);
 
-geometry geometryCreate(const geometryCreateParams *createParams);
+geometryParams geometryCreateParameters(uint32_t vertexCount, uint32_t indexCount);
+
+int geometryParamsAddIndices16(geometryParams params, uint16_t *indices);
+
+int geometryParamsAddIndices32(geometryParams params, uint32_t *indices);
+
+int geometryParamsAddPositions2D(geometryParams params, float *positions);
+
+int geometryParamsAddPositions3D(geometryParams params, float *positions);
+
+int geometryParamsAddColorsRGB(geometryParams params, float *colors);
+
+int geometryParamsAddTexCoords(geometryParams params, float *texCoords);
+
+geometry geometryCreate(const geometryCreateParams *params);
+
+geometry geometryCreate2(const geometryParams params);
 
 void geometryDestroy(geometry geometry);
 

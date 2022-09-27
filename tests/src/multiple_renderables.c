@@ -28,15 +28,13 @@ static renderable makeSquare(void)
         2, 3, 0
     };
 
-	geometryCreateParams geometryParams = {
-		.vertexCount = 4,
-		.positions2D = positions,
-		.colors = colors,
-		.indices_16 = indices,
-		.indexCount = sizeof indices / sizeof *indices };
+	geometryParams geometryParams = geometryCreateParameters(4, sizeof indices / sizeof *indices);
+	geometryParamsAddPositions2D(geometryParams, positions);
+	geometryParamsAddColorsRGB(geometryParams, colors);
+	geometryParamsAddIndices16(geometryParams, indices);
 
 	renderableCreateParams renderableParams = {
-		.geometry = geometryCreate(&geometryParams),
+		.geometry = geometryCreate2(geometryParams),
 		.vertShaderName = "mvp_ubo_position_color_attribute.vert.spv",
 		.fragShaderName = "basic_color_interp.frag.spv",
 		.useUniforms = 1
