@@ -11,9 +11,7 @@ geometryParams geometryCreateParameters(uint32_t vertexCount, uint32_t indexCoun
 
 	params->vertexCount = vertexCount;
 	params->indexCount = indexCount;
-
-	if(indexCount == 0)
-		params->indexType = VK_INDEX_TYPE_NONE_KHR;
+	params->indexType = VK_INDEX_TYPE_NONE_KHR;
 
 	return params;
 }
@@ -59,27 +57,15 @@ int geometryParamsAddIndices32(geometryParams params, uint32_t *indices)
 }
 
 
-int geometryParamsAddPositions2D(geometryParams params, float *positions)
+int geometryParamsAddAttribVec2(geometryParams params, float *positions)
 {
 	return geometryParamsAddAttribute(params, positions, VK_FORMAT_R32G32_SFLOAT, sizeof(float), 2);
 }
 
 
-int geometryParamsAddPositions3D(geometryParams params, float *positions)
+int geometryParamsAddAttribVec3(geometryParams params, float *positions)
 {
 	return geometryParamsAddAttribute(params, positions, VK_FORMAT_R32G32B32_SFLOAT, sizeof(float), 3);
-}
-
-
-int geometryParamsAddColorsRGB(geometryParams params, float *colors)
-{
-	return geometryParamsAddAttribute(params, colors, VK_FORMAT_R32G32B32_SFLOAT, sizeof(float), 3);
-}
-
-
-int geometryParamsAddTexCoords(geometryParams params, float *texCoords)
-{
-	return geometryParamsAddAttribute(params, texCoords, VK_FORMAT_R32G32_SFLOAT, sizeof(float), 2);
 }
 
 

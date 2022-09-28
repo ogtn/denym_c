@@ -66,13 +66,19 @@ int geometryParamsAddIndices16(geometryParams params, uint16_t *indices);
 
 int geometryParamsAddIndices32(geometryParams params, uint32_t *indices);
 
-int geometryParamsAddPositions2D(geometryParams params, float *positions);
+int geometryParamsAddAttribVec2(geometryParams params, float *positions);
 
-int geometryParamsAddPositions3D(geometryParams params, float *positions);
+int geometryParamsAddAttribVec3(geometryParams params, float *positions);
 
-int geometryParamsAddColorsRGB(geometryParams params, float *colors);
+#define geometryParamsAddPositions2D geometryParamsAddAttribVec2
 
-int geometryParamsAddTexCoords(geometryParams params, float *texCoords);
+#define geometryParamsAddPositions3D geometryParamsAddAttribVec3
+
+#define geometryParamsAddColorsRGB geometryParamsAddAttribVec3
+
+#define geometryParamsAddTexCoords geometryParamsAddAttribVec2
+
+#define geometryParamsAddNormals geometryParamsAddAttribVec3
 
 geometry geometryCreate(const geometryParams params);
 
