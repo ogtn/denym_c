@@ -5,7 +5,7 @@
 #include "denym_common.h"
 
 
-renderable modelLoad(const char *objFile, int indexify, const char *texture, const char *vertShader, const char *fragShader);
+renderable modelLoad(const char *objFile, int useIndices, int useNormals, const char *texture, const char *vertShader, const char *fragShader);
 
 
 #endif

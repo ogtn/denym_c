@@ -62,7 +62,6 @@ int createBuffer(VkDeviceSize size, VkBuffer *buffer, VkDeviceMemory *bufferMemo
 	bufferCreateInfo.usage = bufferUsage;
 	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	// TODO destroy this with geometry
 	if(vkCreateBuffer(engine.vulkanContext.device, &bufferCreateInfo, NULL, buffer))
 		return -1;
 
