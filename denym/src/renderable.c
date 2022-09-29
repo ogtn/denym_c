@@ -510,7 +510,9 @@ int updatePushConstants(renderable renderable, float alpha)
 		return -1;
 
 	renderable->pushConstantAlpha = alpha;
-	engine.vulkanContext.needCommandBufferUpdate = VK_TRUE;
+
+	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		engine.vulkanContext.needCommandBufferUpdate[i] = VK_TRUE;
 
 	return 0;
 }

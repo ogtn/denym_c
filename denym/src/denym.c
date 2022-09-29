@@ -40,7 +40,9 @@ int denymInit(int window_width, int window_height)
 		engine.vulkanContext.currentFrame = 0;
 		timespec_get(&engine.uptime, TIME_UTC);
 		engine.frameCount = 0;
-		engine.vulkanContext.needCommandBufferUpdate = VK_TRUE;
+
+		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+			engine.vulkanContext.needCommandBufferUpdate[i] = VK_TRUE;
 	}
 	else
 	{
@@ -70,7 +72,9 @@ int denymKeepRunning(void)
 
 void denymRender(renderable *renderables, uint32_t renderablesCount)
 {
-	updateCommandBuffers(renderables, renderablesCount);
+	// Wait for fence, so we limit the number of in flight frames
+	vkWaitForFences(engine.vulkanContext.device, 1, &engine.vulkanContext.inFlightFences[engine.vulkanContext.currentFrame], VK_TRUE, UINT64_MAX);
+	updateCommandBuffers(engine.vulkanContext.currentFrame, renderables, renderablesCount);
 
 	struct timespec start, end;
     timespec_get(&start, TIME_UTC);
@@ -692,7 +696,9 @@ int recreateSwapChain(void)
 	int result = -1;
 	int width, height;
 
-	engine.vulkanContext.needCommandBufferUpdate = VK_TRUE;
+	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		engine.vulkanContext.needCommandBufferUpdate[i] = VK_TRUE;
+
 	glfwGetFramebufferSize(engine.window, &width, &height);
 
 	while(width == 0 || height == 0)
@@ -962,14 +968,14 @@ int createCommandBuffers(void)
 }
 
 
-int updateCommandBuffers(renderable *renderables, uint32_t renderablesCount)
+int updateCommandBuffers(uint32_t cmdBufferIndex, renderable *renderables, uint32_t renderablesCount)
 {
 	VkResult result = VK_SUCCESS;
 
-	if(engine.vulkanContext.needCommandBufferUpdate == VK_FALSE)
+	if(engine.vulkanContext.needCommandBufferUpdate[cmdBufferIndex] == VK_FALSE)
 		return result;
 
-	fprintf(stderr, "frame %lu: updateCommandBuffers()\n", engine.frameCount);
+	fprintf(stderr, "frame %lu: updateCommandBuffers(%u)\n", engine.frameCount, cmdBufferIndex);
 
 	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -1009,40 +1015,37 @@ int updateCommandBuffers(renderable *renderables, uint32_t renderablesCount)
 	if(engine.vulkanContext.useDepthBuffer)
 		renderPassInfo.clearValueCount++;
 
-	for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	vkResetCommandBuffer(engine.vulkanContext.commandBuffers[cmdBufferIndex], 0);
+	result = vkBeginCommandBuffer(engine.vulkanContext.commandBuffers[cmdBufferIndex], &beginInfo);
+
+	if (result != VK_SUCCESS)
 	{
-		vkResetCommandBuffer(engine.vulkanContext.commandBuffers[i], 0);
-		result = vkBeginCommandBuffer(engine.vulkanContext.commandBuffers[i], &beginInfo);
+		fprintf(stderr, "Failed to begin recording command buffer %d/%d.\n", cmdBufferIndex + 1, MAX_FRAMES_IN_FLIGHT);
 
-		if (result != VK_SUCCESS)
-		{
-			fprintf(stderr, "Failed to begin recording command buffer %d/%d.\n", i + 1, MAX_FRAMES_IN_FLIGHT);
-
-			return result;
-		}
-
-		vkCmdSetViewport(engine.vulkanContext.commandBuffers[i], 0, 1, &viewport);
-		vkCmdSetScissor(engine.vulkanContext.commandBuffers[i], 0, 1, &scissor);
-
-		renderPassInfo.framebuffer = engine.vulkanContext.swapChainFramebuffers[i];
-		vkCmdBeginRenderPass(engine.vulkanContext.commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // VK_SUBPASS_CONTENTS_INLINE for primary
-
-		for(uint32_t j = 0; j < renderablesCount; j++)
-			renderableDraw(renderables[j], engine.vulkanContext.commandBuffers[i]);
-
-		vkCmdEndRenderPass(engine.vulkanContext.commandBuffers[i]);
-
-		result = vkEndCommandBuffer(engine.vulkanContext.commandBuffers[i]);
-
-		if (result != VK_SUCCESS)
-		{
-			fprintf(stderr, "Failed to end recording command buffer %d/%d.\n", i + 1, MAX_FRAMES_IN_FLIGHT);
-
-			return result;
-		}
+		return result;
 	}
 
-	engine.vulkanContext.needCommandBufferUpdate = VK_FALSE;
+	vkCmdSetViewport(engine.vulkanContext.commandBuffers[cmdBufferIndex], 0, 1, &viewport);
+	vkCmdSetScissor(engine.vulkanContext.commandBuffers[cmdBufferIndex], 0, 1, &scissor);
+
+	renderPassInfo.framebuffer = engine.vulkanContext.swapChainFramebuffers[cmdBufferIndex];
+	vkCmdBeginRenderPass(engine.vulkanContext.commandBuffers[cmdBufferIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // VK_SUBPASS_CONTENTS_INLINE for primary
+
+	for(uint32_t j = 0; j < renderablesCount; j++)
+		renderableDraw(renderables[j], engine.vulkanContext.commandBuffers[cmdBufferIndex]);
+
+	vkCmdEndRenderPass(engine.vulkanContext.commandBuffers[cmdBufferIndex]);
+
+	result = vkEndCommandBuffer(engine.vulkanContext.commandBuffers[cmdBufferIndex]);
+
+	if (result != VK_SUCCESS)
+	{
+		fprintf(stderr, "Failed to end recording command buffer %d/%d.\n", cmdBufferIndex + 1, MAX_FRAMES_IN_FLIGHT);
+
+		return result;
+	}
+
+	engine.vulkanContext.needCommandBufferUpdate[cmdBufferIndex] = VK_FALSE;
 
 	return result;
 }
@@ -1073,10 +1076,6 @@ int createSynchronizationObjects(vulkanContext* context)
 void render(vulkanContext *context)
 {
 	uint32_t imageIndex;
-
-	// Wait for fence, so we limit the number of in flight frames
-	vkWaitForFences(context->device, 1, &context->inFlightFences[context->currentFrame], VK_TRUE, UINT64_MAX);
-
 	VkResult result = context->AcquireNextImageKHR(context->device, context->swapchain, UINT64_MAX, context->imageAvailableSemaphore[context->currentFrame], VK_NULL_HANDLE, &imageIndex);
 
 	// TODO cmdbuffer references swapchain elements... fix this

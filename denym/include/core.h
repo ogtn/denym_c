@@ -59,7 +59,7 @@ typedef struct vulkanContext
     uint32_t currentFrame;
 
 	// command buffers
-	VkBool32 needCommandBufferUpdate;
+	VkBool32 needCommandBufferUpdate[MAX_FRAMES_IN_FLIGHT];
 	VkCommandBuffer commandBuffers[MAX_FRAMES_IN_FLIGHT];
 
 	// texture samplers
