@@ -4,6 +4,7 @@
 #include "buffer.h"
 #include "core.h"
 #include "texture.h"
+#include "logger.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -130,7 +131,7 @@ int createPipelineLayout(renderable renderable)
 
 	if (vkCreatePipelineLayout(engine.vulkanContext.device, &pipelineLayoutInfo, NULL, &renderable->pipelineLayout))
 	{
-		fprintf(stderr, "Failed to create pipeline layout");
+		logError("Failed to create pipeline layout");
 
 		return -1;
 	}
@@ -265,7 +266,7 @@ int createPipeline(renderable renderable)
 	// TODO interesting second parameter : pipeline cache can be used to speedup all this, even across runs, through a file !
 	if (vkCreateGraphicsPipelines(engine.vulkanContext.device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &renderable->pipeline))
 	{
-		fprintf(stderr, "Failed to create graphic pipeline.\n");
+		logError("Failed to create graphic pipeline");
 
 		return -1;
 	}
@@ -370,7 +371,7 @@ int createDescriptorSetLayout(renderable renderable)
 
 	if(bindingCount > MAX_BINDINGS)
 	{
-		fprintf(stderr, "createDescriptorSetLayout() reached MAX_BINDINGS\n");
+		logError("Reached MAX_BINDINGS");
 
 		return -1;
 	}
@@ -409,7 +410,7 @@ int createDescriptorPool(renderable renderable)
 
 	if(poolSizeCount > MAX_BINDINGS)
 	{
-		fprintf(stderr, "createDescriptorPool() reached MAX_BINDINGS\n");
+		logError("Reached MAX_BINDINGS");
 
 		return -1;
 	}
@@ -423,7 +424,7 @@ int createDescriptorPool(renderable renderable)
 
 	if(vkCreateDescriptorPool(engine.vulkanContext.device, &descriptorPoolInfo, NULL, &renderable->descriptorPool))
 	{
-		fprintf(stderr, "vkCreateDescriptorPool() failed)\n");
+		logError("vkCreateDescriptorPool() failed");
 
 		return -1;
 	}
@@ -450,7 +451,7 @@ int createDescriptorSets(renderable renderable)
 
 	if(result)
 	{
-		fprintf(stderr, "vkAllocateDescriptorSets() failed)\n");
+		logError("vkAllocateDescriptorSets() failed)");
 
 		return -1;
 	}

@@ -1,5 +1,6 @@
 #include "buffer.h"
 #include "core.h"
+#include "logger.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -90,7 +91,7 @@ int createBuffer(VkDeviceSize size, VkBuffer *buffer, VkDeviceMemory *bufferMemo
 
 	char name[16];
 	snprintf(name, sizeof name, "buffer_%d", cpt++);
-	fprintf(stderr, "createBuffer(%s)\n", name);
+	logInfo("%s", name);
 	objectNameInfo.pObjectName = name;
 	objectNameInfo.objectHandle = (uint64_t)*buffer;
 	engine.vulkanContext.SetDebugUtilsObjectNameEXT(engine.vulkanContext.device, &objectNameInfo);
@@ -127,7 +128,7 @@ int initiateCopyCommandBuffer(VkCommandBuffer *commandBuffer)
 
 	if (result != VK_SUCCESS)
 	{
-		fprintf(stderr, "Failed to allocate command buffer.\n");
+		logError("Failed to allocate command buffer.\n");
 
 		return result;
 	}

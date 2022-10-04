@@ -2,6 +2,7 @@
 #include "image.h"
 #include "buffer.h"
 #include "core.h"
+#include "logger.h"
 
 #include <stb_image.h>
 #include <string.h>
@@ -25,7 +26,7 @@ int textureCreate(const char *filename, texture *txtr)
 
     if(pixels == NULL)
     {
-        fprintf(stderr, "Failed to load texture %s\n", fullName);
+        logError("Failed to load texture '%s'", fullName);
 
         return -1;
     }
@@ -36,7 +37,7 @@ int textureCreate(const char *filename, texture *txtr)
 
     if(createBuffer(size, &stagingBuffer, &stagingBufferMemory, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_TRANSFER_SRC_BIT))
     {
-        fprintf(stderr, "Failed to create buffer for texture %s\n", fullName);
+        logError("Failed to create buffer for texture '%s'", fullName);
 
         return -1;
     }
@@ -45,7 +46,7 @@ int textureCreate(const char *filename, texture *txtr)
 
     if(vkMapMemory(engine.vulkanContext.device, stagingBufferMemory, 0, size, 0, &data))
     {
-        fprintf(stderr, "Failed to map memory for texture %s\n", fullName);
+        logError("Failed to map memory for texture '%s'", fullName);
 
         return -1;
     }
@@ -122,7 +123,7 @@ int textureCreateSampler(VkSampler *sampler)
 
     if(vkCreateSampler(engine.vulkanContext.device, &samplerParams, NULL, sampler))
     {
-        fprintf(stderr, "Failed to create texture sampler\n");
+        logError("Failed to create texture sampler");
 
         return -1;
     }

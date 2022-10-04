@@ -1,6 +1,7 @@
 #include "image.h"
 #include "buffer.h"
 #include "core.h"
+#include "logger.h"
 
 
 int createImageDepth(uint32_t width, uint32_t height, VkFormat format, VkSampleCountFlagBits samples, VkImage *image, VkDeviceMemory *imageMemory)
@@ -35,7 +36,7 @@ int createImage2D(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat 
 
     if(vkCreateImage(engine.vulkanContext.device, &imageCreateInfo, NULL, image))
     {
-        fprintf(stderr, "Failed to create image\n");
+        logError("Failed to create image");
 
         return -1;
     }
@@ -120,7 +121,7 @@ void imageLayoutTransition(VkImage image, uint32_t mipLevels, VkImageLayout oldL
     }
     else
     {
-        fprintf(stderr, "Unsupported image layout transition\n");
+        logError("Unsupported image layout transition");
 
         return;
     }
@@ -259,7 +260,7 @@ int createImageView(VkImage image, uint32_t mipLevels, VkFormat format, VkImageA
 
 	if (vkCreateImageView(engine.vulkanContext.device, &createInfo, NULL, imageView))
 	{
-		fprintf(stderr, "Failed to create image view.\n");
+		logError("Failed to create image view.");
 
 		return -1;
 	}

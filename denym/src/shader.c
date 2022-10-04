@@ -1,4 +1,5 @@
 #include "shader.h"
+#include "logger.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +20,7 @@ int loadShader(VkDevice device, const char* name, VkShaderModule* outShaderr)
 
 	if (f == NULL)
 	{
-		perror(fullName);
+		logError("Failed to open file '%s'", fullName);
 
 		return -1;
 	}
@@ -42,7 +43,7 @@ int loadShader(VkDevice device, const char* name, VkShaderModule* outShaderr)
 	VkResult result = vkCreateShaderModule(device, &createInfo, NULL, outShaderr);
 
 	if(result)
-		fprintf(stderr, "Failed to load shader \"%s\"", fullName);
+		logError("Failed to load shader '%s'", fullName);
 
 	free(data);
 

@@ -4,11 +4,11 @@
 #include "image.h"
 #include "texture.h"
 #include "utils.h"
+#include "logger.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#include <threads.h>
 
 
 denym engine;
@@ -17,6 +17,8 @@ denym engine;
 int denymInit(int window_width, int window_height)
 {
 	int result = -1;
+
+	timespec_get(&engine.uptime, TIME_UTC);
 
 	if ((engine.window = createWindow(window_width, window_height)) != NULL &&
 		!createVulkanInstance(&engine.vulkanContext) &&
@@ -38,7 +40,6 @@ int denymInit(int window_width, int window_height)
 	{
 		result = 0;
 		engine.vulkanContext.currentFrame = 0;
-		timespec_get(&engine.uptime, TIME_UTC);
 		engine.frameCount = 0;
 
 		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -97,7 +98,7 @@ void denymWaitForNextFrame(void)
 
 void glfwErrorCallback(int error, const char* description)
 {
-	fprintf(stderr, "GLFW error %d occured : %s\n", error, description);
+	logError("GLFW error %d occured : '%s'", error, description);
 }
 
 
@@ -139,7 +140,7 @@ GLFWwindow* createWindow(int width, int height)
 
 	if (!glfwInit())
 	{
-		fprintf(stderr, "Holy fuckin' shit, glfwInit() failed\n");
+		logError("Holy fuckin' shit, glfwInit() failed");
 
 		return NULL;
 	}
@@ -148,7 +149,7 @@ GLFWwindow* createWindow(int width, int height)
 
 	if (!glfwVulkanSupported())
 	{
-		fprintf(stderr, "Vulkan is not suported :(\n");
+		logError("Vulkan is not suported :(");
 
 		return NULL;
 	}
@@ -158,7 +159,7 @@ GLFWwindow* createWindow(int width, int height)
 
 	if (!window)
 	{
-		fprintf(stderr, "Holy fuckin' shit, glfwCreateWindow() failed\n");
+		logError("Holy fuckin' shit, glfwCreateWindow() failed");
 		glfwTerminate();
 
 		return NULL;
@@ -253,7 +254,7 @@ int createVulkanInstance(vulkanContext* context)
 	VkDebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = { VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT };
 	debugMessengerCreateInfo.messageSeverity =
 		VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-		// VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | // too verbose, but could be usefull
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | // too verbose, but could be usefull
 		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
 		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 	debugMessengerCreateInfo.messageType =
@@ -279,9 +280,9 @@ int createVulkanInstance(vulkanContext* context)
 	VkResult result = vkCreateInstance(&instInfo, NULL, &context->instance);
 
 	if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
-		fprintf(stderr, "Unable to find a compatible Vulkan Driver.\n");
+		logError("Unable to find a compatible Vulkan Driver.");
 	else if (result)
-		fprintf(stderr, "Could not create a Vulkan instance (for unknown reasons).\n");
+		logError("Could not create a Vulkan instance (reason : %d)", result);
 
 	free((void*)requestedExtensions); // cast to avoid C4090 warning from MSVC
 	free(availableExtensions);
@@ -357,7 +358,7 @@ int getPhysicalDevice(vulkanContext* context)
 
 	if (matchingPhysicalDevice == NULL)
 	{
-		fprintf(stderr, "Unable to find a physical device.\n");
+		logError("Unable to find a suitable physical device");
 		return -1;
 	}
 
@@ -501,11 +502,11 @@ int getDevice(vulkanContext *context)
 		vkGetDeviceQueue(context->device, context->presentQueueFamilyIndex, 0, &context->presentQueue);
 	}
 	else if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
-		fprintf(stderr, "Could not create device : missing requested extension(s).\n");
+		logError("Could not create device : missing requested extension(s)");
 	else if( result == VK_ERROR_FEATURE_NOT_PRESENT)
-		fprintf(stderr, "Could not create device : missing requested feature(s).\n");
+		logError("Could not create device : missing requested feature(s)");
 	else
-		fprintf(stderr, "Could not create device : unknow error.\n");
+		logError("Could not create device (reason : %d)", result);
 
 	return result;
 }
@@ -515,7 +516,7 @@ int getDevice(vulkanContext *context)
 	do {                                                                                                                    \
 		if((vulkanContext->name = (PFN_vk##name)glfwGetInstanceProcAddress(vulkanContext->instance, "vk" #name)) == NULL)   \
 		{                                                                                                                   \
-			fprintf(stderr, "Failed to get 'vk" #name " pointer from loader'\n");                                           \
+			logWarning("Failed to get 'vk" #name " pointer from loader'");                                                  \
 			res = -1;                                                                                                       \
 		}                                                                                                                   \
 	} while(0)                                                                                                              \
@@ -525,7 +526,7 @@ int getDevice(vulkanContext *context)
 	do {                                                                                                                        \
 		if((vulkanContext->name = (PFN_vk##name)vulkanContext->GetDeviceProcAddr(vulkanContext->device, "vk" #name)) == NULL)   \
 		{                                                                                                                       \
-			fprintf(stderr, "Failed to get 'vk" #name " pointer from loader'\n");                                               \
+			logWarning("Failed to get 'vk" #name " pointer from loader'");                                                      \
 			res = -1;                                                                                                           \
 		}                                                                                                                       \
 	} while(0)                                                                                                                  \
@@ -591,7 +592,7 @@ int getSwapchainCapabilities(vulkanContext* context)
 
 	if (!formatFound)
 	{
-		fprintf(stderr, "No suitable format found.\n");
+		logError("No suitable format found");
 		return -1;
 	}
 
@@ -685,7 +686,7 @@ int createSwapchain(vulkanContext* context)
 	VkResult result = context->CreateSwapchainKHR(context->device, &createInfo, NULL, &context->swapchain);
 
 	if (result != VK_SUCCESS)
-		fprintf(stderr, "Swapchain creation failed.\n");
+		logError("Swapchain creation failed");
 
 	return result;
 }
@@ -845,7 +846,7 @@ int createRenderPass(vulkanContext* context)
 	free(attachments);
 
 	if (result)
-		fprintf(stderr, "Error while creating renderpass.\n");
+		logError("Error while creating renderpass");
 
 	return result;
 }
@@ -874,7 +875,7 @@ int createFramebuffer(vulkanContext* context)
 
 		if (result != VK_SUCCESS)
 		{
-			fprintf(stderr, "Failed to create framebuffer %d/%d.\n", i + 1, context->imageCount);
+			logError("Failed to create framebuffer %d/%d", i + 1, context->imageCount);
 
 			return result;
 		}
@@ -894,14 +895,14 @@ int createCommandPool(vulkanContext* context)
 	VkResult result = vkCreateCommandPool(context->device, &poolInfo, NULL, &context->commandPool);
 
 	if (result != VK_SUCCESS)
-		fprintf(stderr, "Error while creating the main command pool.\n");
+		logError("Error while creating the main command pool");
 
 	// dedicated to buffer copies
 	poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 	result = vkCreateCommandPool(context->device, &poolInfo, NULL, &context->bufferCopyCommandPool);
 
 	if (result != VK_SUCCESS)
-		fprintf(stderr, "Error while creating the transient command pool.\n");
+		logError("Error while creating the transient command pool");
 
 	return result;
 }
@@ -962,7 +963,7 @@ int createCommandBuffers(void)
 	VkResult result = vkAllocateCommandBuffers(engine.vulkanContext.device, &allocInfo, engine.vulkanContext.commandBuffers);
 
 	if (result != VK_SUCCESS)
-		fprintf(stderr, "Failed to allocate command buffers.\n");
+		logError("Failed to allocate command buffers");
 
 	return result;
 }
@@ -975,7 +976,7 @@ int updateCommandBuffers(uint32_t cmdBufferIndex, renderable *renderables, uint3
 	if(engine.vulkanContext.needCommandBufferUpdate[cmdBufferIndex] == VK_FALSE)
 		return result;
 
-	fprintf(stderr, "frame %lu: updateCommandBuffers(%u)\n", engine.frameCount, cmdBufferIndex);
+	logInfo("Frame %lu: command buffer %u", engine.frameCount, cmdBufferIndex);
 
 	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -1020,7 +1021,7 @@ int updateCommandBuffers(uint32_t cmdBufferIndex, renderable *renderables, uint3
 
 	if (result != VK_SUCCESS)
 	{
-		fprintf(stderr, "Failed to begin recording command buffer %d/%d.\n", cmdBufferIndex + 1, MAX_FRAMES_IN_FLIGHT);
+		logError("Failed to begin recording command buffer %d/%d", cmdBufferIndex + 1, MAX_FRAMES_IN_FLIGHT);
 
 		return result;
 	}
@@ -1040,7 +1041,7 @@ int updateCommandBuffers(uint32_t cmdBufferIndex, renderable *renderables, uint3
 
 	if (result != VK_SUCCESS)
 	{
-		fprintf(stderr, "Failed to end recording command buffer %d/%d.\n", cmdBufferIndex + 1, MAX_FRAMES_IN_FLIGHT);
+		logError("Failed to end recording command buffer %d/%d", cmdBufferIndex + 1, MAX_FRAMES_IN_FLIGHT);
 
 		return result;
 	}
@@ -1063,7 +1064,7 @@ int createSynchronizationObjects(vulkanContext* context)
 		vkCreateSemaphore(context->device, &semaphoreInfo, NULL, &context->renderFinishedSemaphore[i]) != VK_SUCCESS ||
 		vkCreateFence(context->device, &fenceInfo, NULL, &context->inFlightFences[i]))
 		{
-			fprintf(stderr, "Failed to create sync objets.\n");
+			logError("Failed to create sync objets");
 
 			return -1;
 		}
@@ -1087,7 +1088,7 @@ void render(vulkanContext *context)
 	}
 	else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 	{
-		fprintf(stderr, "AcquireNextImageKHR() failed\n");
+		logError("AcquireNextImageKHR() failed");
 
 		return;
 	}
@@ -1113,7 +1114,7 @@ void render(vulkanContext *context)
 	result = vkQueueSubmit(context->graphicQueue, 1, &submitInfo, context->inFlightFences[context->currentFrame]);
 
 	if (result != VK_SUCCESS)
-		fprintf(stderr, "Failed to submit draw command buffer.\n");
+		logError("Failed to submit draw command buffer");
 
 	VkPresentInfoKHR presentInfo = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
 	presentInfo.waitSemaphoreCount = 1;
@@ -1132,7 +1133,7 @@ void render(vulkanContext *context)
 		recreateSwapChain();
 	}
 	else if(result)
-		fprintf(stderr, "QueuePresentKHR() failed\n");
+		logError("QueuePresentKHR() failed");
 }
 
 
@@ -1249,7 +1250,12 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vulkanErrorCallback(
 	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 	void* pUserData)
 {
-	fprintf(stderr, "Vulkan log : %s\n", pCallbackData->pMessage);
+	if(messageSeverity & (VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT))
+		logInfo("%s", pCallbackData->pMessage);
+	else if(messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+		logWarning("%s", pCallbackData->pMessage);
+	else
+		logError("%s", pCallbackData->pMessage);
 
 	return VK_FALSE;
 }

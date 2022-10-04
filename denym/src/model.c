@@ -1,4 +1,5 @@
 #include "model.h"
+#include "logger.h"
 
 
 #pragma clang diagnostic push
@@ -25,7 +26,7 @@ renderable modelLoad(const char *objFile, int useIndices, int useNormals, const 
     char fullName[FILENAME_MAX];
 	snprintf(fullName, FILENAME_MAX, "resources/models/%s", objFile);
     fastObjMesh* mesh = fast_obj_read(fullName);
-    printf("fast_obj_read: %fs\n", getUptime() - start);
+    logInfo("fast_obj_read: %fs", getUptime() - start);
     start = getUptime();
 
     float *positions = malloc(sizeof(float) * 3 * mesh->index_count);
@@ -65,7 +66,7 @@ renderable modelLoad(const char *objFile, int useIndices, int useNormals, const 
             index_f += mesh->face_vertices[i];
     }
 
-    printf("fast_obj transform: %fs\n", getUptime() - start);
+    logInfo("fast_obj transform: %fs", getUptime() - start);
 
     geometry geometry = NULL;
 
@@ -128,7 +129,7 @@ renderable modelLoad(const char *objFile, int useIndices, int useNormals, const 
 
                 if(vertexCount == UINT32_MAX)
                 {
-                    fprintf(stderr, "MAX INDICES reached\n");
+                    logError("MAX INDICES reached\n");
 
                     break;
                 }
@@ -172,7 +173,7 @@ renderable modelLoad(const char *objFile, int useIndices, int useNormals, const 
         }
 
         double gain = (double)(initialSize - finalSize) / initialSize * 100;
-        printf("Initial size : %ld, indexified size  : %ld. Gain : %.2lf%%\n",
+        logInfo("Initial size : %ld, indexified size  : %ld. Gain : %.2lf%%",
             initialSize, finalSize, gain);
 
         geometry = geometryCreate(geometryParams);
@@ -183,7 +184,7 @@ renderable modelLoad(const char *objFile, int useIndices, int useNormals, const 
         free(newTexCoords);
         hmfree(hash);
 
-        printf("fast_obj indexify: %fs\n", getUptime() - start);
+        logInfo("fast_obj indexify: %fs", getUptime() - start);
     }
     else
     {

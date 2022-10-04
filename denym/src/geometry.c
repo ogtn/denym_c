@@ -1,6 +1,7 @@
 #include "geometry.h"
 #include "buffer.h"
 #include "core.h"
+#include "logger.h"
 
 #include <string.h>
 
@@ -73,14 +74,14 @@ geometry geometryCreate(const geometryParams params)
 {
 	if(params->vertexCount == 0)
 	{
-		fprintf(stderr, "geometryCreate2() vertexCount can't be 0\n");
+		logError("vertexCount can't be 0");
 
 		return NULL;
 	}
 
 	if(params->indexCount && params->data[0] == NULL)
 	{
-		fprintf(stderr, "geometryCreate2() indices are missing\n");
+		logError("Indices are missing");
 
 		return NULL;
 	}
@@ -99,7 +100,7 @@ geometry geometryCreate(const geometryParams params)
 		// TODO: use directly createBufferWithStaging() and delete createVertexBufferWithStaging()
 		if(createVertexBufferWithStaging(size, &geometry->buffers[i], &geometry->bufferMemories[i],	params->data[i]))
 		{
-			fprintf(stderr, "geometryCreate2() failed to create buffers for attribute %d\n", i);
+			logError("Failed to create buffers for attribute %d", i);
 			goto error;
 		}
 
@@ -111,7 +112,7 @@ geometry geometryCreate(const geometryParams params)
 		// TODO: use directly createBufferWithStaging() and delete createIndexBufferWithStaging()
 		if(createIndexBufferWithStaging(params->indexSize, &geometry->buffers[geometry->attribCount], &geometry->bufferMemories[geometry->attribCount],	params->indices))
 		{
-			fprintf(stderr, "geometryCreate2() failed to create buffers for indices\n");
+			logError("Failed to create buffers for indices");
 			goto error;
 		}
 	}
