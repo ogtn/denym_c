@@ -1,5 +1,5 @@
 #include "logger.h"
-#include "denym.h"
+#include "denym_common.h"
 
 #include <stdarg.h>
 
@@ -41,6 +41,31 @@ void logWarningFull(const char *file, int line, const char *function, const char
     va_start(list, format);
     logMsg(file, line, function, LOG_WARN, format, list);
     va_end(list);
+}
+
+
+void glfwErrorCallback(int error, const char* description)
+{
+    fprintf(stderr, "[%.6f][%s] GLFW error %d occured : '%s'", getUptime(), LOG_ERR, error, description);
+}
+
+
+VKAPI_ATTR VkBool32 VKAPI_CALL vulkanErrorCallback(
+	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+	VkDebugUtilsMessageTypeFlagsEXT messageType,
+	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+	void* pUserData)
+{
+    const char *level = LOG_ERR;
+
+	if(messageSeverity & (VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT))
+		level = LOG_INFO;
+	else if(messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+		level = LOG_WARN;
+
+    fprintf(stderr, "[%.6f][%s] %s\n", getUptime(), level, pCallbackData->pMessage);
+
+	return VK_FALSE;
 }
 
 

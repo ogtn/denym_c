@@ -13,17 +13,9 @@ static const char* ENGINE_NAME = "Denym";
 static const int ENGINE_VERSION = VK_MAKE_API_VERSION(0, 0, 1, 0);
 
 
-void glfwErrorCallback(int error, const char* description);
-
 void glfwFramebufferResizeCallback(GLFWwindow* window, int width, int height);
 
 void glfwKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
-
-VKAPI_ATTR VkBool32 VKAPI_CALL vulkanErrorCallback(
-	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-	VkDebugUtilsMessageTypeFlagsEXT messageType,
-	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-	void* pUserData);
 
 GLFWwindow* createWindow(int width, int height);
 

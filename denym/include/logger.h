@@ -2,6 +2,9 @@
 #define _logger_h_
 
 
+#include "denym_common.h"
+
+
 #ifdef __GNUC__
     #define CHK_FMT_AND_ARGS(fmt_pos) __attribute((format(printf, (fmt_pos), (fmt_pos + 1))))
     #define CHK_FMT_ONLY(fmt_pos) __attribute((format(printf, (fmt_pos), 0)))
@@ -22,5 +25,12 @@ void logInfoFull(const char *file, int line, const char *function, const char *f
 
 void logErrorFull(const char *file, int line, const char *function, const char *format, ...) CHK_FMT_AND_ARGS(4);
 
+void glfwErrorCallback(int error, const char* description);
+
+VKAPI_ATTR VkBool32 VKAPI_CALL vulkanErrorCallback(
+	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+	VkDebugUtilsMessageTypeFlagsEXT messageType,
+	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+	void* pUserData);
 
 #endif

@@ -96,12 +96,6 @@ void denymWaitForNextFrame(void)
 }
 
 
-void glfwErrorCallback(int error, const char* description)
-{
-	logError("GLFW error %d occured : '%s'", error, description);
-}
-
-
 void glfwFramebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
 	engine.vulkanContext.framebufferResized = VK_TRUE;
@@ -1241,21 +1235,4 @@ void cleanSwapchain(vulkanContext* context)
 	cleanColorResources();
 	cleanDepthBufferResources();
 	context->DestroySwapchainKHR(context->device, context->swapchain, NULL);
-}
-
-
-VKAPI_ATTR VkBool32 VKAPI_CALL vulkanErrorCallback(
-	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-	VkDebugUtilsMessageTypeFlagsEXT messageType,
-	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-	void* pUserData)
-{
-	if(messageSeverity & (VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT))
-		logInfo("%s", pCallbackData->pMessage);
-	else if(messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-		logWarning("%s", pCallbackData->pMessage);
-	else
-		logError("%s", pCallbackData->pMessage);
-
-	return VK_FALSE;
 }
