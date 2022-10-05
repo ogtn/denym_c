@@ -13,6 +13,7 @@
     #define LOG_ERR "ERROR"
 #endif
 
+#define LOG_MAX_LEN 8192
 
 static void logMsg(const char *file, int line, const char *function, const char *level, const char *format, va_list list);
 
@@ -74,10 +75,21 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vulkanErrorCallback(
 
 static void logMsg(const char *file, int line, const char *function, const char *level, const char *format, va_list list)
 {
-    // TODO: only one print here, use temp buffer to avoid interleaved message with multiple threads
-    fprintf(stderr, "[%.6f][%s][%s:%d] %s(): ", getUptime(), level, file, line, function);
-    vfprintf(stderr, format, list);
-    fprintf(stderr, "\n");
+    char message[LOG_MAX_LEN];
+    const char *filename = file;
+
+    // extract basename
+    while(*file)
+    {
+        if(*file == '\\' || *file == '/')
+            filename = file + 1;
+
+        file++;
+    }
+
+    size_t len = (size_t)snprintf(message, LOG_MAX_LEN, "[%.6f][%s][%s:%d] %s(): ", getUptime(), level, filename, line, function);
+    vsnprintf(message + len, LOG_MAX_LEN - len, format, list);
+    fprintf(stderr, "%s\n", message);
 }
 
 #pragma clang diagnostic pop
