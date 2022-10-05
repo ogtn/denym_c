@@ -71,7 +71,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LibraryPath>$(SolutionDir)/lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(VULKAN_SDK)\lib;$(SolutionDir)\denym\include;$(SolutionDir)\dependencies\cglm\include;$(SolutionDir)\dependencies\stb;$(IncludePath)</IncludePath>
+    <IncludePath>$(VULKAN_SDK)\lib;$(SolutionDir)\denym\include;$(SolutionDir)\dependencies\cglm\include;$(SolutionDir)\dependencies\stb;$(SolutionDir)\dependencies\fast_obj;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)msvc\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -145,6 +145,8 @@
     <ClInclude Include="..\denym\include\denym_private.h" />
     <ClInclude Include="..\denym\include\geometry.h" />
     <ClInclude Include="..\denym\include\image.h" />
+    <ClInclude Include="..\denym\include\logger.h" />
+    <ClInclude Include="..\denym\include\model.h" />
     <ClInclude Include="..\denym\include\renderable.h" />
     <ClInclude Include="..\denym\include\shader.h" />
     <ClInclude Include="..\denym\include\texture.h" />
@@ -153,11 +155,13 @@
   <ItemGroup>
     <ClCompile Include="..\denym\src\buffer.c" />
     <ClCompile Include="..\denym\src\denym.c" />
+    <ClCompile Include="..\denym\src\dependencies_impl.c" />
     <ClCompile Include="..\denym\src\geometry.c" />
     <ClCompile Include="..\denym\src\image.c" />
+    <ClCompile Include="..\denym\src\logger.c" />
+    <ClCompile Include="..\denym\src\model.c" />
     <ClCompile Include="..\denym\src\renderable.c" />
     <ClCompile Include="..\denym\src\shader.c" />
-    <ClCompile Include="..\denym\src\stb_image_impl.c" />
     <ClCompile Include="..\denym\src\texture.c" />
     <ClCompile Include="..\denym\src\utils.c" />
   </ItemGroup>

@@ -48,6 +48,12 @@
     <ClInclude Include="..\denym\include\utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\denym\include\logger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\denym\include\model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\denym\src\buffer.c">
@@ -68,13 +74,19 @@
     <ClCompile Include="..\denym\src\shader.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\denym\src\stb_image_impl.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\denym\src\texture.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\denym\src\utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\denym\src\dependencies_impl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\denym\src\logger.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\denym\src\model.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
