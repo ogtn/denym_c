@@ -99,6 +99,9 @@ typedef struct denym
 	struct timespec uptime;
 	uint64_t frameCount;
 	struct timespec lastFrameDuration;
+
+	float lastTime;
+	uint32_t fps;
 } denym;
 
 

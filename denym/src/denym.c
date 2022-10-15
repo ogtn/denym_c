@@ -41,6 +41,8 @@ int denymInit(int window_width, int window_height)
 		result = 0;
 		engine.vulkanContext.currentFrame = 0;
 		engine.frameCount = 0;
+		engine.fps = 0;
+		engine.lastTime = 0;
 
 		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 			engine.vulkanContext.needCommandBufferUpdate[i] = VK_TRUE;
@@ -84,6 +86,20 @@ void denymRender(renderable *renderables, uint32_t renderablesCount)
     timespec_diff(&start, &end, &engine.lastFrameDuration);
 	engine.vulkanContext.currentFrame = (engine.vulkanContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	engine.frameCount++;
+
+	float uptime = getUptime();
+
+	if(uptime - engine.lastTime > 1)
+	{
+		char title[128];
+
+		snprintf(title, sizeof title, "%s - FPS: %.1f", APP_NAME, engine.fps / (uptime - engine.lastTime));
+		glfwSetWindowTitle(engine.window, title);
+		engine.fps = 0;
+		engine.lastTime = uptime;
+	}
+	else
+		engine.fps++;
 }
 
 
