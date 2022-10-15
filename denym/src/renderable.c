@@ -21,7 +21,8 @@ renderable denymCreateRenderable(const renderableCreateParams *params)
 	strncpy(renderable->vertShaderName, params->vertShaderName, sizeof renderable->vertShaderName);
 	strncpy(renderable->fragShaderName, params->fragShaderName, sizeof renderable->fragShaderName);
 	renderable->geometry = params->geometry;
-	renderable->useUniforms = params->useUniforms;
+	renderable->useUniforms = params->uniformSize != 0;
+	renderable->uniformSize = params->uniformSize;
 	renderable->usePushConstant = params->usePushConstant;
 
 	if(params->textureName)
@@ -313,7 +314,7 @@ int createUniformsBuffer(renderable renderable)
 	if(renderable->useUniforms)
 	{
 		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-			createBuffer(sizeof(modelViewProj), &renderable->uniformBuffers[i], &renderable->uniformBuffersMemory[i],
+			createBuffer(renderable->uniformSize, &renderable->uniformBuffers[i], &renderable->uniformBuffersMemory[i],
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 	}
 
@@ -321,17 +322,16 @@ int createUniformsBuffer(renderable renderable)
 }
 
 
-int updateUniformsBuffer(renderable renderable, const modelViewProj *mvp)
+int updateUniformsBuffer(renderable renderable, const void *data)
 {
 	if(renderable->useUniforms == VK_FALSE)
 		return -1;
 
 	void *dest;
 	VkDeviceMemory deviceMemory = renderable->uniformBuffersMemory[engine.vulkanContext.currentFrame];
-	VkDeviceSize size = sizeof * mvp;
 
-	vkMapMemory(engine.vulkanContext.device, deviceMemory, 0, size, 0, &dest);
-	memcpy(dest, mvp, size);
+	vkMapMemory(engine.vulkanContext.device, deviceMemory, 0, renderable->uniformSize, 0, &dest);
+	memcpy(dest, data, renderable->uniformSize);
 	vkUnmapMemory(engine.vulkanContext.device, deviceMemory);
 
 	return 0;
@@ -468,7 +468,7 @@ int createDescriptorSets(renderable renderable)
 		{
 			bufferInfo.buffer = renderable->uniformBuffers[i];
 			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(modelViewProj); // could use VK_WHOLE_SIZE here
+			bufferInfo.range = renderable->uniformSize; // could use VK_WHOLE_SIZE here
 
 			descriptorWrites[descriptorWriteCount].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[descriptorWriteCount].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;

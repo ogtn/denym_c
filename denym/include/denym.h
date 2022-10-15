@@ -45,7 +45,7 @@ typedef struct renderableCreateParams
 	const char *vertShaderName;
 	const char *fragShaderName;
 	geometry geometry;
-	uint32_t useUniforms;
+	size_t uniformSize;
 	uint32_t usePushConstant;
 } renderableCreateParams;
 
@@ -88,13 +88,13 @@ renderable denymCreateRenderable(const renderableCreateParams *createParams);
 
 void denymDestroyRenderable(renderable renderable);
 
-int updateUniformsBuffer(renderable renderable, const modelViewProj *mvp);
+int updateUniformsBuffer(renderable renderable, const void *data);
 
 int updatePushConstants(renderable renderable, float alpha);
 
 float getUptime(void);
 
-renderable modelLoad(const char *objFile, int useIndices, int useNormals, const char *texture, const char *vertShader, const char *fragShader);
+renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, int useIndices, int useNormals);
 
 
 #endif

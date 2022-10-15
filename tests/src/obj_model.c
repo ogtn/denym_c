@@ -5,6 +5,14 @@
 #include <string.h>
 
 
+typedef struct uniforms
+{
+	mat4 model;
+	mat4 view;
+	mat4 projection;
+} uniforms;
+
+
 int main(void)
 {
 	const int width = 640;
@@ -13,43 +21,41 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 
-	renderable model = modelLoad(
-		"viking_room.obj",
-        0, 0,
-		"viking_room.png",
-		"texture_v2.vert.spv",
-		"texture_v2.frag.spv");
+	renderableCreateParams params = {
+		.textureName = "viking_room.png",
+		.vertShaderName = "texture_v2.vert.spv",
+		.fragShaderName = "texture_v2.frag.spv",
+		.uniformSize = sizeof(uniforms)
+	};
 
-	renderable model2 = modelLoad(
-		"viking_room.obj",
-        1, 0,
-		"viking_room.png",
-		"texture_v2.vert.spv",
-		"texture_v2.frag.spv");
+	renderable model = modelLoad("viking_room.obj", &params, 0, 0);
+
+	params.textureName = "missing.png";
+	renderable model2 = modelLoad("sphere.obj", &params, 1, 1);
 
 	renderable models[] = {model, model2};
-	modelViewProj mvp;
+	uniforms uniforms;
 	vec3 axis = {0, 0, 1};
 	vec3 eye = {4, 0, 2};
 	vec3 center = { 0, 0, 0.5};
 	vec3 up = { 0, 0, 1 };
-	glm_lookat(eye, center, up, mvp.view);
-	glm_perspective(glm_rad(45), (float)width / height, 0.01f, 1000, mvp.projection);
-	mvp.projection[1][1] *= -1;
+	glm_lookat(eye, center, up, uniforms.view);
+	glm_perspective(glm_rad(45), (float)width / height, 0.01f, 1000, uniforms.projection);
+	uniforms.projection[1][1] *= -1;
 
 	while (denymKeepRunning())
 	{
 		float elapsed_since_start = getUptime();
 
-		glm_mat4_identity(mvp.model);
-		glm_translate_y(mvp.model, -1);
-		glm_rotate(mvp.model, glm_rad(elapsed_since_start * 20), axis);
-		updateUniformsBuffer(model, &mvp);
+		glm_mat4_identity(uniforms.model);
+		glm_translate_y(uniforms.model, -1);
+		glm_rotate(uniforms.model, glm_rad(elapsed_since_start * 20), axis);
+		updateUniformsBuffer(model, &uniforms);
 
-		glm_mat4_identity(mvp.model);
-		glm_translate_y(mvp.model, 1);
-		glm_rotate(mvp.model, glm_rad(elapsed_since_start * 20), axis);
-		updateUniformsBuffer(model2, &mvp);
+		glm_mat4_identity(uniforms.model);
+		glm_translate_y(uniforms.model, 1);
+		glm_rotate(uniforms.model, glm_rad(elapsed_since_start * 20), axis);
+		updateUniformsBuffer(model2, &uniforms);
 
 		denymRender(models, 2);
 		denymWaitForNextFrame();

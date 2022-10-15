@@ -24,6 +24,7 @@ typedef struct renderable_t
 	VkBuffer uniformBuffers[MAX_FRAMES_IN_FLIGHT];
 	VkDeviceMemory uniformBuffersMemory[MAX_FRAMES_IN_FLIGHT];
 	VkBool32 useUniforms;
+	VkDeviceSize uniformSize;
 
 	// push constant
 	VkBool32 usePushConstant;
@@ -43,7 +44,7 @@ renderable denymCreateRenderable(const renderableCreateParams *params);
 
 void denymDestroyRenderable(renderable renderable);
 
-int updateUniformsBuffer(renderable renderable, const modelViewProj *mvp);
+int updateUniformsBuffer(renderable renderable, const void *data);
 
 int usePushConstants(renderable renderable);
 
@@ -60,8 +61,6 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer);
 int createUniformsBuffer(renderable renderable);
 
 int useUniforms(renderable renderable);
-
-int updateUniformsBuffer(renderable renderable, const modelViewProj *mvp);
 
 int createDescriptorPool(renderable renderable);
 

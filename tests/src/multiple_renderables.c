@@ -37,7 +37,7 @@ static renderable makeSquare(void)
 		.geometry = geometryCreate(geometryParams),
 		.vertShaderName = "mvp_ubo_position_color_attribute.vert.spv",
 		.fragShaderName = "basic_color_interp.frag.spv",
-		.useUniforms = 1
+		.uniformSize = sizeof(modelViewProj)
 	};
 
     return denymCreateRenderable(&renderableParams);

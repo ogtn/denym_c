@@ -19,7 +19,20 @@ typedef struct vertex_vt
 } vertex_vt;
 
 
-renderable modelLoad(const char *objFile, int useIndices, int useNormals, const char *texture, const char *vertShader, const char *fragShader)
+static void addVertex(uint32_t indexSrc, uint32_t indexDst, fastObjIndex *indices, float *posSrc, float *posDst, float *texSrc, float *texDst, float *normSrc, float *normDst)
+{
+    uint32_t pos = indices[indexSrc].p;
+    uint32_t txc = indices[indexSrc].t;
+    uint32_t norm = indices[indexSrc].n;
+
+    memcpy(&posDst[indexDst * 3], &posSrc[pos * 3], sizeof(vec3));
+    texDst[indexDst * 2] = texSrc[txc * 2];
+    texDst[indexDst * 2 + 1] = -texSrc[txc * 2 + 1]; // invert Y axis between obj and Vulkan
+    memcpy(&normDst[indexDst * 3], &normSrc[norm * 3], sizeof(vec3));
+}
+
+
+renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, int useIndices, int useNormals)
 {
     // TODO: check extension
     float start = getUptime();
@@ -29,41 +42,42 @@ renderable modelLoad(const char *objFile, int useIndices, int useNormals, const 
     logInfo("fast_obj_read: %fs", getUptime() - start);
     start = getUptime();
 
-    float *positions = malloc(sizeof(float) * 3 * mesh->index_count);
-    float *texCoords = malloc(sizeof(float) * 2 * mesh->index_count);
-    float *normals = malloc(sizeof(float) * 3 * mesh->index_count);
+    uint32_t triangleCount = 0;
 
-    uint32_t index_f = 0;
+    for(uint32_t i = 0; i < mesh->face_count; i++)
+        triangleCount += mesh->face_vertices[i] - 2;
+
+    float *positions = malloc(sizeof(float) * 3 * triangleCount * 3);
+    float *texCoords = malloc(sizeof(float) * 2 * triangleCount * 3);
+    float *normals = malloc(sizeof(float) * 3 * triangleCount * 3);
+
+    uint32_t objVertIndex = 0;
     uint32_t index = 0;
 
     for(uint32_t i = 0; i < mesh->face_count; i++)
     {
-        // TODO: generate triangles from n-gons
-        if(mesh->face_vertices[i] == 3)
+        uint32_t baseVertex = objVertIndex;
+        uint32_t nextVertex = objVertIndex + 1;
+
+        for(uint32_t k = 0; k < mesh->face_vertices[i] - 2; k++)
         {
-            for(uint32_t j = 0; j < mesh->face_vertices[i]; j++)
+            addVertex(baseVertex, index++, mesh->indices,
+                mesh->positions, positions,
+                mesh->texcoords, texCoords,
+                mesh->normals, normals);
+
+            for(uint32_t j = 0; j < 2; j++)
             {
-                uint32_t pos = mesh->indices[index_f].p;
-                uint32_t txc = mesh->indices[index_f].t;
-                uint32_t norm = mesh->indices[index_f].n;
-
-                positions[index * 3] = mesh->positions[pos * 3];
-                positions[index * 3 + 1] = mesh->positions[pos * 3 + 1];
-                positions[index * 3 + 2] = mesh->positions[pos * 3 + 2];
-
-                texCoords[index * 2] = mesh->texcoords[txc * 2];
-                texCoords[index * 2 + 1] = 1 - mesh->texcoords[txc * 2 + 1];
-
-                normals[index * 3] = mesh->normals[norm * 3];
-                normals[index * 3 + 1] = mesh->normals[norm * 3 + 1];
-                normals[index * 3 + 2] = mesh->normals[norm * 3 + 2];
-
-                index_f++;
-                index++;
+                addVertex(nextVertex++, index++, mesh->indices,
+                    mesh->positions, positions,
+                    mesh->texcoords, texCoords,
+                    mesh->normals, normals);
             }
+
+            nextVertex--;
         }
-        else
-            index_f += mesh->face_vertices[i];
+
+        objVertIndex += mesh->face_vertices[i];
     }
 
     logInfo("fast_obj transform: %fs", getUptime() - start);
@@ -198,14 +212,8 @@ renderable modelLoad(const char *objFile, int useIndices, int useNormals, const 
         geometry = geometryCreate(geometryParams);
     }
 
-    renderableCreateParams renderableParams = {
-        .fragShaderName = fragShader,
-        .vertShaderName = vertShader,
-        .textureName = texture,
-        .geometry = geometry,
-        .useUniforms = 1
-    };
-    renderable renderable = denymCreateRenderable(&renderableParams);
+    renderableParams->geometry = geometry;
+    renderable renderable = denymCreateRenderable(renderableParams);
 
     free(positions);
     free(texCoords);
