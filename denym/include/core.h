@@ -93,6 +93,8 @@ typedef struct denym
 	int windowHeight;
 	int windowPosX;
 	int windowPosY;
+	int framebufferWidth;
+	int framebufferHeigt;
 	VkBool32 isFullScreen;
 
 	// TODO: add moar metrics : fps, render time etc.

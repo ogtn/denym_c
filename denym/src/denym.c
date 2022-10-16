@@ -5,6 +5,7 @@
 #include "texture.h"
 #include "utils.h"
 #include "scene.h"
+#include "camera.h"
 #include "logger.h"
 
 #include <stdio.h>
@@ -118,7 +119,10 @@ void denymWaitForNextFrame(void)
 void glfwFramebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
 	engine.vulkanContext.framebufferResized = VK_TRUE;
-	glfwGetFramebufferSize(engine.window, &width, &height);
+	engine.framebufferWidth = width;
+	engine.framebufferHeigt = height;
+
+	cameraResize(sceneGetCamera(engine.scene), width, height);
 }
 
 
@@ -150,6 +154,9 @@ GLFWwindow* createWindow(int width, int height)
 	GLFWwindow* window;
 	const GLFWvidmode* videoMode;
 	GLFWmonitor* monitor;
+
+	engine.framebufferWidth = width;
+	engine.framebufferHeigt = height;
 
 	if (!glfwInit())
 	{
@@ -656,9 +663,7 @@ int createSwapchain(vulkanContext* context)
 	}
 	else
 	{
-		int width, height;
-		glfwGetFramebufferSize(engine.window, &width, &height);
-		VkExtent2D windowExtent = { (uint32_t)width, (uint32_t)height };
+		VkExtent2D windowExtent = { (uint32_t)engine.framebufferWidth, (uint32_t)engine.framebufferHeigt };
 
 		context->swapchainExtent = clampExtent2D(
 			windowExtent,
@@ -708,18 +713,9 @@ int createSwapchain(vulkanContext* context)
 int recreateSwapChain(void)
 {
 	int result = -1;
-	int width, height;
 
 	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		engine.vulkanContext.needCommandBufferUpdate[i] = VK_TRUE;
-
-	glfwGetFramebufferSize(engine.window, &width, &height);
-
-	while(width == 0 || height == 0)
-	{
-		glfwWaitEvents();
-		glfwGetFramebufferSize(engine.window, &width, &height);
-	}
 
 	vkDeviceWaitIdle(engine.vulkanContext.device);
 	cleanSwapchain(&engine.vulkanContext);

@@ -49,7 +49,7 @@ int main(void)
 	vec3 eye = {2, 2, 2};
 	vec3 center = { 0, 0, 0};
 
-	camera camera = cameraCreatePerspective(45, (float)width / (float)height, 0.01f, 1000.f);
+	camera camera = cameraCreatePerspective(45, 0.01f, 1000.f);
 	cameraLookAt(camera, eye, center);
 	sceneSetCamera(denymGetScene(), camera);
 

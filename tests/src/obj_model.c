@@ -85,17 +85,16 @@ int main(void)
 	vec3 eye = {4, 0, 2};
 	vec3 center = { 0, 0, 0.5};
 
-	camera camera = cameraCreatePerspective(45, (float)width / (float)height, 0.01f, 1000.f);
+	camera camera = cameraCreatePerspective(60, 0.01f, 1000.f);
 	cameraLookAt(camera, eye, center);
 	sceneSetCamera(denymGetScene(), camera);
-
-	mat4 matrix;
-	glm_mat4_identity(matrix);
-	renderableSetMatrix(grid, matrix);
 
 	while (denymKeepRunning())
 	{
 		float elapsed_since_start = getUptime();
+		mat4 matrix;
+		glm_mat4_identity(matrix);
+		renderableSetMatrix(grid, matrix);
 
 		glm_mat4_identity(matrix);
 		glm_translate_y(matrix, -1);
