@@ -16,6 +16,7 @@ typedef struct geometry_t* geometry;
 typedef struct geometryParams_t *geometryParams;
 typedef struct renderable_t* renderable;
 typedef struct texture_t* texture;
+typedef struct scene_t *scene;
 
 
 typedef struct modelViewProj
@@ -57,7 +58,7 @@ void denymTerminate(void);
 
 int denymKeepRunning(void);
 
-void denymRender(renderable *renderables, uint32_t renderablesCount);
+void denymRender(void);
 
 void denymWaitForNextFrame(void);
 

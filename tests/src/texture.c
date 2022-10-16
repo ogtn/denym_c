@@ -64,7 +64,6 @@ int main(void)
 
     renderable coloredSquare = makeSquare("mvp_ubo_position_color_attribute.vert.spv", "basic_color_interp.frag.spv");
     renderable texturedSquare = makeSquare("texture.vert.spv", "texture.frag.spv");
-    renderable renderables[] = { texturedSquare, coloredSquare };
 
 	modelViewProj mvp;
 	vec3 axis = {0, 0, 1};
@@ -89,12 +88,10 @@ int main(void)
 		glm_rotate(mvp.model, glm_rad(elapsed_since_start * 50), axis);
 		updateUniformsBuffer(texturedSquare, &mvp);
 
-		denymRender(renderables, 2);
+		denymRender();
 		denymWaitForNextFrame();
 	}
 
-    denymDestroyRenderable(texturedSquare);
-	denymDestroyRenderable(coloredSquare);
 	denymTerminate();
 
 	return EXIT_SUCCESS;

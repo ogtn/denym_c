@@ -16,15 +16,14 @@ int main(void)
 		.vertShaderName = "hardcoded_triangle.vert.spv",
 		.fragShaderName = "basic_color_interp.frag.spv"
 	};
-	renderable triangle = denymCreateRenderable(&renderableParams);
+	denymCreateRenderable(&renderableParams);
 
 	while (denymKeepRunning())
 	{
-		denymRender(&triangle, 1);
+		denymRender();
 		denymWaitForNextFrame();
 	}
 
-	denymDestroyRenderable(triangle);
 	denymTerminate();
 
 	return EXIT_SUCCESS;

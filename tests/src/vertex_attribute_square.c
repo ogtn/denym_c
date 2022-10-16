@@ -42,15 +42,14 @@ int main(void)
 		.vertShaderName = "basic_position_color_attribute.vert.spv",
 		.fragShaderName = "basic_color_interp.frag.spv"
 	};
-	renderable square = denymCreateRenderable(&renderableParams);
+	denymCreateRenderable(&renderableParams);
 
 	while (denymKeepRunning())
 	{
-		denymRender(&square, 1);
+		denymRender();
 		denymWaitForNextFrame();
 	}
 
-	denymDestroyRenderable(square);
 	denymTerminate();
 
 	return EXIT_SUCCESS;

@@ -4,6 +4,7 @@
 #include "image.h"
 #include "texture.h"
 #include "utils.h"
+#include "scene.h"
 #include "logger.h"
 
 #include <stdio.h>
@@ -43,6 +44,7 @@ int denymInit(int window_width, int window_height)
 		engine.frameCount = 0;
 		engine.fps = 0;
 		engine.lastTime = 0;
+		engine.scene = sceneCreate();
 
 		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 			engine.vulkanContext.needCommandBufferUpdate[i] = VK_TRUE;
@@ -58,6 +60,7 @@ int denymInit(int window_width, int window_height)
 
 void denymTerminate(void)
 {
+	sceneDestroy(engine.scene);
 	destroyVulkanContext(&engine.vulkanContext);
 	glfwDestroyWindow(engine.window);
 	glfwTerminate();
@@ -73,11 +76,11 @@ int denymKeepRunning(void)
 }
 
 
-void denymRender(renderable *renderables, uint32_t renderablesCount)
+void denymRender(void)
 {
 	// Wait for fence, so we limit the number of in flight frames
 	vkWaitForFences(engine.vulkanContext.device, 1, &engine.vulkanContext.inFlightFences[engine.vulkanContext.currentFrame], VK_TRUE, UINT64_MAX);
-	updateCommandBuffers(engine.vulkanContext.currentFrame, renderables, renderablesCount);
+	updateCommandBuffers(engine.vulkanContext.currentFrame);
 
 	struct timespec start, end;
     timespec_get(&start, TIME_UTC);
@@ -979,7 +982,7 @@ int createCommandBuffers(void)
 }
 
 
-int updateCommandBuffers(uint32_t cmdBufferIndex, renderable *renderables, uint32_t renderablesCount)
+int updateCommandBuffers(uint32_t cmdBufferIndex)
 {
 	VkResult result = VK_SUCCESS;
 
@@ -1038,13 +1041,10 @@ int updateCommandBuffers(uint32_t cmdBufferIndex, renderable *renderables, uint3
 
 	vkCmdSetViewport(engine.vulkanContext.commandBuffers[cmdBufferIndex], 0, 1, &viewport);
 	vkCmdSetScissor(engine.vulkanContext.commandBuffers[cmdBufferIndex], 0, 1, &scissor);
-
 	renderPassInfo.framebuffer = engine.vulkanContext.swapChainFramebuffers[cmdBufferIndex];
+
 	vkCmdBeginRenderPass(engine.vulkanContext.commandBuffers[cmdBufferIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // VK_SUBPASS_CONTENTS_INLINE for primary
-
-	for(uint32_t j = 0; j < renderablesCount; j++)
-		renderableDraw(renderables[j], engine.vulkanContext.commandBuffers[cmdBufferIndex]);
-
+	sceneDraw(engine.scene, engine.vulkanContext.commandBuffers[cmdBufferIndex]);
 	vkCmdEndRenderPass(engine.vulkanContext.commandBuffers[cmdBufferIndex]);
 
 	result = vkEndCommandBuffer(engine.vulkanContext.commandBuffers[cmdBufferIndex]);

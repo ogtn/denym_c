@@ -90,7 +90,6 @@ int main(void)
 	renderable model2 = modelLoad("sphere.obj", &params, 1, 1);
 	renderable grid = createGrid(8, 3);
 
-	renderable models[] = {grid, model, model2};
 	uniforms uniforms;
 	vec3 axis = {0, 0, 1};
 	vec3 eye = {4, 0, 2};
@@ -116,12 +115,9 @@ int main(void)
 		glm_rotate(uniforms.model, glm_rad(elapsed_since_start * 20), axis);
 		updateUniformsBuffer(model2, &uniforms);
 
-		denymRender(models, sizeof models / sizeof *models);
+		denymRender();
 		denymWaitForNextFrame();
 	}
-
-	for(uint32_t i =  0; i < sizeof models / sizeof *models; i++)
-		denymDestroyRenderable(models[i]);
 
 	denymTerminate();
 

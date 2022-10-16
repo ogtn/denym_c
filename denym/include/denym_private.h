@@ -53,7 +53,7 @@ int createDepthBufferResources(void);
 
 int createCommandBuffers(void);
 
-int updateCommandBuffers(uint32_t cmdBufferIndex, renderable *renderables, uint32_t renderablesCount);
+int updateCommandBuffers(uint32_t cmdBufferIndex);
 
 int createSynchronizationObjects(vulkanContext* context);
 

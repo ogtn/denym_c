@@ -54,7 +54,6 @@ int main(void)
 
     renderable square1 = makeSquare();
     renderable square = makeSquare();
-    renderable renderables[] = { square1, square };
 
 	modelViewProj mvp;
 	vec3 axis = {0, 0, 1};
@@ -79,12 +78,10 @@ int main(void)
 		glm_rotate(mvp.model, glm_rad(elapsed_since_start * 100), axis);
 		updateUniformsBuffer(square, &mvp);
 
-		denymRender(renderables, 2);
+		denymRender();
 		denymWaitForNextFrame();
 	}
 
-    denymDestroyRenderable(square1);
-	denymDestroyRenderable(square);
 	denymTerminate();
 
 	return EXIT_SUCCESS;

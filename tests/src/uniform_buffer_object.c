@@ -64,11 +64,10 @@ int main(void)
 		glm_rotate(mvp.model, glm_rad(elapsed_since_start * 100), axis);
 		updateUniformsBuffer(square, &mvp);
 
-		denymRender(&square, 1);
+		denymRender();
 		denymWaitForNextFrame();
 	}
 
-	denymDestroyRenderable(square);
 	denymTerminate();
 
 	return EXIT_SUCCESS;

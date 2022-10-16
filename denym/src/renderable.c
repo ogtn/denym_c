@@ -4,6 +4,7 @@
 #include "buffer.h"
 #include "core.h"
 #include "texture.h"
+#include "scene.h"
 #include "logger.h"
 
 #include <stdlib.h>
@@ -52,6 +53,8 @@ renderable denymCreateRenderable(const renderableCreateParams *params)
 		!createPipelineLayout(renderable) &&
 		!createPipeline(renderable))
 	{
+		sceneAddRenderable(engine.scene, renderable);
+
 		return renderable;
 	}
 

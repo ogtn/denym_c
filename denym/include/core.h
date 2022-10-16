@@ -102,6 +102,8 @@ typedef struct denym
 
 	float lastTime;
 	uint32_t fps;
+
+	scene scene;
 } denym;
 
 
