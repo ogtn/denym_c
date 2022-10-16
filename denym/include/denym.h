@@ -47,6 +47,7 @@ typedef struct renderableCreateParams
 	geometry geometry;
 	size_t uniformSize;
 	uint32_t usePushConstant;
+	uint32_t useWireFrame;
 } renderableCreateParams;
 
 
@@ -66,9 +67,9 @@ int geometryParamsAddIndices16(geometryParams params, uint16_t *indices);
 
 int geometryParamsAddIndices32(geometryParams params, uint32_t *indices);
 
-int geometryParamsAddAttribVec2(geometryParams params, float *positions);
+int geometryParamsAddAttribVec2(geometryParams params, float *data);
 
-int geometryParamsAddAttribVec3(geometryParams params, float *positions);
+int geometryParamsAddAttribVec3(geometryParams params, float *data);
 
 #define geometryParamsAddPositions2D geometryParamsAddAttribVec2
 

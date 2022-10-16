@@ -58,15 +58,15 @@ int geometryParamsAddIndices32(geometryParams params, uint32_t *indices)
 }
 
 
-int geometryParamsAddAttribVec2(geometryParams params, float *positions)
+int geometryParamsAddAttribVec2(geometryParams params, float *data)
 {
-	return geometryParamsAddAttribute(params, positions, VK_FORMAT_R32G32_SFLOAT, sizeof(float), 2);
+	return geometryParamsAddAttribute(params, data, VK_FORMAT_R32G32_SFLOAT, sizeof(float), 2);
 }
 
 
-int geometryParamsAddAttribVec3(geometryParams params, float *positions)
+int geometryParamsAddAttribVec3(geometryParams params, float *data)
 {
-	return geometryParamsAddAttribute(params, positions, VK_FORMAT_R32G32B32_SFLOAT, sizeof(float), 3);
+	return geometryParamsAddAttribute(params, data, VK_FORMAT_R32G32B32_SFLOAT, sizeof(float), 3);
 }
 
 

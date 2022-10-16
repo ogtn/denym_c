@@ -1089,7 +1089,6 @@ void render(vulkanContext *context)
 	uint32_t imageIndex;
 	VkResult result = context->AcquireNextImageKHR(context->device, context->swapchain, UINT64_MAX, context->imageAvailableSemaphore[context->currentFrame], VK_NULL_HANDLE, &imageIndex);
 
-	// TODO cmdbuffer references swapchain elements... fix this
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		recreateSwapChain();
@@ -1136,7 +1135,6 @@ void render(vulkanContext *context)
 
 	result = context->QueuePresentKHR(context->presentQueue, &presentInfo);
 
-	// TODO cmdbuffer references swapchain elements... fix this
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || engine.vulkanContext.framebufferResized)
 	{
 		engine.vulkanContext.framebufferResized = VK_FALSE;

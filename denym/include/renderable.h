@@ -37,6 +37,9 @@ typedef struct renderable_t
 	// texture
 	texture texture;
 	VkBool32 useTexture;
+
+	VkPolygonMode polygonMode;
+	VkPrimitiveTopology primitiveTopology;
 } renderable_t;
 
 

@@ -25,6 +25,17 @@ renderable denymCreateRenderable(const renderableCreateParams *params)
 	renderable->uniformSize = params->uniformSize;
 	renderable->usePushConstant = params->usePushConstant;
 
+	if(params->useWireFrame)
+	{
+		renderable->polygonMode = VK_POLYGON_MODE_LINE;
+		renderable->primitiveTopology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+	}
+	else
+	{
+		renderable->polygonMode = VK_POLYGON_MODE_FILL;
+		renderable->primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	}
+
 	if(params->textureName)
 	{
 		if(textureCreate(params->textureName, &renderable->texture))
@@ -155,7 +166,7 @@ int createPipeline(renderable renderable)
 	// type of geometry we want to draw
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-		.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+		.topology = renderable->primitiveTopology,
 		.primitiveRestartEnable = VK_FALSE
 	};
 
@@ -171,15 +182,14 @@ int createPipeline(renderable renderable)
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 		.depthClampEnable = VK_FALSE, // if enabled, clamp depth instead of discarding fragments
 		.rasterizerDiscardEnable = VK_FALSE, // https://stackoverflow.com/questions/42470669/when-does-it-make-sense-to-turn-off-the-rasterization-step
-		.polygonMode = VK_POLYGON_MODE_FILL, // lines/points/fill
-		.lineWidth = 1, // needed
+		.polygonMode = renderable->polygonMode,
+		.lineWidth = 1,
 		// culling
 		.cullMode = VK_CULL_MODE_BACK_BIT,
 		.frontFace = VK_FRONT_FACE_CLOCKWISE,
 		.depthBiasEnable = VK_FALSE // see rasterizer.depth* for moar depth control
 	};
 
-	// multisampling disabled
 	VkPipelineMultisampleStateCreateInfo multisampling = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
 		.rasterizationSamples = engine.vulkanContext.maxMSAA,
