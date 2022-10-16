@@ -75,5 +75,7 @@ void cleanDepthBufferResources(void);
 
 void cleanFrameBuffer(void);
 
+scene denymGetScene(void);
+
 
 #endif

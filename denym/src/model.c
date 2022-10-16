@@ -175,7 +175,7 @@ renderable modelLoad(const char *objFile, renderableCreateParams *renderablePara
             indices16 = malloc(sizeof *indices16 * index);
 
             for(uint32_t i = 0; i < index; i++)
-                indices16[i] = indices32[i];
+                indices16[i] = (uint16_t)indices32[i];
 
             geometryParamsAddIndices16(geometryParams, indices16);
             finalSize += vertexCount * sizeof *indices16;
@@ -186,7 +186,7 @@ renderable modelLoad(const char *objFile, renderableCreateParams *renderablePara
             finalSize += vertexCount * sizeof *indices32;
         }
 
-        double gain = (double)(initialSize - finalSize) / initialSize * 100;
+        double gain = (double)(initialSize - finalSize) / (double)initialSize * 100;
         logInfo("Initial size : %ld, indexified size  : %ld. Gain : %.2lf%%",
             initialSize, finalSize, gain);
 

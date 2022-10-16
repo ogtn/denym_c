@@ -12,11 +12,12 @@
 #pragma clang diagnostic pop
 
 
-typedef struct geometry_t* geometry;
+typedef struct geometry_t *geometry;
 typedef struct geometryParams_t *geometryParams;
-typedef struct renderable_t* renderable;
-typedef struct texture_t* texture;
+typedef struct renderable_t *renderable;
+typedef struct texture_t *texture;
 typedef struct scene_t *scene;
+typedef struct camera_t *camera;
 
 
 typedef struct modelViewProj
@@ -90,13 +91,20 @@ renderable denymCreateRenderable(const renderableCreateParams *createParams);
 
 void denymDestroyRenderable(renderable renderable);
 
-int updateUniformsBuffer(renderable renderable, const void *data);
-
 int updatePushConstants(renderable renderable, float alpha);
+
+void renderableSetMatrix(renderable renderable, mat4 matrix);
 
 float getUptime(void);
 
 renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, int useIndices, int useNormals);
 
+scene denymGetScene(void);
+
+void sceneSetCamera(scene scene, camera camera);
+
+camera cameraCreatePerspective(float fov, float aspect, float near, float far);
+
+void cameraLookAt(camera camera, vec3 eye, vec3 target);
 
 #endif

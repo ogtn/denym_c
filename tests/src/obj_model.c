@@ -5,14 +5,6 @@
 #include <string.h>
 
 
-typedef struct uniforms
-{
-	mat4 model;
-	mat4 view;
-	mat4 projection;
-} uniforms;
-
-
 static renderable createGrid(float size, uint32_t level)
 {
     static const float black[] = {0, 0, 0};
@@ -82,7 +74,7 @@ int main(void)
 		.textureName = "viking_room.png",
 		.vertShaderName = "texture_v2.vert.spv",
 		.fragShaderName = "texture_v2.frag.spv",
-		.uniformSize = sizeof(uniforms)
+		.uniformSize = sizeof(modelViewProj)
 	};
 
 	renderable model = modelLoad("viking_room.obj", &params, 0, 0);
@@ -90,30 +82,30 @@ int main(void)
 	renderable model2 = modelLoad("sphere.obj", &params, 1, 1);
 	renderable grid = createGrid(8, 3);
 
-	uniforms uniforms;
-	vec3 axis = {0, 0, 1};
 	vec3 eye = {4, 0, 2};
 	vec3 center = { 0, 0, 0.5};
-	vec3 up = { 0, 0, 1 };
-	glm_lookat(eye, center, up, uniforms.view);
-	glm_perspective(glm_rad(45), (float)width / height, 0.01f, 1000, uniforms.projection);
-	uniforms.projection[1][1] *= -1;
-	glm_mat4_identity(uniforms.model);
-	updateUniformsBuffer(grid, &uniforms);
+
+	camera camera = cameraCreatePerspective(45, (float)width / (float)height, 0.01f, 1000.f);
+	cameraLookAt(camera, eye, center);
+	sceneSetCamera(denymGetScene(), camera);
+
+	mat4 matrix;
+	glm_mat4_identity(matrix);
+	renderableSetMatrix(grid, matrix);
 
 	while (denymKeepRunning())
 	{
 		float elapsed_since_start = getUptime();
 
-		glm_mat4_identity(uniforms.model);
-		glm_translate_y(uniforms.model, -1);
-		glm_rotate(uniforms.model, glm_rad(elapsed_since_start * 20), axis);
-		updateUniformsBuffer(model, &uniforms);
+		glm_mat4_identity(matrix);
+		glm_translate_y(matrix, -1);
+		glm_rotate_z(matrix, glm_rad(elapsed_since_start * 20), matrix);
+		renderableSetMatrix(model, matrix);
 
-		glm_mat4_identity(uniforms.model);
-		glm_translate_y(uniforms.model, 1);
-		glm_rotate(uniforms.model, glm_rad(elapsed_since_start * 20), axis);
-		updateUniformsBuffer(model2, &uniforms);
+		glm_mat4_identity(matrix);
+		glm_translate_y(matrix, 1);
+		glm_rotate_z(matrix, glm_rad(elapsed_since_start * 20), matrix);
+		renderableSetMatrix(model2, matrix);
 
 		denymRender();
 		denymWaitForNextFrame();

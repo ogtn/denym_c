@@ -46,23 +46,21 @@ int main(void)
 	};
 	renderable square = denymCreateRenderable(&renderableParams);
 
-	modelViewProj mvp;
-	vec3 axis = {0, 0, 1};
-	glm_mat4_identity(mvp.model);
 	vec3 eye = {2, 2, 2};
 	vec3 center = { 0, 0, 0};
-	vec3 up = { 0, 0, 1 };
-	glm_lookat(eye, center, up, mvp.view);
-	glm_perspective(glm_rad(45), width / height, 0.01f, 10, mvp.projection);
-	mvp.projection[1][1] *= -1;
+
+	camera camera = cameraCreatePerspective(45, (float)width / (float)height, 0.01f, 1000.f);
+	cameraLookAt(camera, eye, center);
+	sceneSetCamera(denymGetScene(), camera);
 
 	while (denymKeepRunning())
 	{
 		float elapsed_since_start = getUptime();
+		mat4 matrix;
 
-	    glm_mat4_identity(mvp.model);
-		glm_rotate(mvp.model, glm_rad(elapsed_since_start * 100), axis);
-		updateUniformsBuffer(square, &mvp);
+	    glm_mat4_identity(matrix);
+		glm_rotate_z(matrix, glm_rad(elapsed_since_start * 100), matrix);
+		renderableSetMatrix(square, matrix);
 
 		denymRender();
 		denymWaitForNextFrame();

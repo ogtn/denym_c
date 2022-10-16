@@ -38,8 +38,11 @@ typedef struct renderable_t
 	texture texture;
 	VkBool32 useTexture;
 
+	// type of geometry
 	VkPolygonMode polygonMode;
 	VkPrimitiveTopology primitiveTopology;
+
+	mat4 modelMatrix;
 } renderable_t;
 
 
@@ -75,5 +78,6 @@ int usePushConstants(renderable renderable);
 
 int updatePushConstants(renderable renderable, float alpha);
 
+void renderableSetMatrix(renderable renderable, mat4 matrix);
 
 #endif

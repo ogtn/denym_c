@@ -96,7 +96,7 @@ void denymRender(void)
 	{
 		char title[128];
 
-		snprintf(title, sizeof title, "%s - FPS: %.1f", APP_NAME, engine.fps / (uptime - engine.lastTime));
+		snprintf(title, sizeof title, "%s - FPS: %.1f", APP_NAME, (float)engine.fps / (uptime - engine.lastTime));
 		glfwSetWindowTitle(engine.window, title);
 		engine.fps = 0;
 		engine.lastTime = uptime;
@@ -1249,4 +1249,10 @@ void cleanSwapchain(vulkanContext* context)
 	cleanColorResources();
 	cleanDepthBufferResources();
 	context->DestroySwapchainKHR(context->device, context->swapchain, NULL);
+}
+
+
+scene denymGetScene(void)
+{
+	return engine.scene;
 }

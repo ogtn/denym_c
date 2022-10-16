@@ -5,6 +5,7 @@
 #include "core.h"
 #include "texture.h"
 #include "scene.h"
+#include "camera.h"
 #include "logger.h"
 
 #include <stdlib.h>
@@ -54,6 +55,7 @@ renderable denymCreateRenderable(const renderableCreateParams *params)
 		!createPipeline(renderable))
 	{
 		sceneAddRenderable(engine.scene, renderable);
+		glm_mat4_identity(renderable->modelMatrix);
 
 		return renderable;
 	}
@@ -131,10 +133,9 @@ int createPipelineLayout(renderable renderable)
 	}
 
 	// Push constant
-	VkPushConstantRange pushConstantRange =
-	{
+	VkPushConstantRange pushConstantRange =	{
 		.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-		.size = sizeof(float),
+		.size = sizeof(float), // TODO remove this hardcoded...
 		.offset = 0
 	};
 
@@ -529,4 +530,19 @@ int updatePushConstants(renderable renderable, float alpha)
 		engine.vulkanContext.needCommandBufferUpdate[i] = VK_TRUE;
 
 	return 0;
+}
+
+
+void renderableSetMatrix(renderable renderable, mat4 matrix)
+{
+	// TODO fix this awful hack
+	glm_mat4_copy(matrix, renderable->modelMatrix);
+
+	modelViewProj mvp;
+
+	glm_mat4_copy(renderable->modelMatrix, mvp.model);
+	glm_mat4_copy(engine.scene->camera->view, mvp.view);
+	glm_mat4_copy(engine.scene->camera->proj, mvp.projection);
+
+	updateUniformsBuffer(renderable, &mvp);
 }
