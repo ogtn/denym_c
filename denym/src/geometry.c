@@ -104,7 +104,7 @@ geometry geometryCreate(const geometryParams params)
 			goto error;
 		}
 
-		addVertexDescription(geometry, i, params->formats[i], params->strides[i]);
+		geometryAddVertexDescription(geometry, i, params->formats[i], params->strides[i]);
 	}
 
 	if(geometry->indexCount)
@@ -142,7 +142,7 @@ void geometryDestroy(geometry geometry)
 }
 
 
-void addVertexDescription(geometry geometry, uint32_t binding, VkFormat format, uint32_t stride)
+void geometryAddVertexDescription(geometry geometry, uint32_t binding, VkFormat format, uint32_t stride)
 {
 	geometry->vertexAttributeDescriptions[binding].binding = binding;
 	geometry->vertexAttributeDescriptions[binding].format = format;
@@ -152,4 +152,37 @@ void addVertexDescription(geometry geometry, uint32_t binding, VkFormat format, 
 	geometry->vertexBindingDescriptions[binding].binding = binding;
 	geometry->vertexBindingDescriptions[binding].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 	geometry->vertexBindingDescriptions[binding].stride = stride;
+}
+
+
+void geometryFillVertexInputInfo(geometry geometry, VkPipelineVertexInputStateCreateInfo *vertexInputInfo)
+{
+	vertexInputInfo->sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputInfo->vertexBindingDescriptionCount = geometry->attribCount;
+	vertexInputInfo->vertexAttributeDescriptionCount = geometry->attribCount;
+	vertexInputInfo->pVertexAttributeDescriptions = geometry->vertexAttributeDescriptions;
+	vertexInputInfo->pVertexBindingDescriptions = geometry->vertexBindingDescriptions;
+}
+
+
+void geometryDraw(geometry geometry, VkCommandBuffer commandBuffer)
+{
+	// bind vertex attributes, except indices
+	if(geometry->attribCount)
+	{
+		VkDeviceSize offsets[GEOMETRY_MAX_ATTRIBS] = { 0 };
+
+		if(geometry->indexCount)
+		{
+			vkCmdBindVertexBuffers(commandBuffer, 0, geometry->attribCount, geometry->buffers, offsets);
+			vkCmdBindIndexBuffer(commandBuffer, geometry->buffers[geometry->attribCount], 0, geometry->indexType);
+		}
+		else
+			vkCmdBindVertexBuffers(commandBuffer, 0, geometry->attribCount, geometry->buffers, offsets);
+	}
+
+	if(geometry->indexCount)
+		vkCmdDrawIndexed(commandBuffer, geometry->indexCount, 1, 0, 0, 0);
+	else
+		vkCmdDraw(commandBuffer, geometry->vertexCount, 1, 0, 0);
 }

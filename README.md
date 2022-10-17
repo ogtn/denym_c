@@ -22,3 +22,9 @@ The initial goal was to see what it takes to display a simple triangle with C an
 - [ ] Deffered shading
 - [ ] Fog
 - [ ] Bloom
+- [ ] Instance rendering
+- [ ] Physic
+- [ ] Tilling
+- [ ] Scrolling
+- [ ] FPS camera
+- [ ] 2D camera

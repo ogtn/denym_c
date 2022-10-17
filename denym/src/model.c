@@ -19,17 +19,7 @@ typedef struct vertex_vt
 } vertex_vt;
 
 
-static void addVertex(uint32_t indexSrc, uint32_t indexDst, fastObjIndex *indices, float *posSrc, float *posDst, float *texSrc, float *texDst, float *normSrc, float *normDst)
-{
-    uint32_t pos = indices[indexSrc].p;
-    uint32_t txc = indices[indexSrc].t;
-    uint32_t norm = indices[indexSrc].n;
-
-    memcpy(&posDst[indexDst * 3], &posSrc[pos * 3], sizeof(vec3));
-    texDst[indexDst * 2] = texSrc[txc * 2];
-    texDst[indexDst * 2 + 1] = -texSrc[txc * 2 + 1]; // invert Y axis between obj and Vulkan
-    memcpy(&normDst[indexDst * 3], &normSrc[norm * 3], sizeof(vec3));
-}
+static void addVertex(uint32_t indexSrc, uint32_t indexDst, fastObjIndex *indices, float *posSrc, float *posDst, float *texSrc, float *texDst, float *normSrc, float *normDst);
 
 
 renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, int useIndices, int useNormals)
@@ -221,4 +211,17 @@ renderable modelLoad(const char *objFile, renderableCreateParams *renderablePara
     fast_obj_destroy(mesh);
 
     return renderable;
+}
+
+
+static void addVertex(uint32_t indexSrc, uint32_t indexDst, fastObjIndex *indices, float *posSrc, float *posDst, float *texSrc, float *texDst, float *normSrc, float *normDst)
+{
+    uint32_t pos = indices[indexSrc].p;
+    uint32_t txc = indices[indexSrc].t;
+    uint32_t norm = indices[indexSrc].n;
+
+    memcpy(&posDst[indexDst * 3], &posSrc[pos * 3], sizeof(vec3));
+    texDst[indexDst * 2] = texSrc[txc * 2];
+    texDst[indexDst * 2 + 1] = -texSrc[txc * 2 + 1]; // invert Y axis between obj and Vulkan
+    memcpy(&normDst[indexDst * 3], &normSrc[norm * 3], sizeof(vec3));
 }

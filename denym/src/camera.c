@@ -47,3 +47,14 @@ void cameraResize(camera camera, int with, int height)
     else
         logWarning("Resizing non perpective camera has no effect");
 }
+
+
+void cameraGetView(camera camera, mat4 out)
+{
+    glm_mat4_copy(camera->view, out);
+}
+
+void cameraGetProj(camera camera, mat4 out)
+{
+    glm_mat4_copy(camera->proj, out);
+}

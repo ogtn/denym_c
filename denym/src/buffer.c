@@ -156,6 +156,7 @@ void bufferTerminateCopyCmdBuffer(VkCommandBuffer commandBuffer)
 }
 
 
+// TODO: move this to denym or utils ?
 int bufferFindMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties, uint32_t* index)
 {
 	VkPhysicalDeviceMemoryProperties memProperties;

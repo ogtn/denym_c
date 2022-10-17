@@ -54,7 +54,10 @@ geometry geometryCreate(const geometryParams params);
 
 void geometryDestroy(geometry geometry);
 
-void addVertexDescription(geometry geometry, uint32_t binding, VkFormat format, uint32_t stride);
+void geometryAddVertexDescription(geometry geometry, uint32_t binding, VkFormat format, uint32_t stride);
 
+void geometryFillVertexInputInfo(geometry geometry, VkPipelineVertexInputStateCreateInfo *vertexInputInfo);
+
+void geometryDraw(geometry geometry, VkCommandBuffer commandBuffer);
 
 #endif

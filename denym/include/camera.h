@@ -28,5 +28,9 @@ void cameraLookAt(camera camera, vec3 eye, vec3 target);
 
 void cameraResize(camera camera, int with, int height);
 
+void cameraGetView(camera camera, mat4 out);
+
+void cameraGetProj(camera camera, mat4 out);
+
 
 #endif

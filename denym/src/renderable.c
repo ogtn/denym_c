@@ -159,13 +159,8 @@ int renderableCreatePipelineLayout(renderable renderable)
 int renderableCreatePipeline(renderable renderable)
 {
 	// vertex attributes
-	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-		.vertexBindingDescriptionCount = renderable->geometry->attribCount,
-		.vertexAttributeDescriptionCount = renderable->geometry->attribCount,
-		.pVertexAttributeDescriptions = renderable->geometry->vertexAttributeDescriptions,
-		.pVertexBindingDescriptions = renderable->geometry->vertexBindingDescriptions
-	};
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo;
+	geometryFillVertexInputInfo(renderable->geometry, &vertexInputInfo);
 
 	// type of geometry we want to draw
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
@@ -294,20 +289,6 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 {
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipeline);
 
-	// bind vertex attributes, except indices
-	if(renderable->geometry->attribCount)
-	{
-		VkDeviceSize offsets[GEOMETRY_MAX_ATTRIBS] = { 0 };
-
-		if(renderable->geometry->indexCount)
-		{
-			vkCmdBindVertexBuffers(commandBuffer, 0, renderable->geometry->attribCount, renderable->geometry->buffers, offsets);
-			vkCmdBindIndexBuffer(commandBuffer, renderable->geometry->buffers[renderable->geometry->attribCount], 0, renderable->geometry->indexType);
-		}
-		else
-			vkCmdBindVertexBuffers(commandBuffer, 0, renderable->geometry->attribCount, renderable->geometry->buffers, offsets);
-	}
-
 	// bind descriptor set to send uniforms
 	if(renderable->useUniforms)
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipelineLayout, 0, 1, &renderable->descriptorSets[engine.vulkanContext.currentFrame], 0, NULL);
@@ -316,10 +297,7 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 	if(renderable->usePushConstant)
 		vkCmdPushConstants(commandBuffer, renderable->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &renderable->pushConstantAlpha);
 
-	if(renderable->geometry->indexCount)
-		vkCmdDrawIndexed(commandBuffer, renderable->geometry->indexCount, 1, 0, 0, 0);
-	else
-		vkCmdDraw(commandBuffer, renderable->geometry->vertexCount, 1, 0, 0);
+	geometryDraw(renderable->geometry, commandBuffer);
 }
 
 
@@ -541,8 +519,8 @@ void renderableSetMatrix(renderable renderable, mat4 matrix)
 	modelViewProj mvp;
 
 	glm_mat4_copy(renderable->modelMatrix, mvp.model);
-	glm_mat4_copy(engine.scene->camera->view, mvp.view);
-	glm_mat4_copy(engine.scene->camera->proj, mvp.projection);
+	cameraGetView(sceneGetCamera(engine.scene), mvp.view);
+	cameraGetProj(sceneGetCamera(engine.scene), mvp.projection);
 
 	renderableUpdateUniformsBuffer(renderable, &mvp);
 }
