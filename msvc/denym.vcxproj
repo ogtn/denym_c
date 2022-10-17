@@ -139,6 +139,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\denym\include\buffer.h" />
+    <ClInclude Include="..\denym\include\camera.h" />
     <ClInclude Include="..\denym\include\core.h" />
     <ClInclude Include="..\denym\include\denym.h" />
     <ClInclude Include="..\denym\include\denym_common.h" />
@@ -148,12 +149,14 @@
     <ClInclude Include="..\denym\include\logger.h" />
     <ClInclude Include="..\denym\include\model.h" />
     <ClInclude Include="..\denym\include\renderable.h" />
+    <ClInclude Include="..\denym\include\scene.h" />
     <ClInclude Include="..\denym\include\shader.h" />
     <ClInclude Include="..\denym\include\texture.h" />
     <ClInclude Include="..\denym\include\utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\denym\src\buffer.c" />
+    <ClCompile Include="..\denym\src\camera.c" />
     <ClCompile Include="..\denym\src\denym.c" />
     <ClCompile Include="..\denym\src\dependencies_impl.c" />
     <ClCompile Include="..\denym\src\geometry.c" />
@@ -161,6 +164,7 @@
     <ClCompile Include="..\denym\src\logger.c" />
     <ClCompile Include="..\denym\src\model.c" />
     <ClCompile Include="..\denym\src\renderable.c" />
+    <ClCompile Include="..\denym\src\scene.c" />
     <ClCompile Include="..\denym\src\shader.c" />
     <ClCompile Include="..\denym\src\texture.c" />
     <ClCompile Include="..\denym\src\utils.c" />

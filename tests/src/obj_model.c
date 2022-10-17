@@ -76,7 +76,6 @@ int main(void)
 		.fragShaderName = "texture_v2.frag.spv",
 		.uniformSize = sizeof(modelViewProj)
 	};
-
 	renderable model = modelLoad("viking_room.obj", &params, 0, 0);
 	params.textureName = "missing.png";
 	renderable model2 = modelLoad("sphere.obj", &params, 1, 1);
