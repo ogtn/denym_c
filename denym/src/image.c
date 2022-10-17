@@ -49,7 +49,7 @@ int createImage2D(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat 
 
 	VkMemoryAllocateInfo memoryAllocateInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
 	memoryAllocateInfo.allocationSize = memoryRequirements.size;
-	findMemoryTypeIndex(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryAllocateInfo.memoryTypeIndex);
+	bufferFindMemoryTypeIndex(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryAllocateInfo.memoryTypeIndex);
 
 	if(vkAllocateMemory(engine.vulkanContext.device, &memoryAllocateInfo, NULL, imageMemory))
 		return -1;
@@ -79,9 +79,9 @@ void imageCopyFromBuffer(VkImage dst, VkBuffer src, VkExtent3D imageExtent)
     };
 
     VkCommandBuffer commandBuffer;
-    initiateCopyCommandBuffer(&commandBuffer);
+    bufferInitiateCopyCmdBuffer(&commandBuffer);
     vkCmdCopyBufferToImage(commandBuffer, src, dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyParams);
-    terminateCopyCommandBuffer(commandBuffer);
+    bufferTerminateCopyCmdBuffer(commandBuffer);
 }
 
 
@@ -127,7 +127,7 @@ void imageLayoutTransition(VkImage image, uint32_t mipLevels, VkImageLayout oldL
     }
 
     VkCommandBuffer commandBuffer;
-    initiateCopyCommandBuffer(&commandBuffer);
+    bufferInitiateCopyCmdBuffer(&commandBuffer);
 
     vkCmdPipelineBarrier(
         commandBuffer, srcStage, dstStage,
@@ -136,7 +136,7 @@ void imageLayoutTransition(VkImage image, uint32_t mipLevels, VkImageLayout oldL
         0, NULL,        // buffer barrier
         1, &barrier);   // image barrier
 
-    terminateCopyCommandBuffer(commandBuffer);
+    bufferTerminateCopyCmdBuffer(commandBuffer);
 }
 
 
@@ -157,7 +157,7 @@ void imageGenerateMipMaps(VkImage image, int32_t width, int32_t height, uint32_t
     };
 
     VkCommandBuffer commandBuffer;
-    initiateCopyCommandBuffer(&commandBuffer);
+    bufferInitiateCopyCmdBuffer(&commandBuffer);
 
     int32_t mip_width = width;
     int32_t mip_height = height;
@@ -230,7 +230,7 @@ void imageGenerateMipMaps(VkImage image, int32_t width, int32_t height, uint32_t
             0, NULL,        // buffer barrier
             1, &barrier);   // image barrier
 
-    terminateCopyCommandBuffer(commandBuffer);
+    bufferTerminateCopyCmdBuffer(commandBuffer);
 }
 
 

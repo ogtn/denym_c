@@ -97,8 +97,8 @@ geometry geometryCreate(const geometryParams params)
 	{
 		VkDeviceSize size = params->strides[i] * geometry->vertexCount;
 
-		// TODO: use directly createBufferWithStaging() and delete createVertexBufferWithStaging()
-		if(createVertexBufferWithStaging(size, &geometry->buffers[i], &geometry->bufferMemories[i],	params->data[i]))
+		// TODO: use directly bufferCreateWithStaging() and delete bufferCreateVertexWithStaging()
+		if(bufferCreateVertexWithStaging(size, &geometry->buffers[i], &geometry->bufferMemories[i],	params->data[i]))
 		{
 			logError("Failed to create buffers for attribute %d", i);
 			goto error;
@@ -109,8 +109,8 @@ geometry geometryCreate(const geometryParams params)
 
 	if(geometry->indexCount)
 	{
-		// TODO: use directly createBufferWithStaging() and delete createIndexBufferWithStaging()
-		if(createIndexBufferWithStaging(params->indexSize, &geometry->buffers[geometry->attribCount], &geometry->bufferMemories[geometry->attribCount],	params->indices))
+		// TODO: use directly bufferCreateWithStaging() and delete bufferCreateIndexWithStaging()
+		if(bufferCreateIndexWithStaging(params->indexSize, &geometry->buffers[geometry->attribCount], &geometry->bufferMemories[geometry->attribCount],	params->indices))
 		{
 			logError("Failed to create buffers for indices");
 			goto error;

@@ -328,7 +328,7 @@ int createUniformsBuffer(renderable renderable)
 	if(renderable->useUniforms)
 	{
 		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-			createBuffer(renderable->uniformSize, &renderable->uniformBuffers[i], &renderable->uniformBuffersMemory[i],
+			bufferCreate(renderable->uniformSize, &renderable->uniformBuffers[i], &renderable->uniformBuffersMemory[i],
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 	}
 
