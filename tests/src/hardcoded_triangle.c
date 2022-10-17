@@ -16,7 +16,7 @@ int main(void)
 		.vertShaderName = "hardcoded_triangle.vert.spv",
 		.fragShaderName = "basic_color_interp.frag.spv"
 	};
-	denymCreateRenderable(&renderableParams);
+	renderableCreate(&renderableParams);
 
 	while (denymKeepRunning())
 	{

@@ -42,7 +42,7 @@ int main(void)
 		.vertShaderName = "basic_position_color_attribute.vert.spv",
 		.fragShaderName = "basic_color_interp.frag.spv"
 	};
-	denymCreateRenderable(&renderableParams);
+	renderableCreate(&renderableParams);
 
 	while (denymKeepRunning())
 	{

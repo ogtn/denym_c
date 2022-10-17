@@ -47,7 +47,7 @@ int main(void)
 		.usePushConstant = 1
 	};
 
-	renderable square = denymCreateRenderable(&renderableParams);
+	renderable square = renderableCreate(&renderableParams);
 
 	vec3 eye = {2, 2, 2};
 	vec3 center = { 0, 0, 0};
@@ -65,7 +65,7 @@ int main(void)
 		glm_rotate_z(matrix, glm_rad(elapsed_since_start * 100), matrix);
 		renderableSetMatrix(square, matrix);
         float alpha = (sinf(elapsed_since_start * 4) + 1) / 2;
-        updatePushConstants(square, alpha);
+        renderableUpdatePushConstant(square, alpha);
 
 		denymRender();
 		denymWaitForNextFrame();

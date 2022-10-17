@@ -213,7 +213,7 @@ renderable modelLoad(const char *objFile, renderableCreateParams *renderablePara
     }
 
     renderableParams->geometry = geometry;
-    renderable renderable = denymCreateRenderable(renderableParams);
+    renderable renderable = renderableCreate(renderableParams);
 
     free(positions);
     free(texCoords);

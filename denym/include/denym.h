@@ -87,11 +87,11 @@ geometry geometryCreate(const geometryParams params);
 
 void geometryDestroy(geometry geometry);
 
-renderable denymCreateRenderable(const renderableCreateParams *createParams);
+renderable renderableCreate(const renderableCreateParams *createParams);
 
-void denymDestroyRenderable(renderable renderable);
+void renderableDestroy(renderable renderable);
 
-int updatePushConstants(renderable renderable, float alpha);
+int renderableUpdatePushConstant(renderable renderable, float alpha);
 
 void renderableSetMatrix(renderable renderable, mat4 matrix);
 

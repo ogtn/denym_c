@@ -58,7 +58,7 @@ static renderable createGrid(float size, uint32_t level)
     free(positions);
     free(colors);
 
-    return denymCreateRenderable(&renderableParams);
+    return renderableCreate(&renderableParams);
 }
 
 

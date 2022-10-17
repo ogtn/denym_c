@@ -46,38 +46,31 @@ typedef struct renderable_t
 } renderable_t;
 
 
-renderable denymCreateRenderable(const renderableCreateParams *params);
+renderable renderableCreate(const renderableCreateParams *params);
 
-void denymDestroyRenderable(renderable renderable);
+void renderableDestroy(renderable renderable);
 
-int updateUniformsBuffer(renderable renderable, const void *data);
+int renderableLoadShaders(renderable renderable);
 
-int usePushConstants(renderable renderable);
+int renderableCreatePipelineLayout(renderable renderable);
 
-int updatePushConstants(renderable renderable, float alpha);
-
-int loadShaders(renderable renderable);
-
-int createPipelineLayout(renderable renderable);
-
-int createPipeline(renderable renderable);
+int renderableCreatePipeline(renderable renderable);
 
 void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer);
 
-int createUniformsBuffer(renderable renderable);
+int renderableCreateUniformsBuffer(renderable renderable);
 
-int useUniforms(renderable renderable);
+int renderableUpdateUniformsBuffer(renderable renderable, const void *data);
 
-int createDescriptorPool(renderable renderable);
+int renderableCreateDescriptorPool(renderable renderable);
 
-int createDescriptorSetLayout(renderable renderable);
+int renderableCreateDescriptorSetLayout(renderable renderable);
 
-int createDescriptorSets(renderable renderable);
+int renderableCreateDescriptorSets(renderable renderable);
 
-int usePushConstants(renderable renderable);
-
-int updatePushConstants(renderable renderable, float alpha);
+int renderableUpdatePushConstant(renderable renderable, float alpha);
 
 void renderableSetMatrix(renderable renderable, mat4 matrix);
+
 
 #endif

@@ -50,7 +50,7 @@ static renderable makeSquare(const char *vertShader, const char *fragShader)
 		.uniformSize = sizeof(modelViewProj)
 	};
 
-    return denymCreateRenderable(&renderableParams);
+    return renderableCreate(&renderableParams);
 }
 
 

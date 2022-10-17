@@ -16,7 +16,7 @@
 #define MAX_BINDINGS 2
 
 
-renderable denymCreateRenderable(const renderableCreateParams *params)
+renderable renderableCreate(const renderableCreateParams *params)
 {
 	renderable renderable = calloc(1, sizeof(*renderable));
 
@@ -46,13 +46,13 @@ renderable denymCreateRenderable(const renderableCreateParams *params)
 			renderable->useTexture = VK_TRUE;
 	}
 
-	if(	!createDescriptorSetLayout(renderable) &&
-		!createDescriptorPool(renderable) &&
-		!createUniformsBuffer(renderable) &&
-		!createDescriptorSets(renderable) &&
-		!loadShaders(renderable) &&
-		!createPipelineLayout(renderable) &&
-		!createPipeline(renderable))
+	if(	!renderableCreateDescriptorSetLayout(renderable) &&
+		!renderableCreateDescriptorPool(renderable) &&
+		!renderableCreateUniformsBuffer(renderable) &&
+		!renderableCreateDescriptorSets(renderable) &&
+		!renderableLoadShaders(renderable) &&
+		!renderableCreatePipelineLayout(renderable) &&
+		!renderableCreatePipeline(renderable))
 	{
 		sceneAddRenderable(engine.scene, renderable);
 		glm_mat4_identity(renderable->modelMatrix);
@@ -61,13 +61,13 @@ renderable denymCreateRenderable(const renderableCreateParams *params)
 	}
 
 	error:
-	denymDestroyRenderable(renderable);
+	renderableDestroy(renderable);
 
 	return NULL;
 }
 
 
-void denymDestroyRenderable(renderable renderable)
+void renderableDestroy(renderable renderable)
 {
 	// TODO clean a shitload of stuff here !!!
 	vkDeviceWaitIdle(engine.vulkanContext.device);
@@ -98,7 +98,7 @@ void denymDestroyRenderable(renderable renderable)
 }
 
 
-int loadShaders(renderable renderable)
+int renderableLoadShaders(renderable renderable)
 {
 	if (loadShader(engine.vulkanContext.device, renderable->vertShaderName, &renderable->vertShader))
 		return -1;
@@ -121,7 +121,7 @@ int loadShaders(renderable renderable)
 }
 
 
-int createPipelineLayout(renderable renderable)
+int renderableCreatePipelineLayout(renderable renderable)
 {
 	// Required here even when we don't use it
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
@@ -156,7 +156,7 @@ int createPipelineLayout(renderable renderable)
 }
 
 
-int createPipeline(renderable renderable)
+int renderableCreatePipeline(renderable renderable)
 {
 	// vertex attributes
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
@@ -323,7 +323,7 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 }
 
 
-int createUniformsBuffer(renderable renderable)
+int renderableCreateUniformsBuffer(renderable renderable)
 {
 	if(renderable->useUniforms)
 	{
@@ -336,7 +336,7 @@ int createUniformsBuffer(renderable renderable)
 }
 
 
-int updateUniformsBuffer(renderable renderable, const void *data)
+int renderableUpdateUniformsBuffer(renderable renderable, const void *data)
 {
 	if(renderable->useUniforms == VK_FALSE)
 		return -1;
@@ -352,7 +352,7 @@ int updateUniformsBuffer(renderable renderable, const void *data)
 }
 
 
-int createDescriptorSetLayout(renderable renderable)
+int renderableCreateDescriptorSetLayout(renderable renderable)
 {
 	VkDescriptorSetLayoutBinding bindings[MAX_BINDINGS];
 	uint32_t bindingCount = 0;
@@ -403,7 +403,7 @@ int createDescriptorSetLayout(renderable renderable)
 }
 
 
-int createDescriptorPool(renderable renderable)
+int renderableCreateDescriptorPool(renderable renderable)
 {
 	VkDescriptorPoolSize poolSizes[MAX_BINDINGS];
 	uint32_t poolSizeCount = 0;
@@ -447,7 +447,7 @@ int createDescriptorPool(renderable renderable)
 }
 
 
-int createDescriptorSets(renderable renderable)
+int renderableCreateDescriptorSets(renderable renderable)
 {
 	VkDescriptorSetLayout layouts[MAX_FRAMES_IN_FLIGHT];
 
@@ -519,7 +519,7 @@ int createDescriptorSets(renderable renderable)
 }
 
 
-int updatePushConstants(renderable renderable, float alpha)
+int renderableUpdatePushConstant(renderable renderable, float alpha)
 {
 	if(renderable->usePushConstant == VK_FALSE)
 		return -1;
@@ -544,5 +544,5 @@ void renderableSetMatrix(renderable renderable, mat4 matrix)
 	glm_mat4_copy(engine.scene->camera->view, mvp.view);
 	glm_mat4_copy(engine.scene->camera->proj, mvp.projection);
 
-	updateUniformsBuffer(renderable, &mvp);
+	renderableUpdateUniformsBuffer(renderable, &mvp);
 }

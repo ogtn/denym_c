@@ -44,7 +44,7 @@ int main(void)
 		.fragShaderName = "basic_color_interp.frag.spv",
 		.uniformSize = sizeof(modelViewProj)
 	};
-	renderable square = denymCreateRenderable(&renderableParams);
+	renderable square = renderableCreate(&renderableParams);
 
 	vec3 eye = {2, 2, 2};
 	vec3 center = { 0, 0, 0};

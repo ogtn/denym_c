@@ -40,7 +40,7 @@ static renderable makeSquare(void)
 		.uniformSize = sizeof(modelViewProj)
 	};
 
-    return denymCreateRenderable(&renderableParams);
+    return renderableCreate(&renderableParams);
 }
 
 

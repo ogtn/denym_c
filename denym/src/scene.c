@@ -18,7 +18,7 @@ scene sceneCreate(void)
 void sceneDestroy(scene scene)
 {
     for(uint32_t i = 0; i < scene->renderableCount; i++)
-        denymDestroyRenderable(scene->renderables[i]);
+        renderableDestroy(scene->renderables[i]);
 
     cameraDestroy(scene->camera);
     free(scene);
