@@ -9,6 +9,8 @@ scene sceneCreate(void)
     scene scene = malloc(sizeof *scene);
 
     scene->renderableCount = 0;
+    scene->maxRenderableCount = 32;
+    scene->renderables = malloc(sizeof(renderable) * scene->maxRenderableCount);
     scene->camera = NULL;
 
     return scene;
@@ -20,6 +22,7 @@ void sceneDestroy(scene scene)
     for(uint32_t i = 0; i < scene->renderableCount; i++)
         renderableDestroy(scene->renderables[i]);
 
+    free(scene->renderables);
     cameraDestroy(scene->camera);
     free(scene);
 }
@@ -27,11 +30,13 @@ void sceneDestroy(scene scene)
 
 void sceneAddRenderable(scene scene, renderable renderable)
 {
-    if(scene->renderableCount >= SCENE_MAX_RENDERABLES)
+    if(scene->renderableCount >= scene->maxRenderableCount)
     {
-        logWarning("Max renderables reached in the scene");
+        logInfo("Max renderables updated from %u to %u",
+            scene->maxRenderableCount, scene->maxRenderableCount * 2);
 
-        return;
+        scene->maxRenderableCount *= 2;
+        scene->renderables = realloc(scene->renderables, sizeof(renderable) * scene->maxRenderableCount);
     }
 
     scene->renderables[scene->renderableCount++] = renderable;

@@ -5,13 +5,11 @@
 #include "denym_common.h"
 
 
-#define SCENE_MAX_RENDERABLES 16
-
-
 typedef struct scene_t
 {
-    renderable renderables[SCENE_MAX_RENDERABLES];
+    renderable *renderables;
     uint32_t renderableCount;
+    uint32_t maxRenderableCount;
     camera camera;
 } scene_t;
 

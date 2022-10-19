@@ -84,7 +84,7 @@ int bufferCreate(VkDeviceSize size, VkBuffer *buffer, VkDeviceMemory *bufferMemo
 		return -1;
 
 	// TODO: maybe overload some vk functions and use this to inject __LINE__ __FILE__ ?
-#ifdef _DEBUG
+#if 0//#ifdef _DEBUG
 	static int cpt;
 	VkDebugUtilsObjectNameInfoEXT objectNameInfo = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
 	objectNameInfo.objectType = VK_OBJECT_TYPE_BUFFER;

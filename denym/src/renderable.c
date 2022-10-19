@@ -31,9 +31,9 @@ renderable renderableCreate(const renderableCreateParams *params)
 		logWarning("Push constant size (%u) is above the physical device limit (%u)",
 			params->pushConstantSize, engine.vulkanContext.physicalDeviceProperties.limits.maxPushConstantsSize);
 	}
-	else
+	else if(params->pushConstantSize)
 	{
-		renderable->usePushConstant = params->pushConstantSize != 0;
+		renderable->usePushConstant = VK_TRUE;
 		renderable->pushConstantSize = params->pushConstantSize;
 		renderable->pushConstantValue = malloc(renderable->pushConstantSize);
 	}

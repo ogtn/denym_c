@@ -186,6 +186,7 @@ renderable modelLoad(const char *objFile, renderableCreateParams *renderablePara
         free(indices16);
         free(newPositions);
         free(newTexCoords);
+        free(newNormals);
         hmfree(hash);
 
         logInfo("fast_obj indexify: %fs", getUptime() - start);

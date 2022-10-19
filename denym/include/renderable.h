@@ -28,7 +28,7 @@ typedef struct renderable_t
 
 	// push constant
 	VkBool32 usePushConstant;
-	VkDeviceSize pushConstantSize;
+	uint32_t pushConstantSize;
 	void *pushConstantValue;
 
 	// pipeline
