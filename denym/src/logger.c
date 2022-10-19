@@ -64,7 +64,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vulkanErrorCallback(
 	else if(messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
 		level = LOG_WARN;
 
-    fprintf(stderr, "[%.6f][%s] %s\n", getUptime(), level, pCallbackData->pMessage);
+    fprintf(stderr, "[%s][%.6f] %s\n", level, getUptime(), pCallbackData->pMessage);
 
 	return VK_FALSE;
 }
@@ -87,7 +87,7 @@ static void logMsg(const char *file, int line, const char *function, const char 
         file++;
     }
 
-    size_t len = (size_t)snprintf(message, LOG_MAX_LEN, "[%.6f][%s][%s:%d] %s(): ", getUptime(), level, filename, line, function);
+    size_t len = (size_t)snprintf(message, LOG_MAX_LEN, "[%s][%.6f][%s:%d] %s(): ", level, getUptime(), filename, line, function);
     vsnprintf(message + len, LOG_MAX_LEN - len, format, list);
     fprintf(stderr, "%s\n", message);
 }
