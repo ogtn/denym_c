@@ -48,7 +48,7 @@ typedef struct renderableCreateParams
 	const char *fragShaderName;
 	geometry geometry;
 	size_t uniformSize;
-	uint32_t usePushConstant;
+	size_t pushConstantSize;
 	uint32_t useWireFrame;
 } renderableCreateParams;
 
@@ -91,7 +91,7 @@ renderable renderableCreate(const renderableCreateParams *createParams);
 
 void renderableDestroy(renderable renderable);
 
-int renderableUpdatePushConstant(renderable renderable, float alpha);
+int renderableUpdatePushConstant(renderable renderable, void *value);
 
 void renderableSetMatrix(renderable renderable, mat4 matrix);
 

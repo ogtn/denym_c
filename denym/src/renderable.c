@@ -25,7 +25,18 @@ renderable renderableCreate(const renderableCreateParams *params)
 	renderable->geometry = params->geometry;
 	renderable->useUniforms = params->uniformSize != 0;
 	renderable->uniformSize = params->uniformSize;
-	renderable->usePushConstant = params->usePushConstant;
+
+	if(params->pushConstantSize > engine.vulkanContext.physicalDeviceProperties.limits.maxPushConstantsSize)
+	{
+		logWarning("Push constant size (%u) is above the physical device limit (%u)",
+			params->pushConstantSize, engine.vulkanContext.physicalDeviceProperties.limits.maxPushConstantsSize);
+	}
+	else
+	{
+		renderable->usePushConstant = params->pushConstantSize != 0;
+		renderable->pushConstantSize = params->pushConstantSize;
+		renderable->pushConstantValue = malloc(renderable->pushConstantSize);
+	}
 
 	if(params->useWireFrame)
 	{
@@ -88,6 +99,9 @@ void renderableDestroy(renderable renderable)
 			vkFreeMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory[i], NULL);
 		}
 	}
+
+	if(renderable->usePushConstant)
+		free(renderable->pushConstantValue);
 
 	geometryDestroy(renderable->geometry);
 
@@ -295,7 +309,7 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 
 	// push constant
 	if(renderable->usePushConstant)
-		vkCmdPushConstants(commandBuffer, renderable->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &renderable->pushConstantAlpha);
+		vkCmdPushConstants(commandBuffer, renderable->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, renderable->pushConstantSize, renderable->pushConstantValue);
 
 	geometryDraw(renderable->geometry, commandBuffer);
 }
@@ -497,12 +511,12 @@ int renderableCreateDescriptorSets(renderable renderable)
 }
 
 
-int renderableUpdatePushConstant(renderable renderable, float alpha)
+int renderableUpdatePushConstant(renderable renderable, void *value)
 {
 	if(renderable->usePushConstant == VK_FALSE)
 		return -1;
 
-	renderable->pushConstantAlpha = alpha;
+	memcpy(renderable->pushConstantValue, value, renderable->pushConstantSize);
 
 	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		engine.vulkanContext.needCommandBufferUpdate[i] = VK_TRUE;

@@ -983,8 +983,6 @@ int updateCommandBuffers(uint32_t cmdBufferIndex)
 	if(engine.vulkanContext.needCommandBufferUpdate[cmdBufferIndex] == VK_FALSE)
 		return result;
 
-	logInfo("Frame %lu: command buffer %u", engine.frameCount, cmdBufferIndex);
-
 	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 	beginInfo.pInheritanceInfo = NULL; // NULL in case of primary

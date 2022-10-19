@@ -28,7 +28,8 @@ typedef struct renderable_t
 
 	// push constant
 	VkBool32 usePushConstant;
-	float pushConstantAlpha;
+	VkDeviceSize pushConstantSize;
+	void *pushConstantValue;
 
 	// pipeline
 	VkPipelineLayout pipelineLayout;
@@ -68,7 +69,7 @@ int renderableCreateDescriptorSetLayout(renderable renderable);
 
 int renderableCreateDescriptorSets(renderable renderable);
 
-int renderableUpdatePushConstant(renderable renderable, float alpha);
+int renderableUpdatePushConstant(renderable renderable, void *value);
 
 void renderableSetMatrix(renderable renderable, mat4 matrix);
 

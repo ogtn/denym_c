@@ -44,7 +44,7 @@ int main(void)
 		.vertShaderName = "mvp_ubo_position_color_attribute.vert.spv",
 		.fragShaderName = "basic_color_with_alpha_cst.frag.spv",
 		.uniformSize = sizeof(modelViewProj),
-		.usePushConstant = 1
+		.pushConstantSize = sizeof(float)
 	};
 
 	renderable square = renderableCreate(&renderableParams);
@@ -65,7 +65,7 @@ int main(void)
 		glm_rotate_z(matrix, glm_rad(elapsed_since_start * 100), matrix);
 		renderableSetMatrix(square, matrix);
         float alpha = (sinf(elapsed_since_start * 4) + 1) / 2;
-        renderableUpdatePushConstant(square, alpha);
+        renderableUpdatePushConstant(square, &alpha);
 
 		denymRender();
 		denymWaitForNextFrame();
