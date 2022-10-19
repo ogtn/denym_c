@@ -73,7 +73,7 @@ int textureCreate(const char *filename, texture *txtr)
     vkFreeMemory(engine.vulkanContext.device, stagingBufferMemory, NULL);
 
     *txtr = newTexture;
-    return createImageView2D(newTexture->image, newTexture->mipLevelCount, TEXTURE_FORMAT, &newTexture->imageView);
+    return imageViewCreate2D(newTexture->image, newTexture->mipLevelCount, TEXTURE_FORMAT, &newTexture->imageView);
 }
 
 
@@ -88,7 +88,7 @@ void textureDestroy(texture texture)
 
 int textureCreateImage2D(texture texture)
 {
-    return createImage2D(
+    return imageCreate2D(
         texture->extent.width, texture->extent.height,
         texture->mipLevelCount, TEXTURE_FORMAT, VK_SAMPLE_COUNT_1_BIT,
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,

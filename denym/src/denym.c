@@ -1,6 +1,4 @@
 #include "denym_private.h"
-#include "shader.h"
-#include "renderable.h"
 #include "image.h"
 #include "texture.h"
 #include "utils.h"
@@ -744,7 +742,7 @@ int createImageViews(vulkanContext* context)
 	context->GetSwapchainImagesKHR(context->device, context->swapchain, &context->imageCount, context->images);
 
 	for (uint32_t i = 0; i < context->imageCount; i++)
-		if(createImageView2D(context->images[i], 1, context->surfaceFormat.format, &context->imageViews[i]))
+		if(imageViewCreate2D(context->images[i], 1, context->surfaceFormat.format, &context->imageViews[i]))
 			return -1;
 
 	return 0;
@@ -919,7 +917,7 @@ int createCommandPool(vulkanContext* context)
 
 int createColorResources(void)
 {
-	createImage2D(
+	imageCreate2D(
 		engine.vulkanContext.swapchainExtent.width,
 		engine.vulkanContext.swapchainExtent.height,
 		1,
@@ -929,7 +927,7 @@ int createColorResources(void)
 		&engine.vulkanContext.colorImage,
 		&engine.vulkanContext.colorImageMemory);
 
-	createImageView(
+	imageViewCreate(
 		engine.vulkanContext.colorImage,
 		1,
 		VK_FORMAT_B8G8R8A8_SRGB,
@@ -945,7 +943,7 @@ int createDepthBufferResources(void)
 	engine.vulkanContext.useDepthBuffer = VK_TRUE;
 	engine.vulkanContext.depthFormat = VK_FORMAT_D32_SFLOAT;
 
-	createImageDepth(
+	imageCreateDepth(
 		engine.vulkanContext.swapchainExtent.width,
 		engine.vulkanContext.swapchainExtent.height,
 		engine.vulkanContext.depthFormat,
@@ -953,7 +951,7 @@ int createDepthBufferResources(void)
 		&engine.vulkanContext.depthImage,
 		&engine.vulkanContext.depthImageMemory);
 
-	createImageViewDepth(
+	imageViewCreateDepth(
 		engine.vulkanContext.depthImage,
 		engine.vulkanContext.depthFormat,
 		&engine.vulkanContext.depthImageView);

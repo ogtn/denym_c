@@ -4,16 +4,16 @@
 #include "logger.h"
 
 
-int createImageDepth(uint32_t width, uint32_t height, VkFormat format, VkSampleCountFlagBits samples, VkImage *image, VkDeviceMemory *imageMemory)
+int imageCreateDepth(uint32_t width, uint32_t height, VkFormat format, VkSampleCountFlagBits samples, VkImage *image, VkDeviceMemory *imageMemory)
 {
-    return createImage2D(
+    return imageCreate2D(
         width, height, 1, format, samples,
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
         image, imageMemory);
 }
 
 
-int createImage2D(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImage *image, VkDeviceMemory *imageMemory)
+int imageCreate2D(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImage *image, VkDeviceMemory *imageMemory)
 {
     VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -234,19 +234,19 @@ void imageGenerateMipMaps(VkImage image, int32_t width, int32_t height, uint32_t
 }
 
 
-int createImageView2D(VkImage image, uint32_t mipLevels, VkFormat format, VkImageView *imageView)
+int imageViewCreate2D(VkImage image, uint32_t mipLevels, VkFormat format, VkImageView *imageView)
 {
-    return createImageView(image, mipLevels, format, VK_IMAGE_ASPECT_COLOR_BIT, imageView);
+    return imageViewCreate(image, mipLevels, format, VK_IMAGE_ASPECT_COLOR_BIT, imageView);
 }
 
 
-int createImageViewDepth(VkImage image, VkFormat format, VkImageView *imageView)
+int imageViewCreateDepth(VkImage image, VkFormat format, VkImageView *imageView)
 {
-    return createImageView(image, 1, format, VK_IMAGE_ASPECT_DEPTH_BIT, imageView);
+    return imageViewCreate(image, 1, format, VK_IMAGE_ASPECT_DEPTH_BIT, imageView);
 }
 
 
-int createImageView(VkImage image, uint32_t mipLevels, VkFormat format, VkImageAspectFlags aspect, VkImageView *imageView)
+int imageViewCreate(VkImage image, uint32_t mipLevels, VkFormat format, VkImageAspectFlags aspect, VkImageView *imageView)
 {
 	VkImageViewCreateInfo createInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
 	createInfo.image = image;
