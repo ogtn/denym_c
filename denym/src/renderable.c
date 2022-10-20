@@ -159,7 +159,7 @@ int renderableCreatePipelineLayout(renderable renderable)
 int renderableCreatePipeline(renderable renderable)
 {
 	// vertex attributes
-	VkPipelineVertexInputStateCreateInfo vertexInputInfo;
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
 	geometryFillVertexInputInfo(renderable->geometry, &vertexInputInfo);
 
 	// type of geometry we want to draw
