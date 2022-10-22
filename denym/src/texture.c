@@ -18,6 +18,11 @@ int textureCreate(const char *filename, texture *txtr)
 
 	snprintf(fullName, FILENAME_MAX, "resources/textures/%s", filename);
 
+    *txtr = resourceCacheGet(engine.caches.textureCache, fullName);
+
+    if(*txtr != NULL)
+        return 0;
+
     int width, height;
     int channelCount;
 
@@ -73,16 +78,26 @@ int textureCreate(const char *filename, texture *txtr)
     vkFreeMemory(engine.vulkanContext.device, stagingBufferMemory, NULL);
 
     *txtr = newTexture;
+    strncpy(newTexture->name, fullName, sizeof newTexture->name);
+    resourceCacheAdd(engine.caches.textureCache, newTexture->name, newTexture);
+
     return imageViewCreate2D(newTexture->image, newTexture->mipLevelCount, TEXTURE_FORMAT, &newTexture->imageView);
 }
 
 
 void textureDestroy(texture texture)
 {
-    vkDestroyImageView(engine.vulkanContext.device, texture->imageView, NULL);
-	vkDestroyImage(engine.vulkanContext.device, texture->image, NULL);
-	vkFreeMemory(engine.vulkanContext.device, texture->imageMemory, NULL);
-    free(texture);
+    VkBool32 needDestruction;
+
+    resourceCacheRemove(engine.caches.textureCache, texture->name, &needDestruction);
+
+    if(needDestruction)
+    {
+        vkDestroyImageView(engine.vulkanContext.device, texture->imageView, NULL);
+        vkDestroyImage(engine.vulkanContext.device, texture->image, NULL);
+        vkFreeMemory(engine.vulkanContext.device, texture->imageMemory, NULL);
+        free(texture);
+    }
 }
 
 

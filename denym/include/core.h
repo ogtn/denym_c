@@ -3,6 +3,8 @@
 
 
 #include "denym_common.h"
+#include "resource_cache.h"
+
 #include <time.h>
 
 
@@ -84,6 +86,12 @@ typedef struct vulkanContext
 } vulkanContext;
 
 
+typedef struct resourceCaches
+{
+	resourceCache textureCache;
+} resourceCaches;
+
+
 typedef struct denym
 {
 	vulkanContext vulkanContext;
@@ -101,11 +109,15 @@ typedef struct denym
 	struct timespec uptime;
 	uint64_t frameCount;
 	struct timespec lastFrameDuration;
-
 	float lastTime;
 	uint32_t fps;
 
 	scene scene;
+
+	struct
+	{
+		resourceCache textureCache;
+	} caches;
 } denym;
 
 

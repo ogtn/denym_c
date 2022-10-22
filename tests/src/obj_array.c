@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 
-#define ARRAY_SIZE 4
+#define ARRAY_SIZE 8
 
 
 int main(void)
@@ -15,7 +15,7 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 
-	renderable grid = createGrid(16, 4);
+	renderable grid = createGrid(32, 5);
     renderable objects[ARRAY_SIZE][ARRAY_SIZE][ARRAY_SIZE];
 
 	renderableCreateParams params = {
@@ -25,12 +25,18 @@ int main(void)
 		.uniformSize = sizeof(modelViewProj)
 	};
 
+	float start = getUptime();
+
 	for(uint32_t i = 0; i < ARRAY_SIZE; i++)
     	for(uint32_t j = 0; j < ARRAY_SIZE; j++)
 			for(uint32_t k = 0; k < ARRAY_SIZE; k++)
 	        	objects[i][j][k] = modelLoad("sphere.obj", &params, 0, 0);
 
-	vec3 eye = {8, 8, 8};
+	printf("%d objects loaded in %.3fs\n",
+		ARRAY_SIZE * ARRAY_SIZE * ARRAY_SIZE,
+		getUptime() - start);
+
+	vec3 eye = {16, 16, 16};
 	vec3 center = { 0, 0, 0};
 	camera camera = cameraCreatePerspective(60, 0.01f, 1000.f);
 	cameraLookAt(camera, eye, center);

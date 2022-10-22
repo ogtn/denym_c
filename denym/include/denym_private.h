@@ -77,5 +77,9 @@ void cleanFrameBuffer(void);
 
 scene denymGetScene(void);
 
+void createCaches(void);
+
+void destroyCaches(void);
+
 
 #endif

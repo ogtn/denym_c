@@ -44,6 +44,7 @@ int denymInit(int window_width, int window_height)
 		engine.fps = 0;
 		engine.lastTime = 0;
 		engine.scene = sceneCreate();
+		createCaches();
 
 		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 			engine.vulkanContext.needCommandBufferUpdate[i] = VK_TRUE;
@@ -60,6 +61,7 @@ int denymInit(int window_width, int window_height)
 void denymTerminate(void)
 {
 	sceneDestroy(engine.scene);
+	destroyCaches();
 	destroyVulkanContext(&engine.vulkanContext);
 	glfwDestroyWindow(engine.window);
 	glfwTerminate();
@@ -1247,4 +1249,16 @@ void cleanSwapchain(vulkanContext* context)
 scene denymGetScene(void)
 {
 	return engine.scene;
+}
+
+
+void createCaches(void)
+{
+	engine.caches.textureCache = resourceCacheCreate();
+}
+
+
+void destroyCaches(void)
+{
+	resourceCacheDestroy(engine.caches.textureCache);
 }

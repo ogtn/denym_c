@@ -7,6 +7,7 @@
 
 typedef struct texture_t
 {
+	char name[FILENAME_MAX];
 	VkImage image;
 	VkDeviceMemory imageMemory;
 	VkImageView imageView;
