@@ -5,7 +5,16 @@
 #include "denym_common.h"
 
 
-int loadShader(VkDevice device, const char* name, VkShaderModule *outShaderr);
+typedef struct shader_t
+{
+    char name[FILENAME_MAX];
+    VkShaderModule shaderModule;
+} shader_t;
+
+
+shader shaderCreate(VkDevice device, const char* name);
+
+void shaderDestroy(shader shader);
 
 
 #endif

@@ -117,6 +117,7 @@ typedef struct denym
 	struct
 	{
 		resourceCache textureCache;
+		resourceCache shaderCache;
 	} caches;
 } denym;
 

@@ -1,16 +1,22 @@
 #include "shader.h"
+#include "core.h"
 #include "logger.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 
-int loadShader(VkDevice device, const char* name, VkShaderModule* outShaderr)
+shader shaderCreate(VkDevice device, const char* name)
 {
 	FILE* f;
 	char fullName[FILENAME_MAX];
 
 	snprintf(fullName, FILENAME_MAX, "resources/shaders/%s", name);
+	shader shader = resourceCacheGet(engine.caches.shaderCache, fullName);
+
+	if(shader != NULL)
+		return shader;
 
 #ifdef _MSC_VER
 	fopen_s(&f, fullName, "rb");
@@ -22,7 +28,7 @@ int loadShader(VkDevice device, const char* name, VkShaderModule* outShaderr)
 	{
 		logError("Failed to open file '%s'", fullName);
 
-		return -1;
+		return shader;
 	}
 
 	fseek(f, 0, SEEK_END);
@@ -40,12 +46,31 @@ int loadShader(VkDevice device, const char* name, VkShaderModule* outShaderr)
 	createInfo.codeSize = size;
 	createInfo.pCode = data;
 
-	VkResult result = vkCreateShaderModule(device, &createInfo, NULL, outShaderr);
+	VkShaderModule shaderModule;
+	VkResult result = vkCreateShaderModule(device, &createInfo, NULL, &shaderModule);
 
 	if(result)
 		logError("Failed to load shader '%s'", fullName);
+	else
+	{
+		shader = malloc(sizeof *shader);
+		strncpy(shader->name, fullName, sizeof shader->name);
+		shader->shaderModule = shaderModule;
+		resourceCacheAdd(engine.caches.shaderCache, fullName, shader);
+	}
 
 	free(data);
 
-	return result;
+	return shader;
+}
+
+
+void shaderDestroy(shader shader)
+{
+	VkBool32 needDestruction;
+
+	resourceCacheRemove(engine.caches.shaderCache, shader->name, &needDestruction);
+
+	if(needDestruction)
+		vkDestroyShaderModule(engine.vulkanContext.device, shader->shaderModule, NULL);
 }

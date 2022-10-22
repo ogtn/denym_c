@@ -1255,10 +1255,12 @@ scene denymGetScene(void)
 void createCaches(void)
 {
 	engine.caches.textureCache = resourceCacheCreate();
+	engine.caches.shaderCache = resourceCacheCreate();
 }
 
 
 void destroyCaches(void)
 {
 	resourceCacheDestroy(engine.caches.textureCache);
+	resourceCacheDestroy(engine.caches.shaderCache);
 }

@@ -11,8 +11,8 @@ typedef struct renderable_t
 	// shaders
 	char vertShaderName[FILENAME_MAX];
 	char fragShaderName[FILENAME_MAX];
-	VkShaderModule vertShader;
-	VkShaderModule fragShader;
+	shader vertShader;
+	shader fragShader;
 	VkPipelineShaderStageCreateInfo shaderStages[2];
 
 	// descriptors

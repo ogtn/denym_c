@@ -87,8 +87,8 @@ void renderableDestroy(renderable renderable)
 	vkDestroyDescriptorSetLayout(engine.vulkanContext.device, renderable->descriptorSetLayout, NULL);
 
 	vkDestroyPipeline(engine.vulkanContext.device, renderable->pipeline, NULL);
-	vkDestroyShaderModule(engine.vulkanContext.device, renderable->fragShader, NULL);
-	vkDestroyShaderModule(engine.vulkanContext.device, renderable->vertShader, NULL);
+	shaderDestroy(renderable->vertShader);
+	shaderDestroy(renderable->fragShader);
 	vkDestroyPipelineLayout(engine.vulkanContext.device, renderable->pipelineLayout, NULL);
 
 	if(renderable->useUniforms)
@@ -114,21 +114,21 @@ void renderableDestroy(renderable renderable)
 
 int renderableLoadShaders(renderable renderable)
 {
-	if (loadShader(engine.vulkanContext.device, renderable->vertShaderName, &renderable->vertShader))
+	if((renderable->vertShader = shaderCreate(engine.vulkanContext.device, renderable->vertShaderName)) ==  NULL)
 		return -1;
 
-	if (loadShader(engine.vulkanContext.device, renderable->fragShaderName, &renderable->fragShader))
+	if((renderable->fragShader = shaderCreate(engine.vulkanContext.device, renderable->fragShaderName)) == NULL)
 		return -1;
 
 	renderable->shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	renderable->shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-	renderable->shaderStages[0].module = renderable->vertShader;
+	renderable->shaderStages[0].module = renderable->vertShader->shaderModule;
 	renderable->shaderStages[0].pName = "main";
 	// TODO : check vertShaderStageInfo.pSpecializationInfo to pass constants to the shaders
 
 	renderable->shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	renderable->shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	renderable->shaderStages[1].module = renderable->fragShader;
+	renderable->shaderStages[1].module = renderable->fragShader->shaderModule;
 	renderable->shaderStages[1].pName = "main";
 
 	return 0;
