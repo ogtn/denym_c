@@ -321,57 +321,42 @@ int getPhysicalDevice(vulkanContext* context)
 {
 	uint32_t count;
 	VkPhysicalDevice matchingPhysicalDevice = NULL;
+	VkPhysicalDeviceProperties physicalDeviceProperties;
 
 	vkEnumeratePhysicalDevices(context->instance, &count, NULL);
-	fprintf(stderr, "%d physical devices found :\n", count);
+	logInfo("%d physical devices found :\n", count);
 	VkPhysicalDevice* physicalDevices = malloc(sizeof * physicalDevices * count);
 	vkEnumeratePhysicalDevices(context->instance, &count, physicalDevices);
 
-	// TODO : clean this horrifying mess
-	for (uint32_t i = 0; i < count; i++)
+	static const VkPhysicalDeviceType priority[] =
 	{
-		VkPhysicalDeviceProperties physicalDeviceProperties;
-		vkGetPhysicalDeviceProperties(physicalDevices[i], &physicalDeviceProperties);
-		fprintf(stderr, "  %d : '%s' :\n", i, physicalDeviceProperties.deviceName);
+		VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU,
+		VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU,
+		VK_PHYSICAL_DEVICE_TYPE_CPU
+	};
 
-		if (physicalDeviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+	for (uint32_t j = 0; j < count; j++)
+	{
+		vkGetPhysicalDeviceProperties(physicalDevices[j], &physicalDeviceProperties);
+		logInfo("  %d : '%s' :\n", j, physicalDeviceProperties.deviceName);
+	}
+
+	for(uint32_t i = 0; i < sizeof priority / sizeof priority[0]; i++)
+	{
+		for (uint32_t j = 0; j < count; j++)
 		{
-			matchingPhysicalDevice = physicalDevices[i];
-			context->physicalDeviceProperties = physicalDeviceProperties;
+			vkGetPhysicalDeviceProperties(physicalDevices[j], &physicalDeviceProperties);
+
+			if (physicalDeviceProperties.deviceType == priority[i])
+			{
+				matchingPhysicalDevice = physicalDevices[j];
+				context->physicalDeviceProperties = physicalDeviceProperties;
+				break;
+			}
+		}
+
+		if(matchingPhysicalDevice)
 			break;
-		}
-	}
-
-	if (matchingPhysicalDevice == NULL)
-	{
-		for (uint32_t i = 0; i < count; i++)
-		{
-			VkPhysicalDeviceProperties physicalDeviceProperties;
-			vkGetPhysicalDeviceProperties(physicalDevices[i], &physicalDeviceProperties);
-
-			if (physicalDeviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
-			{
-				matchingPhysicalDevice = physicalDevices[i];
-				context->physicalDeviceProperties = physicalDeviceProperties;
-				break;
-			}
-		}
-	}
-
-	if (matchingPhysicalDevice == NULL)
-	{
-		for (uint32_t i = 0; i < count; i++)
-		{
-			VkPhysicalDeviceProperties physicalDeviceProperties;
-			vkGetPhysicalDeviceProperties(physicalDevices[i], &physicalDeviceProperties);
-
-			if (physicalDeviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU)
-			{
-				matchingPhysicalDevice = physicalDevices[i];
-				context->physicalDeviceProperties = physicalDeviceProperties;
-				break;
-			}
-		}
 	}
 
 	free(physicalDevices);
