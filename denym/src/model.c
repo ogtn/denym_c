@@ -11,38 +11,70 @@
 #pragma clang diagnostic pop
 
 
+typedef struct pos_t
+{
+    float x;
+    float y;
+    float z;
+} pos_t;
+
+
+typedef struct txc_t
+{
+    float u;
+    float v;
+} txc_t;
+
+
+typedef pos_t norm_t;
+
+
+typedef struct vertexData
+{
+    uint32_t triangleCount;
+    uint32_t indexCount;
+    pos_t *positions;
+    txc_t *texCoords;
+    norm_t *normals;
+} vertexData;
+
+
 typedef struct vertex_vt
 {
-    struct { float x; float y; float z; } position;
-    struct { float u; float v; } texCoord;
-    struct { float x; float y; float z; } normal;
+    pos_t position;
+    txc_t texCoord;
+    norm_t normal;
 } vertex_vt;
 
 
-static void addVertex(uint32_t indexSrc, uint32_t indexDst, fastObjIndex *indices, float *posSrc, float *posDst, float *texSrc, float *texDst, float *normSrc, float *normDst);
+static int modelReadOBJ(const char *objFile, vertexData *vertexData);
+
+static geometry modelLoadInternal(const char *objFile, int useIndices, int useNormals);
+
+static void modelAddVertex(uint32_t indexSrc, uint32_t indexDst, fastObjMesh *mesh, vertexData *vertexData);
 
 
-renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, int useIndices, int useNormals)
+static int modelReadOBJ(const char *objFile, vertexData *vertexData)
 {
     // TODO: check extension
-    float start = getUptime();
     char fullName[FILENAME_MAX];
 	snprintf(fullName, FILENAME_MAX, "resources/models/%s", objFile);
     fastObjMesh* mesh = fast_obj_read(fullName);
-    logInfo("fast_obj_read: %fs", getUptime() - start);
-    start = getUptime();
 
-    uint32_t triangleCount = 0;
+    if(mesh == NULL)
+        return -1;
+
+    vertexData->triangleCount = 0;
 
     for(uint32_t i = 0; i < mesh->face_count; i++)
-        triangleCount += mesh->face_vertices[i] - 2;
+        vertexData->triangleCount += mesh->face_vertices[i] - 2;
 
-    float *positions = malloc(sizeof(float) * 3 * triangleCount * 3);
-    float *texCoords = malloc(sizeof(float) * 2 * triangleCount * 3);
-    float *normals = malloc(sizeof(float) * 3 * triangleCount * 3);
+    vertexData->positions = malloc(sizeof *vertexData->positions * vertexData->triangleCount * 3);
+    vertexData->texCoords = malloc(sizeof *vertexData->texCoords * vertexData->triangleCount * 3);
+    vertexData->normals = malloc(sizeof *vertexData->normals * vertexData->triangleCount * 3);
 
     uint32_t objVertIndex = 0;
-    uint32_t index = 0;
+    vertexData->indexCount = 0;
 
     for(uint32_t i = 0; i < mesh->face_count; i++)
     {
@@ -51,18 +83,10 @@ renderable modelLoad(const char *objFile, renderableCreateParams *renderablePara
 
         for(uint32_t k = 0; k < mesh->face_vertices[i] - 2; k++)
         {
-            addVertex(baseVertex, index++, mesh->indices,
-                mesh->positions, positions,
-                mesh->texcoords, texCoords,
-                mesh->normals, normals);
+            modelAddVertex(baseVertex, vertexData->indexCount++, mesh, vertexData);
 
             for(uint32_t j = 0; j < 2; j++)
-            {
-                addVertex(nextVertex++, index++, mesh->indices,
-                    mesh->positions, positions,
-                    mesh->texcoords, texCoords,
-                    mesh->normals, normals);
-            }
+                modelAddVertex(nextVertex++, vertexData->indexCount++, mesh, vertexData);
 
             nextVertex--;
         }
@@ -70,39 +94,40 @@ renderable modelLoad(const char *objFile, renderableCreateParams *renderablePara
         objVertIndex += mesh->face_vertices[i];
     }
 
-    logInfo("fast_obj transform: %fs", getUptime() - start);
+    fast_obj_destroy(mesh);
+
+    return 0;
+}
+
+
+static geometry modelLoadInternal(const char *objFile, int useIndices, int useNormals)
+{
+    vertexData vertexData;
+    modelReadOBJ(objFile, &vertexData);
 
     geometry geometry = NULL;
 
     if(useIndices)
     {
-        start = getUptime();
+        float start = getUptime();
         uint32_t vertexCount = 0;
-        uint32_t *indices32 = malloc(sizeof *indices32 * index);
+        uint32_t *indices32 = malloc(sizeof *indices32 * vertexData.indexCount);
         uint16_t *indices16 = NULL;
-        float *newPositions = malloc(sizeof(float) * 3 * index);
-        float *newTexCoords = malloc(sizeof(float) * 2 * index);
-        float *newNormals = malloc(sizeof(float) * 3 * index);
+        pos_t *newPositions = malloc(sizeof *newPositions * vertexData.indexCount);
+        txc_t *newTexCoords = malloc(sizeof *newTexCoords * vertexData.indexCount);
+        norm_t *newNormals = malloc(sizeof *newNormals * vertexData.indexCount);
 
         struct { vertex_vt key; uint32_t value; } *hash = NULL;
 
-        for(uint32_t i = 0; i < index; i++)
+        for(uint32_t i = 0; i < vertexData.indexCount; i++)
         {
             vertex_vt vertex = {
-                .position.x = positions[i * 3],
-                .position.y = positions[i * 3 + 1],
-                .position.z = positions[i * 3 + 2],
-
-                .texCoord.u = texCoords[i * 2],
-                .texCoord.v = texCoords[i * 2 + 1]
+                .position = vertexData.positions[i],
+                .texCoord = vertexData.texCoords[i],
             };
 
             if(useNormals)
-            {
-                vertex.normal.x = normals[i * 3];
-                vertex.normal.y = normals[i * 3 + 1];
-                vertex.normal.z = normals[i * 3 + 2];
-            }
+                vertex.normal = vertexData.normals[i];
 
             uint32_t currentVertex = (uint32_t)hmgeti(hash, vertex);
 
@@ -111,24 +136,18 @@ renderable modelLoad(const char *objFile, renderableCreateParams *renderablePara
                 currentVertex = vertexCount++;
                 hmput(hash, vertex, currentVertex);
 
-                newPositions[currentVertex * 3] = vertex.position.x;
-                newPositions[currentVertex * 3 + 1] = vertex.position.y;
-                newPositions[currentVertex * 3 + 2] = vertex.position.z;
-
-                newTexCoords[currentVertex * 2] = vertex.texCoord.u;
-                newTexCoords[currentVertex * 2 + 1] = vertex.texCoord.v;
+                newPositions[currentVertex] = vertex.position;
+                newTexCoords[currentVertex] = vertex.texCoord;
 
                 if(useNormals)
                 {
-                    newNormals[currentVertex * 3] = vertex.normal.x;
-                    newNormals[currentVertex * 3 + 1] = vertex.normal.y;
-                    newNormals[currentVertex * 3 + 2] = vertex.normal.z;
+                    newNormals[currentVertex] = vertex.normal;
                 }
                 else
                 {
-                    newNormals[currentVertex * 3] = 0;
-                    newNormals[currentVertex * 3 + 1] = 0;
-                    newNormals[currentVertex * 3 + 2] = 0;
+                    newNormals[currentVertex].x = 0;
+                    newNormals[currentVertex].y = 0;
+                    newNormals[currentVertex].z = 0;
                 }
 
                 if(vertexCount == UINT32_MAX)
@@ -142,29 +161,26 @@ renderable modelLoad(const char *objFile, renderableCreateParams *renderablePara
             indices32[i] = currentVertex;
         }
 
-        size_t initialSize = 0;
-        size_t finalSize = 0;
+        size_t initialSize = vertexData.indexCount * sizeof(pos_t) + sizeof(txc_t);
+        size_t finalSize = vertexCount * (sizeof(pos_t) + sizeof(txc_t));
 
-        geometryParams geometryParams = geometryCreateParameters(vertexCount, index);
-        geometryParamsAddPositions3D(geometryParams, newPositions);
-        geometryParamsAddTexCoords(geometryParams, newTexCoords);
+        geometryParams geometryParams = geometryCreateParameters(vertexCount, vertexData.indexCount);
+        geometryParamsAddPositions3D(geometryParams, (float*)newPositions);
+        geometryParamsAddTexCoords(geometryParams, (float*)newTexCoords);
 
         if(useNormals)
         {
-            geometryParamsAddNormals(geometryParams, newNormals);
-            initialSize += index * sizeof(float) * 3;
-            finalSize += vertexCount * sizeof(float) * 3;
+            geometryParamsAddNormals(geometryParams, (float*)newNormals);
+            initialSize += vertexData.indexCount * sizeof(norm_t);
+            finalSize += vertexCount * sizeof(norm_t);
         }
 
-        initialSize += index * (sizeof(float) * 3 + sizeof(float) * 2);
-        finalSize += vertexCount * (sizeof(float) * 3 + sizeof(float) * 2);
-
         // if possible, use 16bits indices
-        if(index < UINT16_MAX)
+        if(vertexData.indexCount < UINT16_MAX)
         {
-            indices16 = malloc(sizeof *indices16 * index);
+            indices16 = malloc(sizeof *indices16 * vertexData.indexCount);
 
-            for(uint32_t i = 0; i < index; i++)
+            for(uint32_t i = 0; i < vertexData.indexCount; i++)
                 indices16[i] = (uint16_t)indices32[i];
 
             geometryParamsAddIndices16(geometryParams, indices16);
@@ -193,36 +209,43 @@ renderable modelLoad(const char *objFile, renderableCreateParams *renderablePara
     }
     else
     {
-        geometryParams geometryParams = geometryCreateParameters(index, 0);
-        geometryParamsAddPositions3D(geometryParams, positions);
-        geometryParamsAddTexCoords(geometryParams, texCoords);
+        geometryParams geometryParams = geometryCreateParameters(vertexData.indexCount, 0);
+        geometryParamsAddPositions3D(geometryParams, (float*)vertexData.positions);
+        geometryParamsAddTexCoords(geometryParams, (float*)vertexData.texCoords);
 
         if(useNormals)
-            geometryParamsAddNormals(geometryParams, normals);
+            geometryParamsAddNormals(geometryParams, (float*)vertexData.normals);
 
         geometry = geometryCreate(geometryParams);
     }
 
-    renderableParams->geometry = geometry;
-    renderable renderable = renderableCreate(renderableParams);
+    free(vertexData.positions);
+    free(vertexData.texCoords);
+    free(vertexData.normals);
 
-    free(positions);
-    free(texCoords);
-    free(normals);
-    fast_obj_destroy(mesh);
+    return geometry;
+}
+
+
+renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, int useIndices, int useNormals)
+{
+    float start = getUptime();
+    renderableParams->geometry = modelLoadInternal(objFile, useIndices, useNormals);;
+    renderable renderable = renderableCreate(renderableParams);
+    logInfo("Model loaded in: %fs", getUptime() - start);
 
     return renderable;
 }
 
 
-static void addVertex(uint32_t indexSrc, uint32_t indexDst, fastObjIndex *indices, float *posSrc, float *posDst, float *texSrc, float *texDst, float *normSrc, float *normDst)
+static void modelAddVertex(uint32_t indexSrc, uint32_t indexDst, fastObjMesh *mesh, vertexData *vertexData)
 {
-    uint32_t pos = indices[indexSrc].p;
-    uint32_t txc = indices[indexSrc].t;
-    uint32_t norm = indices[indexSrc].n;
+    uint32_t pos = mesh->indices[indexSrc].p;
+    uint32_t txc = mesh->indices[indexSrc].t;
+    uint32_t norm = mesh->indices[indexSrc].n;
 
-    memcpy(&posDst[indexDst * 3], &posSrc[pos * 3], sizeof(vec3));
-    texDst[indexDst * 2] = texSrc[txc * 2];
-    texDst[indexDst * 2 + 1] = -texSrc[txc * 2 + 1]; // invert Y axis between obj and Vulkan
-    memcpy(&normDst[indexDst * 3], &normSrc[norm * 3], sizeof(vec3));
+    memcpy(&vertexData->positions[indexDst], &mesh->positions[pos * 3], sizeof *vertexData->positions);
+    vertexData->texCoords[indexDst].u = mesh->texcoords[txc * 2];
+    vertexData->texCoords[indexDst].v = -mesh->texcoords[txc * 2 + 1]; // invert Y axis between obj and Vulkan
+    memcpy(&vertexData->normals[indexDst], &mesh->normals[norm * 3], sizeof *vertexData->normals);
 }
