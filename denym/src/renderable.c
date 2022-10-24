@@ -213,9 +213,6 @@ int renderableCreatePipeline(renderable renderable)
 		.alphaToOneEnable = VK_FALSE // Optional
 	};
 
-	// depth and stencil buffer
-	//VkPipelineDepthStencilStateCreateInfo depthStencil = { VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO}
-
 	// Basic color blending for one framebuffer
 	VkPipelineColorBlendAttachmentState colorBlendAttachment = {
 		.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
@@ -287,8 +284,7 @@ int renderableCreatePipeline(renderable renderable)
 	else
 		pipelineInfo.pDepthStencilState = NULL;
 
-	// TODO interesting second parameter : pipeline cache can be used to speedup all this, even across runs, through a file !
-	if (vkCreateGraphicsPipelines(engine.vulkanContext.device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &renderable->pipeline))
+	if (vkCreateGraphicsPipelines(engine.vulkanContext.device, engine.caches.pipelineCache, 1, &pipelineInfo, NULL, &renderable->pipeline))
 	{
 		logError("Failed to create graphic pipeline");
 

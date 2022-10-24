@@ -118,6 +118,7 @@ typedef struct denym
 	{
 		resourceCache textureCache;
 		resourceCache shaderCache;
+		VkPipelineCache pipelineCache;
 	} caches;
 } denym;
 

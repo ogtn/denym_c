@@ -36,7 +36,8 @@ int denymInit(int window_width, int window_height)
 		!createCommandPool(&engine.vulkanContext) &&
 		!createCommandBuffers() &&
 		!createSynchronizationObjects(&engine.vulkanContext) &&
-		!textureCreateSampler(&engine.vulkanContext.textureSampler))
+		!textureCreateSampler(&engine.vulkanContext.textureSampler) &&
+		!createCaches())
 	{
 		result = 0;
 		engine.vulkanContext.currentFrame = 0;
@@ -44,7 +45,6 @@ int denymInit(int window_width, int window_height)
 		engine.fps = 0;
 		engine.lastTime = 0;
 		engine.scene = sceneCreate();
-		createCaches();
 
 		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 			engine.vulkanContext.needCommandBufferUpdate[i] = VK_TRUE;
@@ -1237,10 +1237,21 @@ scene denymGetScene(void)
 }
 
 
-void createCaches(void)
+int createCaches(void)
 {
 	engine.caches.textureCache = resourceCacheCreate();
 	engine.caches.shaderCache = resourceCacheCreate();
+
+	VkPipelineCacheCreateInfo pipelineCacheInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
+
+	if(vkCreatePipelineCache(engine.vulkanContext.device, &pipelineCacheInfo, NULL, &engine.caches.pipelineCache))
+	{
+		logError("Failed to create graphic pipeline cache");
+
+		return -1;
+	}
+
+	return 0;
 }
 
 
@@ -1248,4 +1259,5 @@ void destroyCaches(void)
 {
 	resourceCacheDestroy(engine.caches.textureCache);
 	resourceCacheDestroy(engine.caches.shaderCache);
+	vkDestroyPipelineCache(engine.vulkanContext.device, engine.caches.pipelineCache, NULL);
 }
