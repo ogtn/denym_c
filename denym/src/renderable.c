@@ -140,7 +140,7 @@ int renderableCreatePipelineLayout(renderable renderable)
 	// Required here even when we don't use it
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
 
-	if(renderable->useUniforms)
+	if(renderable->useUniforms || renderable->useTexture)
 	{
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.pSetLayouts = &renderable->descriptorSetLayout;
@@ -149,7 +149,7 @@ int renderableCreatePipelineLayout(renderable renderable)
 	// Push constant
 	VkPushConstantRange pushConstantRange =	{
 		.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-		.size = sizeof(float), // TODO remove this hardcoded...
+		.size = renderable->pushConstantSize,
 		.offset = 0
 	};
 
@@ -300,7 +300,7 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipeline);
 
 	// bind descriptor set to send uniforms
-	if(renderable->useUniforms)
+	if(renderable->useUniforms || renderable->useTexture)
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipelineLayout, 0, 1, &renderable->descriptorSets[engine.vulkanContext.currentFrame], 0, NULL);
 
 	// push constant
@@ -349,7 +349,7 @@ int renderableCreateDescriptorSetLayout(renderable renderable)
 	{
 		VkDescriptorSetLayoutBinding vertexAttributesLayoutBinding = {
 			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-			.binding = 0,
+			.binding = bindingCount,
 			.descriptorCount = 1, // number of element, > 1 if we pass an array
 			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, // * shader stage
 			.pImmutableSamplers = NULL // for images
@@ -362,7 +362,7 @@ int renderableCreateDescriptorSetLayout(renderable renderable)
 	{
 		VkDescriptorSetLayoutBinding textureSamplerLayoutBinding = {
 			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-			.binding = 1,
+			.binding = bindingCount,
 			.descriptorCount = 1, // number of element, > 1 if we pass an array
 			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, // * shader stage
 			.pImmutableSamplers = NULL
@@ -475,7 +475,7 @@ int renderableCreateDescriptorSets(renderable renderable)
 			descriptorWrites[descriptorWriteCount].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[descriptorWriteCount].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			descriptorWrites[descriptorWriteCount].dstSet = renderable->descriptorSets[i];
-			descriptorWrites[descriptorWriteCount].dstBinding = 0;	// * here is the binding that matches the glsl code
+			descriptorWrites[descriptorWriteCount].dstBinding = descriptorWriteCount;	// * here is the binding that matches the glsl code
 			descriptorWrites[descriptorWriteCount].dstArrayElement = 0; // * this is an offset, here 0 because we're not sending an array
 			descriptorWrites[descriptorWriteCount].descriptorCount = 1; // * only one element to transfer
 			descriptorWrites[descriptorWriteCount].pBufferInfo = &bufferInfo;
@@ -493,7 +493,7 @@ int renderableCreateDescriptorSets(renderable renderable)
 			descriptorWrites[descriptorWriteCount].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[descriptorWriteCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			descriptorWrites[descriptorWriteCount].dstSet = renderable->descriptorSets[i];
-			descriptorWrites[descriptorWriteCount].dstBinding = 1;	// * here is the binding that matches the glsl code
+			descriptorWrites[descriptorWriteCount].dstBinding = descriptorWriteCount;	// * here is the binding that matches the glsl code
 			descriptorWrites[descriptorWriteCount].dstArrayElement = 0; // * this is an offset, here 0 because we're not sending an array
 			descriptorWrites[descriptorWriteCount].descriptorCount = 1; // * only one element to transfer
 			descriptorWrites[descriptorWriteCount].pImageInfo = &imageInfo;
@@ -510,7 +510,11 @@ int renderableCreateDescriptorSets(renderable renderable)
 int renderableUpdatePushConstant(renderable renderable, void *value)
 {
 	if(renderable->usePushConstant == VK_FALSE)
+	{
+		logWarning("Can't update push constant on this renderable : none defined");
+
 		return -1;
+	}
 
 	memcpy(renderable->pushConstantValue, value, renderable->pushConstantSize);
 
