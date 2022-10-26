@@ -124,6 +124,7 @@ typedef struct denym
 	{
 		VkBool32 useMSAA;
 		VkBool32 useDepthBuffer;
+		VkBool32 cacheUniformMemory;
 	} settings;
 } denym;
 

@@ -25,6 +25,7 @@ typedef struct renderable_t
 	VkDeviceMemory uniformBuffersMemory[MAX_FRAMES_IN_FLIGHT];
 	VkBool32 useUniforms;
 	VkDeviceSize uniformSize;
+	void *uniformCache[MAX_FRAMES_IN_FLIGHT];
 
 	// push constant
 	VkBool32 usePushConstant;

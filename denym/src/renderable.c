@@ -329,12 +329,24 @@ int renderableUpdateUniformsBuffer(renderable renderable, const void *data)
 	if(renderable->useUniforms == VK_FALSE)
 		return -1;
 
-	void *dest;
-	VkDeviceMemory deviceMemory = renderable->uniformBuffersMemory[engine.vulkanContext.currentFrame];
+	uint32_t currentFrame = engine.vulkanContext.currentFrame;
+	VkDeviceMemory deviceMemory = renderable->uniformBuffersMemory[currentFrame];
 
-	vkMapMemory(engine.vulkanContext.device, deviceMemory, 0, renderable->uniformSize, 0, &dest);
-	memcpy(dest, data, renderable->uniformSize);
-	vkUnmapMemory(engine.vulkanContext.device, deviceMemory);
+	if(engine.settings.cacheUniformMemory)
+	{
+		if(renderable->uniformCache[currentFrame] == NULL)
+			vkMapMemory(engine.vulkanContext.device, deviceMemory, 0, renderable->uniformSize, 0,
+				&renderable->uniformCache[currentFrame]);
+
+		memcpy(renderable->uniformCache[currentFrame], data, renderable->uniformSize);
+	}
+	else
+	{
+		vkMapMemory(engine.vulkanContext.device, deviceMemory, 0, renderable->uniformSize, 0,
+			&renderable->uniformCache[currentFrame]);
+		memcpy(renderable->uniformCache[currentFrame], data, renderable->uniformSize);
+		vkUnmapMemory(engine.vulkanContext.device, deviceMemory);
+	}
 
 	return 0;
 }
