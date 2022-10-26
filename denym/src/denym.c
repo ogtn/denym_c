@@ -20,6 +20,10 @@ int denymInit(int window_width, int window_height)
 
 	timespec_get(&engine.uptime, TIME_UTC);
 
+	// TODO make this configurable
+	engine.settings.useDepthBuffer = VK_TRUE;
+	engine.settings.useMSAA = VK_TRUE;
+
 	if ((engine.window = createWindow(window_width, window_height)) != NULL &&
 		!createVulkanInstance(&engine.vulkanContext) &&
 		!glfwCreateWindowSurface(engine.vulkanContext.instance, engine.window, NULL, &engine.vulkanContext.surface) &&
@@ -377,25 +381,30 @@ int getPhysicalDevice(vulkanContext* context)
 
 void getMsaaCapabilities(void)
 {
-	VkSampleCountFlags colorSampleCount = engine.vulkanContext.physicalDeviceProperties.limits.framebufferColorSampleCounts;
-	VkSampleCountFlags depthSampleCount = engine.vulkanContext.physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+	if(engine.settings.useMSAA)
+	{
+		VkSampleCountFlags framebufferSampleCount = engine.vulkanContext.physicalDeviceProperties.limits.framebufferColorSampleCounts;
 
-	VkSampleCountFlags framebufferSampleCount = colorSampleCount & depthSampleCount;
+		if(engine.settings.useDepthBuffer)
+			framebufferSampleCount &= engine.vulkanContext.physicalDeviceProperties.limits.framebufferDepthSampleCounts;
 
-	if(framebufferSampleCount & VK_SAMPLE_COUNT_64_BIT)
-		engine.vulkanContext.maxMSAA = VK_SAMPLE_COUNT_64_BIT;
-	else if(framebufferSampleCount & VK_SAMPLE_COUNT_32_BIT)
-		engine.vulkanContext.maxMSAA = VK_SAMPLE_COUNT_32_BIT;
-	else if(framebufferSampleCount & VK_SAMPLE_COUNT_16_BIT)
-		engine.vulkanContext.maxMSAA = VK_SAMPLE_COUNT_16_BIT;
-	else if(framebufferSampleCount & VK_SAMPLE_COUNT_8_BIT)
-		engine.vulkanContext.maxMSAA = VK_SAMPLE_COUNT_8_BIT;
-	else if(framebufferSampleCount & VK_SAMPLE_COUNT_4_BIT)
-		engine.vulkanContext.maxMSAA = VK_SAMPLE_COUNT_4_BIT;
-	else if(framebufferSampleCount & VK_SAMPLE_COUNT_2_BIT)
-		engine.vulkanContext.maxMSAA = VK_SAMPLE_COUNT_2_BIT;
+		if(framebufferSampleCount & VK_SAMPLE_COUNT_64_BIT)
+			engine.vulkanContext.MSAASampling = VK_SAMPLE_COUNT_64_BIT;
+		else if(framebufferSampleCount & VK_SAMPLE_COUNT_32_BIT)
+			engine.vulkanContext.MSAASampling = VK_SAMPLE_COUNT_32_BIT;
+		else if(framebufferSampleCount & VK_SAMPLE_COUNT_16_BIT)
+			engine.vulkanContext.MSAASampling = VK_SAMPLE_COUNT_16_BIT;
+		else if(framebufferSampleCount & VK_SAMPLE_COUNT_8_BIT)
+			engine.vulkanContext.MSAASampling = VK_SAMPLE_COUNT_8_BIT;
+		else if(framebufferSampleCount & VK_SAMPLE_COUNT_4_BIT)
+			engine.vulkanContext.MSAASampling = VK_SAMPLE_COUNT_4_BIT;
+		else if(framebufferSampleCount & VK_SAMPLE_COUNT_2_BIT)
+			engine.vulkanContext.MSAASampling = VK_SAMPLE_COUNT_2_BIT;
+		else
+			engine.vulkanContext.MSAASampling = VK_SAMPLE_COUNT_1_BIT;
+	}
 	else
-		engine.vulkanContext.maxMSAA = VK_SAMPLE_COUNT_1_BIT;
+		engine.vulkanContext.MSAASampling = VK_SAMPLE_COUNT_1_BIT;
 }
 
 
@@ -741,7 +750,7 @@ int createRenderPass(vulkanContext* context)
 	const uint32_t colorAttachmentCount = 2; // color attachment + color attachment resolve for MSAA
 	uint32_t attachmentCount = colorAttachmentCount;
 
-	if(engine.vulkanContext.useDepthBuffer)
+	if(engine.settings.useDepthBuffer)
 		attachmentCount++;
 
 	VkAttachmentDescription *attachments = malloc(sizeof *attachments * attachmentCount);
@@ -749,7 +758,7 @@ int createRenderPass(vulkanContext* context)
 	// This color attachment is the one on which rendering happens with MSAA
 	VkAttachmentDescription colorAttachment = {
 		.format = context->surfaceFormat.format,
-		.samples = engine.vulkanContext.maxMSAA,
+		.samples = engine.vulkanContext.MSAASampling,
 		.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR, // clear framebuffer between each rendering
 		.storeOp = VK_ATTACHMENT_STORE_OP_STORE, // write to the framebuffer when rendering
 		// no stencil buffer so we don't care about it
@@ -803,11 +812,11 @@ int createRenderPass(vulkanContext* context)
 
 	VkAttachmentReference depthAttachmentRef;
 
-	if(engine.vulkanContext.useDepthBuffer)
+	if(engine.settings.useDepthBuffer)
 	{
 		VkAttachmentDescription depthAttachment = { 0 };
 		depthAttachment.format = engine.vulkanContext.depthFormat;
-		depthAttachment.samples = engine.vulkanContext.maxMSAA;
+		depthAttachment.samples = engine.vulkanContext.MSAASampling;
 		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		// no stencil buffer so we don't care about it
@@ -857,7 +866,7 @@ int createFramebuffer(vulkanContext* context)
 	framebufferInfo.height = context->swapchainExtent.height;
 	framebufferInfo.layers = 1;
 
-	if(engine.vulkanContext.useDepthBuffer)
+	if(engine.settings.useDepthBuffer)
 		framebufferInfo.attachmentCount++;
 
 	for (uint32_t i = 0; i < context->imageCount; i++)
@@ -909,7 +918,7 @@ int createColorResources(void)
 		engine.vulkanContext.swapchainExtent.height,
 		1,
 		VK_FORMAT_B8G8R8A8_SRGB,
-		engine.vulkanContext.maxMSAA,
+		engine.vulkanContext.MSAASampling,
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
 		&engine.vulkanContext.colorImage,
 		&engine.vulkanContext.colorImageMemory);
@@ -927,21 +936,23 @@ int createColorResources(void)
 
 int createDepthBufferResources(void)
 {
-	engine.vulkanContext.useDepthBuffer = VK_TRUE;
-	engine.vulkanContext.depthFormat = VK_FORMAT_D32_SFLOAT;
+	if(engine.settings.useDepthBuffer)
+	{
+		engine.vulkanContext.depthFormat = VK_FORMAT_D32_SFLOAT;
 
-	imageCreateDepth(
-		engine.vulkanContext.swapchainExtent.width,
-		engine.vulkanContext.swapchainExtent.height,
-		engine.vulkanContext.depthFormat,
-		engine.vulkanContext.maxMSAA,
-		&engine.vulkanContext.depthImage,
-		&engine.vulkanContext.depthImageMemory);
+		imageCreateDepth(
+			engine.vulkanContext.swapchainExtent.width,
+			engine.vulkanContext.swapchainExtent.height,
+			engine.vulkanContext.depthFormat,
+			engine.vulkanContext.MSAASampling,
+			&engine.vulkanContext.depthImage,
+			&engine.vulkanContext.depthImageMemory);
 
-	imageViewCreateDepth(
-		engine.vulkanContext.depthImage,
-		engine.vulkanContext.depthFormat,
-		&engine.vulkanContext.depthImageView);
+		imageViewCreateDepth(
+			engine.vulkanContext.depthImage,
+			engine.vulkanContext.depthFormat,
+			&engine.vulkanContext.depthImageView);
+	}
 
 	return VK_SUCCESS;
 }
@@ -1005,7 +1016,7 @@ int updateCommandBuffers(uint32_t cmdBufferIndex)
 	renderPassInfo.clearValueCount = 2;
 	renderPassInfo.pClearValues = clearValues; // follow the same order as attachments
 
-	if(engine.vulkanContext.useDepthBuffer)
+	if(engine.settings.useDepthBuffer)
 		renderPassInfo.clearValueCount++;
 
 	vkResetCommandBuffer(engine.vulkanContext.commandBuffers[cmdBufferIndex], 0);
@@ -1212,7 +1223,7 @@ void cleanColorResources(void)
 
 void cleanDepthBufferResources(void)
 {
-	if(engine.vulkanContext.useDepthBuffer)
+	if(engine.settings.useDepthBuffer)
 	{
 		vkDestroyImageView(engine.vulkanContext.device, engine.vulkanContext.depthImageView, NULL);
 		vkDestroyImage(engine.vulkanContext.device, engine.vulkanContext.depthImage, NULL);

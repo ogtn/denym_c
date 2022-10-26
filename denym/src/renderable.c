@@ -205,7 +205,7 @@ int renderableCreatePipeline(renderable renderable)
 
 	VkPipelineMultisampleStateCreateInfo multisampling = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		.rasterizationSamples = engine.vulkanContext.maxMSAA,
+		.rasterizationSamples = engine.vulkanContext.MSAASampling,
 		.sampleShadingEnable = VK_TRUE,
 		.minSampleShading = 0.2f, // Optional
 		.pSampleMask = NULL, // Optional
@@ -279,7 +279,7 @@ int renderableCreatePipeline(renderable renderable)
 		.basePipelineIndex = -1
 	};
 
-	if(engine.vulkanContext.useDepthBuffer)
+	if(engine.settings.useDepthBuffer)
 		pipelineInfo.pDepthStencilState = &depthStencilInfo;
 	else
 		pipelineInfo.pDepthStencilState = NULL;

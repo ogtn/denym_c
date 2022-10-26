@@ -23,7 +23,7 @@ typedef struct vulkanContext
 	uint32_t presentQueueFamilyIndex;
 
 	// MSAA
-	VkSampleCountFlagBits maxMSAA;
+	VkSampleCountFlagBits MSAASampling;
 	VkImage colorImage;
 	VkDeviceMemory colorImageMemory;
 	VkImageView colorImageView;
@@ -49,7 +49,6 @@ typedef struct vulkanContext
 	VkCommandPool bufferCopyCommandPool;
 
 	// depth buffer
-	VkBool32 useDepthBuffer;
 	VkFormat depthFormat;
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;
@@ -120,6 +119,12 @@ typedef struct denym
 		resourceCache shaderCache;
 		VkPipelineCache pipelineCache;
 	} caches;
+
+	struct
+	{
+		VkBool32 useMSAA;
+		VkBool32 useDepthBuffer;
+	} settings;
 } denym;
 
 
