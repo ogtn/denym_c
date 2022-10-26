@@ -22,7 +22,7 @@ int main(void)
 		.textureName = "missing.png",
 		.vertShaderName = "texture_v2.vert.spv",
 		.fragShaderName = "texture_v2.frag.spv",
-		.uniformSize = sizeof(modelViewProj)
+		.sendMVP = 1
 	};
 
 	float start = getUptime();

@@ -42,7 +42,7 @@ int main(void)
 		.geometry = geometryCreate(geometryParams),
 		.vertShaderName = "mvp_ubo_position_color_attribute.vert.spv",
 		.fragShaderName = "basic_color_interp.frag.spv",
-		.uniformSize = sizeof(modelViewProj)
+		.sendMVP = 1
 	};
 	renderable square = renderableCreate(&renderableParams);
 

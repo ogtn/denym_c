@@ -23,8 +23,8 @@ renderable renderableCreate(const renderableCreateParams *params)
 	strncpy(renderable->vertShaderName, params->vertShaderName, sizeof renderable->vertShaderName);
 	strncpy(renderable->fragShaderName, params->fragShaderName, sizeof renderable->fragShaderName);
 	renderable->geometry = params->geometry;
-	renderable->useUniforms = params->uniformSize != 0;
-	renderable->uniformSize = params->uniformSize;
+	renderable->useUniforms = params->sendMVP;
+	renderable->uniformSize = sizeof(mat4) * 3; // model, view, proj
 
 	if(params->pushConstantSize > engine.vulkanContext.physicalDeviceProperties.limits.maxPushConstantsSize)
 	{
@@ -542,11 +542,11 @@ void renderableSetMatrix(renderable renderable, mat4 matrix)
 	// TODO fix this awful hack
 	glm_mat4_copy(matrix, renderable->modelMatrix);
 
-	modelViewProj mvp;
+	mat4 mvp[3];
 
-	glm_mat4_copy(renderable->modelMatrix, mvp.model);
-	cameraGetView(sceneGetCamera(engine.scene), mvp.view);
-	cameraGetProj(sceneGetCamera(engine.scene), mvp.projection);
+	glm_mat4_copy(renderable->modelMatrix, mvp[0]);
+	cameraGetView(sceneGetCamera(engine.scene), mvp[1]);
+	cameraGetProj(sceneGetCamera(engine.scene), mvp[2]);
 
 	renderableUpdateUniformsBuffer(renderable, &mvp);
 }

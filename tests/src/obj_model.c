@@ -16,7 +16,7 @@ int main(void)
 		.textureName = "viking_room.png",
 		.vertShaderName = "texture_v2.vert.spv",
 		.fragShaderName = "texture_v2.frag.spv",
-		.uniformSize = sizeof(modelViewProj)
+		.sendMVP = 1
 	};
 	renderable model = modelLoad("viking_room.obj", &params, 0, 0);
 	params.textureName = "missing.png";

@@ -21,14 +21,6 @@ typedef struct camera_t *camera;
 typedef struct shader_t *shader;
 
 
-typedef struct modelViewProj
-{
-    mat4 model;
-    mat4 view;
-    mat4 projection;
-} modelViewProj;
-
-
 typedef struct geometryCreateParams
 {
 	uint32_t vertexCount;
@@ -48,7 +40,7 @@ typedef struct renderableCreateParams
 	const char *vertShaderName;
 	const char *fragShaderName;
 	geometry geometry;
-	size_t uniformSize;
+	uint32_t sendMVP;
 	uint32_t pushConstantSize;
 	uint32_t useWireFrame;
 } renderableCreateParams;
