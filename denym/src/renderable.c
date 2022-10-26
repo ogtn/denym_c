@@ -31,17 +31,8 @@ renderable renderableCreate(const renderableCreateParams *params)
 	else
 		renderable->uniformSize = sizeof(mat4) * 3; // model, view, proj
 
-	if(params->pushConstantSize > engine.vulkanContext.physicalDeviceProperties.limits.maxPushConstantsSize)
-	{
-		logWarning("Push constant size (%u) is above the physical device limit (%u)",
-			params->pushConstantSize, engine.vulkanContext.physicalDeviceProperties.limits.maxPushConstantsSize);
-	}
-	else if(params->pushConstantSize)
-	{
-		renderable->usePushConstant = VK_TRUE;
-		renderable->pushConstantSize = params->pushConstantSize;
-		renderable->pushConstantValue = malloc(renderable->pushConstantSize);
-	}
+	if(params->pushConstantSize)
+		renderableAddPushConstant(renderable, params->pushConstantSize, VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	if(params->useWireFrame)
 	{
@@ -105,8 +96,8 @@ void renderableDestroy(renderable renderable)
 		}
 	}
 
-	if(renderable->usePushConstant)
-		free(renderable->pushConstantValue);
+	for(uint32_t i = 0; i < renderable->pushConstants.count; i++)
+		free(renderable->pushConstants.values[i]);
 
 	geometryDestroy(renderable->geometry);
 
@@ -152,16 +143,22 @@ int renderableCreatePipelineLayout(renderable renderable)
 	}
 
 	// Push constant
-	VkPushConstantRange pushConstantRange =	{
-		.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-		.size = renderable->pushConstantSize,
-		.offset = 0
-	};
+	VkPushConstantRange pushConstantRanges[RENDERABLE_MAX_PUSH_CONSTANTS];
 
-	if(renderable->usePushConstant)
+	if(renderable->pushConstants.count)
 	{
-		pipelineLayoutInfo.pushConstantRangeCount = 1;
-		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+		uint32_t offset = 0;
+
+		for(uint32_t i = 0; i <  renderable->pushConstants.count; i++)
+		{
+			pushConstantRanges[i].offset = offset;
+			pushConstantRanges[i].size = renderable->pushConstants.sizes[i];
+			pushConstantRanges[i].stageFlags = renderable->pushConstants.shaderStages[i];
+			offset += pushConstantRanges[i].size;
+		}
+
+		pipelineLayoutInfo.pushConstantRangeCount = renderable->pushConstants.count;
+		pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges;
 	}
 
 	if (vkCreatePipelineLayout(engine.vulkanContext.device, &pipelineLayoutInfo, NULL, &renderable->pipelineLayout))
@@ -309,8 +306,8 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipelineLayout, 0, 1, &renderable->descriptorSets[engine.vulkanContext.currentFrame], 0, NULL);
 
 	// push constant
-	if(renderable->usePushConstant)
-		vkCmdPushConstants(commandBuffer, renderable->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, renderable->pushConstantSize, renderable->pushConstantValue);
+	for(uint32_t i = 0; i < renderable->pushConstants.count; i++)
+		vkCmdPushConstants(commandBuffer, renderable->pipelineLayout, renderable->pushConstants.shaderStages[i], 0, renderable->pushConstants.sizes[i], renderable->pushConstants.values[i]);
 
 	geometryDraw(renderable->geometry, commandBuffer);
 }
@@ -526,14 +523,20 @@ int renderableCreateDescriptorSets(renderable renderable)
 
 int renderableUpdatePushConstant(renderable renderable, void *value)
 {
-	if(renderable->usePushConstant == VK_FALSE)
+	return renderableUpdatePushConstantInternal(renderable, value, renderable->pushConstants.count - 1);
+}
+
+
+int renderableUpdatePushConstantInternal(renderable renderable, void *value, uint32_t pushConstantNumber)
+{
+	if(renderable->pushConstants.count <= pushConstantNumber)
 	{
 		logWarning("Can't update push constant on this renderable : none defined");
 
 		return -1;
 	}
 
-	memcpy(renderable->pushConstantValue, value, renderable->pushConstantSize);
+	memcpy(renderable->pushConstants.values[pushConstantNumber], value, renderable->pushConstants.sizes[pushConstantNumber]);
 
 	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		engine.vulkanContext.needCommandBufferUpdate[i] = VK_TRUE;
@@ -563,4 +566,31 @@ void renderableSetMatrix(renderable renderable, mat4 matrix)
 	}
 	else
 		renderableUpdateUniformsBuffer(renderable, matrices);
+}
+
+
+int renderableAddPushConstant(renderable renderable, uint32_t size, VkShaderStageFlags shaderStage)
+{
+	if(renderable->pushConstants.count >= RENDERABLE_MAX_PUSH_CONSTANTS)
+	{
+		logWarning("Max number of push constant reached (%d)", RENDERABLE_MAX_PUSH_CONSTANTS);
+
+		return -1;
+	}
+
+	if(renderable->pushConstants.totalSize + size > engine.vulkanContext.physicalDeviceProperties.limits.maxPushConstantsSize)
+	{
+		logWarning("Push constant size (%u) is above the physical device limit (%u)",
+			renderable->pushConstants.totalSize + size, engine.vulkanContext.physicalDeviceProperties.limits.maxPushConstantsSize);
+
+		return -1;
+	}
+
+	renderable->pushConstants.totalSize += size;
+	renderable->pushConstants.sizes[renderable->pushConstants.count] += size;
+	renderable->pushConstants.values[renderable->pushConstants.count] = malloc(size);
+	renderable->pushConstants.shaderStages[renderable->pushConstants.count] = shaderStage;
+	renderable->pushConstants.count++;
+
+	return 0;
 }

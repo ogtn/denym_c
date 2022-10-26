@@ -4,6 +4,9 @@
 #include "denym_common.h"
 
 
+#define RENDERABLE_MAX_PUSH_CONSTANTS 2
+
+
 typedef struct renderable_t
 {
 	geometry geometry;
@@ -28,9 +31,14 @@ typedef struct renderable_t
 	void *uniformCache[MAX_FRAMES_IN_FLIGHT];
 
 	// push constant
-	VkBool32 usePushConstant;
-	uint32_t pushConstantSize;
-	void *pushConstantValue;
+	struct
+	{
+		uint32_t totalSize;
+		uint32_t count;
+		VkShaderStageFlags shaderStages[RENDERABLE_MAX_PUSH_CONSTANTS];
+		uint32_t sizes[RENDERABLE_MAX_PUSH_CONSTANTS];
+		void *values[RENDERABLE_MAX_PUSH_CONSTANTS];
+	} pushConstants;
 
 	// pipeline
 	VkPipelineLayout pipelineLayout;
@@ -73,7 +81,10 @@ int renderableCreateDescriptorSets(renderable renderable);
 
 int renderableUpdatePushConstant(renderable renderable, void *value);
 
+int renderableUpdatePushConstantInternal(renderable renderable, void *value, uint32_t pushConstantNumber);
+
 void renderableSetMatrix(renderable renderable, mat4 matrix);
 
+int renderableAddPushConstant(renderable renderable, uint32_t size, VkShaderStageFlags shaderStage);
 
 #endif
