@@ -24,7 +24,12 @@ renderable renderableCreate(const renderableCreateParams *params)
 	strncpy(renderable->fragShaderName, params->fragShaderName, sizeof renderable->fragShaderName);
 	renderable->geometry = params->geometry;
 	renderable->useUniforms = params->sendMVP;
-	renderable->uniformSize = sizeof(mat4) * 3; // model, view, proj
+	renderable->compactMVP = params->compactMVP;
+
+	if(renderable->compactMVP)
+		renderable->uniformSize = sizeof(mat4); // only one mvp matrix
+	else
+		renderable->uniformSize = sizeof(mat4) * 3; // model, view, proj
 
 	if(params->pushConstantSize > engine.vulkanContext.physicalDeviceProperties.limits.maxPushConstantsSize)
 	{
@@ -542,11 +547,20 @@ void renderableSetMatrix(renderable renderable, mat4 matrix)
 	// TODO fix this awful hack
 	glm_mat4_copy(matrix, renderable->modelMatrix);
 
-	mat4 mvp[3];
+	mat4 matrices[3];
 
-	glm_mat4_copy(renderable->modelMatrix, mvp[0]);
-	cameraGetView(sceneGetCamera(engine.scene), mvp[1]);
-	cameraGetProj(sceneGetCamera(engine.scene), mvp[2]);
+	glm_mat4_copy(renderable->modelMatrix, matrices[0]);
+	cameraGetView(sceneGetCamera(engine.scene), matrices[1]);
+	cameraGetProj(sceneGetCamera(engine.scene), matrices[2]);
 
-	renderableUpdateUniformsBuffer(renderable, &mvp);
+	if(renderable->compactMVP)
+	{
+		mat4 mvp;
+
+		glm_mat4_mul(matrices[2], matrices[1], mvp);
+		glm_mat4_mul(mvp, matrices[0], mvp);
+		renderableUpdateUniformsBuffer(renderable, mvp);
+	}
+	else
+		renderableUpdateUniformsBuffer(renderable, matrices);
 }

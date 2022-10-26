@@ -44,6 +44,7 @@ typedef struct renderable_t
 	VkPolygonMode polygonMode;
 	VkPrimitiveTopology primitiveTopology;
 
+	VkBool32 compactMVP;
 	mat4 modelMatrix;
 } renderable_t;
 

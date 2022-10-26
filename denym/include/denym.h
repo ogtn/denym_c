@@ -41,6 +41,7 @@ typedef struct renderableCreateParams
 	const char *fragShaderName;
 	geometry geometry;
 	uint32_t sendMVP;
+	uint32_t compactMVP;
 	uint32_t pushConstantSize;
 	uint32_t useWireFrame;
 } renderableCreateParams;

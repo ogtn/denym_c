@@ -3,9 +3,7 @@
 
 layout(binding = 0) uniform MVP
 {
-    mat4 model;
-    mat4 view;
-    mat4 proj;
+    mat4 mvp;
 } ubo;
 
 layout(location = 0) in vec2 in_position;
@@ -15,7 +13,7 @@ layout(location = 0) out vec3 out_color;
 
 void main()
 {
-    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(in_position, 0, 1);
+    gl_Position = ubo.mvp * vec4(in_position, 0, 1);
 
     out_color = in_color;
 }

@@ -50,7 +50,8 @@ static renderable createGrid(float size, uint32_t level)
         .fragShaderName = "grid.frag.spv",
         .useWireFrame = 1,
         .geometry = geometryCreate(geometryParams),
-        .sendMVP = 1
+        .sendMVP = 1,
+        .compactMVP = 1
     };
 
     free(positions);
