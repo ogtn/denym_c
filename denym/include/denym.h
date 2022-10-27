@@ -21,19 +21,6 @@ typedef struct camera_t *camera;
 typedef struct shader_t *shader;
 
 
-typedef struct geometryCreateParams
-{
-	uint32_t vertexCount;
-	uint32_t indexCount;
-	float *positions2D;
-	float *positions3D;
-	float *colors;
-	float *texCoords;
-	uint16_t *indices_16;
-	uint32_t *indices_32;
-} geometryCreateParams;
-
-
 typedef struct renderableCreateParams
 {
 	const char *textureName;
