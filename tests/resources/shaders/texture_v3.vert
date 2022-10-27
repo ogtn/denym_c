@@ -3,9 +3,7 @@
 
 layout(binding = 0) uniform UBO
 {
-    mat4 model;
-    mat4 view;
-    mat4 proj;
+    mat4 mvp;
 } ubo;
 
 layout(location = 0) in vec3 position;
@@ -15,7 +13,7 @@ layout(location = 0) out vec2 out_texCoord;
 
 void main()
 {
-    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(position, 1);
+    gl_Position = ubo.mvp * vec4(position, 1);
 
     out_texCoord = texCoord;
 }

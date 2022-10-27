@@ -53,6 +53,7 @@ typedef struct renderable_t
 	VkPrimitiveTopology primitiveTopology;
 
 	VkBool32 compactMVP;
+	VkBool32 sendMVPAsPushConstant;
 	mat4 modelMatrix;
 } renderable_t;
 

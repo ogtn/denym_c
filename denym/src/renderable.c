@@ -23,13 +23,26 @@ renderable renderableCreate(const renderableCreateParams *params)
 	strncpy(renderable->vertShaderName, params->vertShaderName, sizeof renderable->vertShaderName);
 	strncpy(renderable->fragShaderName, params->fragShaderName, sizeof renderable->fragShaderName);
 	renderable->geometry = params->geometry;
-	renderable->useUniforms = params->sendMVP;
 	renderable->compactMVP = params->compactMVP;
 
-	if(renderable->compactMVP)
-		renderable->uniformSize = sizeof(mat4); // only one mvp matrix
-	else
-		renderable->uniformSize = sizeof(mat4) * 3; // model, view, proj
+	if(params->sendMVP)
+	{
+		if(params->sendMVPAsPushConstant)
+		{
+			renderable->sendMVPAsPushConstant = params->sendMVPAsPushConstant;
+			renderable->compactMVP = VK_TRUE;
+			renderableAddPushConstant(renderable, sizeof(mat4), VK_SHADER_STAGE_VERTEX_BIT);
+		}
+		else
+		{
+			renderable->useUniforms = VK_TRUE;
+
+			if(renderable->compactMVP)
+				renderable->uniformSize = sizeof(mat4); // only one mvp matrix
+			else
+				renderable->uniformSize = sizeof(mat4) * 3; // model, view, proj
+		}
+	}
 
 	if(params->pushConstantSize)
 		renderableAddPushConstant(renderable, params->pushConstantSize, VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -562,7 +575,11 @@ void renderableSetMatrix(renderable renderable, mat4 matrix)
 
 		glm_mat4_mul(matrices[2], matrices[1], mvp);
 		glm_mat4_mul(mvp, matrices[0], mvp);
-		renderableUpdateUniformsBuffer(renderable, mvp);
+
+		if(renderable->sendMVPAsPushConstant)
+			renderableUpdatePushConstantInternal(renderable, mvp, 0);
+		else
+			renderableUpdateUniformsBuffer(renderable, mvp);
 	}
 	else
 		renderableUpdateUniformsBuffer(renderable, matrices);

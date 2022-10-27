@@ -20,9 +20,11 @@ int main(void)
 
 	renderableCreateParams params = {
 		.textureName = "missing.png",
-		.vertShaderName = "texture_v2.vert.spv",
-		.fragShaderName = "texture_v2.frag.spv",
-		.sendMVP = 1
+		.vertShaderName = "texture_v4.vert.spv",
+		.fragShaderName = "texture_v3.frag.spv",
+		.sendMVP = 1,
+		.compactMVP = 1,
+		.sendMVPAsPushConstant = 1
 	};
 
 	float start = getUptime();
