@@ -111,6 +111,7 @@ typedef struct denym
 	float lastTime;
 	uint32_t fps;
 
+	texture textureFallback;
 	scene scene;
 
 	struct

@@ -31,9 +31,10 @@ int textureCreate(const char *filename, texture *txtr)
 
     if(pixels == NULL)
     {
-        logError("Failed to load texture '%s'", fullName);
+        logWarning("Failed to load texture '%s'", fullName);
+        *txtr = resourceCacheGet(engine.caches.textureCache, engine.textureFallback->name);
 
-        return -1;
+        return 0;
     }
 
     // TODO: fix leak when error

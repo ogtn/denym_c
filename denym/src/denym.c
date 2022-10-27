@@ -42,7 +42,8 @@ int denymInit(int window_width, int window_height)
 		!createCommandBuffers() &&
 		!createSynchronizationObjects(&engine.vulkanContext) &&
 		!textureCreateSampler(&engine.vulkanContext.textureSampler) &&
-		!createCaches())
+		!createCaches() &&
+		!textureCreate("missing.png", &engine.textureFallback))
 	{
 		result = 0;
 		engine.vulkanContext.currentFrame = 0;
@@ -66,6 +67,7 @@ int denymInit(int window_width, int window_height)
 void denymTerminate(void)
 {
 	sceneDestroy(engine.scene);
+	textureDestroy(engine.textureFallback);
 	destroyCaches();
 	destroyVulkanContext(&engine.vulkanContext);
 	glfwDestroyWindow(engine.window);
