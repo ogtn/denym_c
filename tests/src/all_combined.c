@@ -4,6 +4,18 @@
 #include <stdlib.h>
 
 
+static void setModelMatrix(renderable renderable, float x, float y, float angle)
+{
+	mat4 matrix;
+
+	glm_mat4_identity(matrix);
+	glm_translate_x(matrix, x);
+	glm_translate_y(matrix, y);
+	glm_rotate_z(matrix, angle, matrix);
+	renderableSetMatrix(renderable, matrix);
+}
+
+
 int main(void)
 {
 	const int width = 640;
@@ -40,6 +52,15 @@ int main(void)
 	params.vertShaderName = "texture_v4.vert.spv";
 	params.fragShaderName = "texture_v3.frag.spv";
 	renderable room_push_cst_mvp = modelLoad("viking_room.obj", &params, 1, 0);
+	params.vertShaderName = "texture_v5.vert.spv";
+	params.fragShaderName = "texture_v2.frag.spv";
+	params.sendMVPAsPushConstant = 0;
+	params.sendMVPAsStorageBuffer = 1;
+	renderable room_sbbo = modelLoad("viking_room.obj", &params, 1, 0);
+	params.vertShaderName = "texture_v4.vert.spv";
+	params.fragShaderName = "texture_v3.frag.spv";
+	params.sendMVPAsPushConstant = 1;
+	params.sendMVPAsStorageBuffer = 0;
 	params.textureName = "holes.png";
 	renderable sphere_holes = modelLoad("sphere.obj", &params, 1, 0);
 	params.textureName = "this file doesn't exist";
@@ -49,53 +70,15 @@ int main(void)
 	{
 		float angle = glm_rad(getUptime() * 20);
 
-		glm_mat4_identity(matrix);
-		glm_translate_x(matrix, -3);
-		glm_translate_y(matrix, -3);
-		glm_rotate_z(matrix, angle, matrix);
-		renderableSetMatrix(room, matrix);
-
-		glm_mat4_identity(matrix);
-		glm_translate_x(matrix, -1);
-		glm_translate_y(matrix, -3);
-		glm_rotate_z(matrix, angle, matrix);
-		renderableSetMatrix(room_indexed, matrix);
-
-		glm_mat4_identity(matrix);
-		glm_translate_x(matrix, 1);
-		glm_translate_y(matrix, -3);
-		glm_rotate_z(matrix, angle, matrix);
-		renderableSetMatrix(room_normals, matrix);
-
-		glm_mat4_identity(matrix);
-		glm_translate_x(matrix, 3);
-		glm_translate_y(matrix, -3);
-		glm_rotate_z(matrix, angle, matrix);
-		renderableSetMatrix(room_indexed_normals, matrix);
-
-		glm_mat4_identity(matrix);
-		glm_translate_x(matrix, -3);
-		glm_translate_y(matrix, -1);
-		glm_rotate_z(matrix, angle, matrix);
-		renderableSetMatrix(room_compact_mvp, matrix);
-
-		glm_mat4_identity(matrix);
-		glm_translate_x(matrix, -1);
-		glm_translate_y(matrix, -1);
-		glm_rotate_z(matrix, angle, matrix);
-		renderableSetMatrix(room_push_cst_mvp, matrix);
-
-		glm_mat4_identity(matrix);
-		glm_translate_x(matrix, 1);
-		glm_translate_y(matrix, -1);
-		glm_rotate_z(matrix, angle, matrix);
-		renderableSetMatrix(sphere_holes, matrix);
-
-		glm_mat4_identity(matrix);
-		glm_translate_x(matrix, 3);
-		glm_translate_y(matrix, -1);
-		glm_rotate_z(matrix, angle, matrix);
-		renderableSetMatrix(sphere_missing_texture, matrix);
+		setModelMatrix(room, -3, -3, angle);
+		setModelMatrix(room_indexed, -1, -3, angle);
+		setModelMatrix(room_normals, 1, -3, angle);
+		setModelMatrix(room_indexed_normals, 3, -3, angle);
+		setModelMatrix(room_compact_mvp, -3, -1, angle);
+		setModelMatrix(room_push_cst_mvp, -1, -1, angle);
+		setModelMatrix(room_sbbo, 1, -1, angle);
+		setModelMatrix(sphere_holes, 3, -1, angle);
+		setModelMatrix(sphere_missing_texture, -3, 1, angle);
 
 		denymRender();
 		denymWaitForNextFrame();
