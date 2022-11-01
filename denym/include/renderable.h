@@ -30,6 +30,13 @@ typedef struct renderable_t
 	VkDeviceSize uniformSize;
 	void *uniformCache[MAX_FRAMES_IN_FLIGHT];
 
+	// storage buffer
+	VkBuffer storageBuffer[MAX_FRAMES_IN_FLIGHT];
+	VkDeviceMemory storageBufferMemory[MAX_FRAMES_IN_FLIGHT];
+	VkBool32 useStorageBuffer;
+	VkDeviceSize storageBufferSize;
+	void *storageBufferCache[MAX_FRAMES_IN_FLIGHT];
+
 	// push constant
 	struct
 	{
@@ -54,6 +61,7 @@ typedef struct renderable_t
 
 	VkBool32 compactMVP;
 	VkBool32 sendMVPAsPushConstant;
+	VkBool32 sendMVPAsStorageBuffer;
 	mat4 modelMatrix;
 } renderable_t;
 
@@ -72,7 +80,11 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer);
 
 int renderableCreateUniformsBuffer(renderable renderable);
 
+int renderableCreateStorageBuffer(renderable renderable);
+
 int renderableUpdateUniformsBuffer(renderable renderable, const void *data);
+
+int renderableUpdateStorageBuffer(renderable renderable, const void *data);
 
 int renderableCreateDescriptorPool(renderable renderable);
 

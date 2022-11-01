@@ -24,6 +24,7 @@ int denymInit(int window_width, int window_height)
 	engine.settings.useMSAA = VK_TRUE;
 	engine.settings.useDepthBuffer = VK_TRUE;
 	engine.settings.cacheUniformMemory = VK_TRUE;
+	engine.settings.cacheStorageBufferMemory = VK_TRUE;
 
 	if ((engine.window = createWindow(window_width, window_height)) != NULL &&
 		!createVulkanInstance(&engine.vulkanContext) &&

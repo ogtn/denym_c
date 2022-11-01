@@ -13,7 +13,7 @@
 #include <stdio.h>
 
 
-#define MAX_BINDINGS 2
+#define MAX_BINDINGS 3
 
 
 renderable renderableCreate(const renderableCreateParams *params)
@@ -29,9 +29,19 @@ renderable renderableCreate(const renderableCreateParams *params)
 	{
 		if(params->sendMVPAsPushConstant)
 		{
-			renderable->sendMVPAsPushConstant = params->sendMVPAsPushConstant;
+			renderable->sendMVPAsPushConstant = VK_TRUE;
 			renderable->compactMVP = VK_TRUE;
 			renderableAddPushConstant(renderable, sizeof(mat4), VK_SHADER_STAGE_VERTEX_BIT);
+		}
+		else if(params->sendMVPAsStorageBuffer)
+		{
+			renderable->useStorageBuffer = VK_TRUE;
+			renderable->sendMVPAsStorageBuffer = VK_TRUE;
+
+			if(renderable->compactMVP)
+				renderable->storageBufferSize = sizeof(mat4); // only one mvp matrix
+			else
+				renderable->storageBufferSize = sizeof(mat4) * 3; // model, view, proj
 		}
 		else
 		{
@@ -69,6 +79,7 @@ renderable renderableCreate(const renderableCreateParams *params)
 	if(	!renderableCreateDescriptorSetLayout(renderable) &&
 		!renderableCreateDescriptorPool(renderable) &&
 		!renderableCreateUniformsBuffer(renderable) &&
+		!renderableCreateStorageBuffer(renderable) &&
 		!renderableCreateDescriptorSets(renderable) &&
 		!renderableLoadShaders(renderable) &&
 		!renderableCreatePipelineLayout(renderable) &&
@@ -106,6 +117,15 @@ void renderableDestroy(renderable renderable)
 		{
 			vkDestroyBuffer(engine.vulkanContext.device, renderable->uniformBuffers[i], NULL);
 			vkFreeMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory[i], NULL);
+		}
+	}
+
+	if(renderable->useStorageBuffer)
+	{
+		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		{
+			vkDestroyBuffer(engine.vulkanContext.device, renderable->storageBuffer[i], NULL);
+			vkFreeMemory(engine.vulkanContext.device, renderable->storageBufferMemory[i], NULL);
 		}
 	}
 
@@ -149,7 +169,7 @@ int renderableCreatePipelineLayout(renderable renderable)
 	// Required here even when we don't use it
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
 
-	if(renderable->useUniforms || renderable->useTexture)
+	if(renderable->useUniforms || renderable->useStorageBuffer || renderable->useTexture)
 	{
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.pSetLayouts = &renderable->descriptorSetLayout;
@@ -315,7 +335,7 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipeline);
 
 	// bind descriptor set to send uniforms
-	if(renderable->useUniforms || renderable->useTexture)
+	if(renderable->useUniforms || renderable->useStorageBuffer || renderable->useTexture)
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipelineLayout, 0, 1, &renderable->descriptorSets[engine.vulkanContext.currentFrame], 0, NULL);
 
 	// push constant
@@ -332,7 +352,20 @@ int renderableCreateUniformsBuffer(renderable renderable)
 	{
 		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 			bufferCreate(renderable->uniformSize, &renderable->uniformBuffers[i], &renderable->uniformBuffersMemory[i],
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+	}
+
+	return 0;
+}
+
+
+int renderableCreateStorageBuffer(renderable renderable)
+{
+	if(renderable->useStorageBuffer)
+	{
+		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+			bufferCreate(renderable->storageBufferSize, &renderable->storageBuffer[i], &renderable->storageBufferMemory[i],
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 	}
 
 	return 0;
@@ -367,6 +400,35 @@ int renderableUpdateUniformsBuffer(renderable renderable, const void *data)
 }
 
 
+// TODO same code as above, that sucks
+int renderableUpdateStorageBuffer(renderable renderable, const void *data)
+{
+	if(renderable->useStorageBuffer == VK_FALSE)
+		return -1;
+
+	uint32_t currentFrame = engine.vulkanContext.currentFrame;
+	VkDeviceMemory deviceMemory = renderable->storageBufferMemory[currentFrame];
+
+	if(engine.settings.cacheStorageBufferMemory)
+	{
+		if(renderable->storageBufferCache[currentFrame] == NULL)
+			vkMapMemory(engine.vulkanContext.device, deviceMemory, 0, renderable->storageBufferSize, 0,
+				&renderable->storageBufferCache[currentFrame]);
+
+		memcpy(renderable->storageBufferCache[currentFrame], data, renderable->storageBufferSize);
+	}
+	else
+	{
+		vkMapMemory(engine.vulkanContext.device, deviceMemory, 0, renderable->storageBufferSize, 0,
+				&renderable->storageBufferCache[currentFrame]);
+		memcpy(renderable->storageBufferCache, data, renderable->storageBufferSize);
+		vkUnmapMemory(engine.vulkanContext.device, deviceMemory);
+	}
+
+	return 0;
+}
+
+
 int renderableCreateDescriptorSetLayout(renderable renderable)
 {
 	VkDescriptorSetLayoutBinding bindings[MAX_BINDINGS];
@@ -383,6 +445,18 @@ int renderableCreateDescriptorSetLayout(renderable renderable)
 		};
 
 		bindings[bindingCount++ % MAX_BINDINGS] = vertexAttributesLayoutBinding;
+	}
+
+	if(renderable->useStorageBuffer)
+	{
+		VkDescriptorSetLayoutBinding storageBufferLayoutBinding = {
+			.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+			.binding = bindingCount,
+			.descriptorCount = 1,
+			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+		};
+
+		bindings[bindingCount++ % MAX_BINDINGS] = storageBufferLayoutBinding;
 	}
 
 	if(renderable->useTexture)
@@ -430,12 +504,20 @@ int renderableCreateDescriptorPool(renderable renderable)
 		poolSizeCount++;
 	}
 
+	if(renderable->useStorageBuffer)
+	{
+		poolSizes[poolSizeCount].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		poolSizes[poolSizeCount].descriptorCount = MAX_FRAMES_IN_FLIGHT;
+		poolSizeCount++;
+	}
+
 	if(renderable->useTexture)
 	{
 		poolSizes[poolSizeCount].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		poolSizes[poolSizeCount].descriptorCount = MAX_FRAMES_IN_FLIGHT;
 		poolSizeCount++;
 	}
+
 
 	if(poolSizeCount > MAX_BINDINGS)
 	{
@@ -491,13 +573,13 @@ int renderableCreateDescriptorSets(renderable renderable)
 		memset(descriptorWrites, 0, sizeof descriptorWrites);
 		uint32_t descriptorWriteCount = 0;
 
-		VkDescriptorBufferInfo bufferInfo;
+		VkDescriptorBufferInfo uniformBufferInfo;
 
 		if(renderable->useUniforms)
 		{
-			bufferInfo.buffer = renderable->uniformBuffers[i];
-			bufferInfo.offset = 0;
-			bufferInfo.range = renderable->uniformSize; // could use VK_WHOLE_SIZE here
+			uniformBufferInfo.buffer = renderable->uniformBuffers[i];
+			uniformBufferInfo.offset = 0;
+			uniformBufferInfo.range = renderable->uniformSize; // could use VK_WHOLE_SIZE here
 
 			descriptorWrites[descriptorWriteCount].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[descriptorWriteCount].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -505,7 +587,25 @@ int renderableCreateDescriptorSets(renderable renderable)
 			descriptorWrites[descriptorWriteCount].dstBinding = descriptorWriteCount;	// * here is the binding that matches the glsl code
 			descriptorWrites[descriptorWriteCount].dstArrayElement = 0; // * this is an offset, here 0 because we're not sending an array
 			descriptorWrites[descriptorWriteCount].descriptorCount = 1; // * only one element to transfer
-			descriptorWrites[descriptorWriteCount].pBufferInfo = &bufferInfo;
+			descriptorWrites[descriptorWriteCount].pBufferInfo = &uniformBufferInfo;
+			descriptorWriteCount++;
+		}
+
+		VkDescriptorBufferInfo storageBufferInfo;
+
+		if(renderable->useStorageBuffer)
+		{
+			storageBufferInfo.buffer = renderable->storageBuffer[i];
+			storageBufferInfo.offset = 0;
+			storageBufferInfo.range = renderable->storageBufferSize; // could use VK_WHOLE_SIZE here
+
+			descriptorWrites[descriptorWriteCount].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[descriptorWriteCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[descriptorWriteCount].dstSet = renderable->descriptorSets[i];
+			descriptorWrites[descriptorWriteCount].dstBinding = descriptorWriteCount;	// * here is the binding that matches the glsl code
+			descriptorWrites[descriptorWriteCount].dstArrayElement = 0; // * this is an offset, here 0 because we're not sending an array
+			descriptorWrites[descriptorWriteCount].descriptorCount = 1; // * only one element to transfer
+			descriptorWrites[descriptorWriteCount].pBufferInfo = &storageBufferInfo;
 			descriptorWriteCount++;
 		}
 
@@ -578,9 +678,13 @@ void renderableSetMatrix(renderable renderable, mat4 matrix)
 
 		if(renderable->sendMVPAsPushConstant)
 			renderableUpdatePushConstantInternal(renderable, mvp, 0);
+		else if(renderable->sendMVPAsStorageBuffer)
+			renderableUpdateStorageBuffer(renderable, mvp);
 		else
 			renderableUpdateUniformsBuffer(renderable, mvp);
 	}
+	else if(renderable->sendMVPAsStorageBuffer)
+		renderableUpdateStorageBuffer(renderable, matrices);
 	else
 		renderableUpdateUniformsBuffer(renderable, matrices);
 }

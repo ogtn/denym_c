@@ -32,6 +32,7 @@ typedef struct renderableCreateParams
 	uint32_t pushConstantSize;
 	uint32_t useWireFrame;
 	uint32_t sendMVPAsPushConstant;
+	uint32_t sendMVPAsStorageBuffer;
 } renderableCreateParams;
 
 
