@@ -680,6 +680,14 @@ int renderableUpdatePushConstantInternal(renderable renderable, void *value, uin
 
 void renderableSetMatrix(renderable renderable, mat4 matrix)
 {
+	if(renderable->instanceCount > 1)
+	{
+		logWarning("Renderable is instanciated, can't set matrix without specifying instance Id",
+			renderable->instanceCount);
+
+		return;
+	}
+
 	mat4 matrices[3];
 
 	glm_mat4_copy(matrix, matrices[0]);
