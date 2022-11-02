@@ -165,7 +165,7 @@ void geometryFillVertexInputInfo(geometry geometry, VkPipelineVertexInputStateCr
 }
 
 
-void geometryDraw(geometry geometry, VkCommandBuffer commandBuffer)
+void geometryDraw(geometry geometry, VkCommandBuffer commandBuffer, uint32_t instanceCount)
 {
 	// bind vertex attributes, except indices
 	if(geometry->attribCount)
@@ -182,7 +182,7 @@ void geometryDraw(geometry geometry, VkCommandBuffer commandBuffer)
 	}
 
 	if(geometry->indexCount)
-		vkCmdDrawIndexed(commandBuffer, geometry->indexCount, 1, 0, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, geometry->indexCount, instanceCount, 0, 0, 0);
 	else
-		vkCmdDraw(commandBuffer, geometry->vertexCount, 1, 0, 0);
+		vkCmdDraw(commandBuffer, geometry->vertexCount, instanceCount, 0, 0);
 }

@@ -22,7 +22,7 @@ The initial goal was to see what it takes to display a simple triangle with C an
 - [ ] Deffered shading
 - [ ] Fog
 - [ ] Bloom
-- [ ] Instance rendering
+- [x] Instance rendering
 - [ ] Physic
 - [ ] Tilling
 - [ ] Scrolling

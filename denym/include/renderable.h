@@ -62,11 +62,14 @@ typedef struct renderable_t
 	VkBool32 compactMVP;
 	VkBool32 sendMVPAsPushConstant;
 	VkBool32 sendMVPAsStorageBuffer;
-	mat4 modelMatrix;
+
+	uint32_t instanceCount;
 } renderable_t;
 
 
 renderable renderableCreate(const renderableCreateParams *params);
+
+renderable renderableCreateInstances(const renderableCreateParams *params, uint32_t instanceCount);
 
 void renderableDestroy(renderable renderable);
 
@@ -84,7 +87,7 @@ int renderableCreateStorageBuffer(renderable renderable);
 
 int renderableUpdateUniformsBuffer(renderable renderable, const void *data);
 
-int renderableUpdateStorageBuffer(renderable renderable, const void *data);
+int renderableUpdateStorageBuffer(renderable renderable, const void *data, uint32_t instanceId);
 
 int renderableCreateDescriptorPool(renderable renderable);
 
@@ -97,6 +100,8 @@ int renderableUpdatePushConstant(renderable renderable, void *value);
 int renderableUpdatePushConstantInternal(renderable renderable, void *value, uint32_t pushConstantNumber);
 
 void renderableSetMatrix(renderable renderable, mat4 matrix);
+
+void renderableSetMatrixInstance(renderable renderable, mat4 matrix, uint32_t instanceId);
 
 int renderableAddPushConstant(renderable renderable, uint32_t size, VkShaderStageFlags shaderStage);
 

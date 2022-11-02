@@ -58,6 +58,6 @@ void geometryAddVertexDescription(geometry geometry, uint32_t binding, VkFormat 
 
 void geometryFillVertexInputInfo(geometry geometry, VkPipelineVertexInputStateCreateInfo *vertexInputInfo);
 
-void geometryDraw(geometry geometry, VkCommandBuffer commandBuffer);
+void geometryDraw(geometry geometry, VkCommandBuffer commandBuffer, uint32_t instanceCount);
 
 #endif

@@ -3,7 +3,7 @@
 
 layout(binding = 0) readonly buffer SSBO
 {
-    mat4 mvp;
+    mat4 mvp[];
 } ssbo;
 
 layout(location = 0) in vec3 position;
@@ -13,7 +13,7 @@ layout(location = 0) out vec2 out_texCoord;
 
 void main()
 {
-    gl_Position = ssbo.mvp * vec4(position, 1);
+    gl_Position = ssbo.mvp[gl_InstanceIndex] * vec4(position, 1);
 
     out_texCoord = texCoord;
 }

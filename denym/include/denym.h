@@ -72,15 +72,21 @@ void geometryDestroy(geometry geometry);
 
 renderable renderableCreate(const renderableCreateParams *createParams);
 
+renderable renderableCreateInstances(const renderableCreateParams *params, uint32_t instanceCount);
+
 void renderableDestroy(renderable renderable);
 
 int renderableUpdatePushConstant(renderable renderable, void *value);
 
 void renderableSetMatrix(renderable renderable, mat4 matrix);
 
+void renderableSetMatrixInstance(renderable renderable, mat4 matrix, uint32_t instanceId);
+
 float getUptime(void);
 
 renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, int useIndices, int useNormals);
+
+renderable modelLoadInstances(const char *objFile, renderableCreateParams *renderableParams, uint32_t instancesCount, int useIndices, int useNormals);
 
 scene denymGetScene(void);
 

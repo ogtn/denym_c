@@ -18,17 +18,30 @@
 
 renderable renderableCreate(const renderableCreateParams *params)
 {
+	return renderableCreateInstances(params, 1);
+}
+
+
+renderable renderableCreateInstances(const renderableCreateParams *params, uint32_t instanceCount)
+{
 	renderable renderable = calloc(1, sizeof(*renderable));
 
 	strncpy(renderable->vertShaderName, params->vertShaderName, sizeof renderable->vertShaderName);
 	strncpy(renderable->fragShaderName, params->fragShaderName, sizeof renderable->fragShaderName);
 	renderable->geometry = params->geometry;
 	renderable->compactMVP = params->compactMVP;
+	renderable->instanceCount = instanceCount;
 
 	if(params->sendMVP)
 	{
 		if(params->sendMVPAsPushConstant)
 		{
+			if(renderable->instanceCount > 1)
+			{
+				logError("sendMVPAsPushConstant is not supported with multiple instances");
+				goto error;
+			}
+
 			renderable->sendMVPAsPushConstant = VK_TRUE;
 			renderable->compactMVP = VK_TRUE;
 			renderableAddPushConstant(renderable, sizeof(mat4), VK_SHADER_STAGE_VERTEX_BIT);
@@ -39,12 +52,18 @@ renderable renderableCreate(const renderableCreateParams *params)
 			renderable->sendMVPAsStorageBuffer = VK_TRUE;
 
 			if(renderable->compactMVP)
-				renderable->storageBufferSize = sizeof(mat4); // only one mvp matrix
+				renderable->storageBufferSize = sizeof(mat4); // only one mvp matrix per instance
 			else
-				renderable->storageBufferSize = sizeof(mat4) * 3; // model, view, proj
+				renderable->storageBufferSize = sizeof(mat4) * 3; // model, view, proj for each instance
 		}
 		else
 		{
+			if(renderable->instanceCount > 1)
+			{
+				logError("sending MVP as uniforms is not supported with multiple instances");
+				goto error;
+			}
+
 			renderable->useUniforms = VK_TRUE;
 
 			if(renderable->compactMVP)
@@ -86,7 +105,6 @@ renderable renderableCreate(const renderableCreateParams *params)
 		!renderableCreatePipeline(renderable))
 	{
 		sceneAddRenderable(engine.scene, renderable);
-		glm_mat4_identity(renderable->modelMatrix);
 
 		return renderable;
 	}
@@ -342,7 +360,7 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 	for(uint32_t i = 0; i < renderable->pushConstants.count; i++)
 		vkCmdPushConstants(commandBuffer, renderable->pipelineLayout, renderable->pushConstants.shaderStages[i], 0, renderable->pushConstants.sizes[i], renderable->pushConstants.values[i]);
 
-	geometryDraw(renderable->geometry, commandBuffer);
+	geometryDraw(renderable->geometry, commandBuffer, renderable->instanceCount);
 }
 
 
@@ -364,7 +382,7 @@ int renderableCreateStorageBuffer(renderable renderable)
 	if(renderable->useStorageBuffer)
 	{
 		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-			bufferCreate(renderable->storageBufferSize, &renderable->storageBuffer[i], &renderable->storageBufferMemory[i],
+			bufferCreate(renderable->storageBufferSize * renderable->instanceCount, &renderable->storageBuffer[i], &renderable->storageBufferMemory[i],
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 	}
 
@@ -400,8 +418,7 @@ int renderableUpdateUniformsBuffer(renderable renderable, const void *data)
 }
 
 
-// TODO same code as above, that sucks
-int renderableUpdateStorageBuffer(renderable renderable, const void *data)
+int renderableUpdateStorageBuffer(renderable renderable, const void *data, uint32_t instanceId)
 {
 	if(renderable->useStorageBuffer == VK_FALSE)
 		return -1;
@@ -412,16 +429,18 @@ int renderableUpdateStorageBuffer(renderable renderable, const void *data)
 	if(engine.settings.cacheStorageBufferMemory)
 	{
 		if(renderable->storageBufferCache[currentFrame] == NULL)
-			vkMapMemory(engine.vulkanContext.device, deviceMemory, 0, renderable->storageBufferSize, 0,
+			vkMapMemory(engine.vulkanContext.device, deviceMemory, 0, renderable->storageBufferSize * renderable->instanceCount, 0,
 				&renderable->storageBufferCache[currentFrame]);
 
-		memcpy(renderable->storageBufferCache[currentFrame], data, renderable->storageBufferSize);
+		char *basePtr = renderable->storageBufferCache[currentFrame];
+		memcpy(&basePtr[renderable->storageBufferSize * instanceId], data, renderable->storageBufferSize);
 	}
 	else
 	{
-		vkMapMemory(engine.vulkanContext.device, deviceMemory, 0, renderable->storageBufferSize, 0,
+		vkMapMemory(engine.vulkanContext.device, deviceMemory, 0, renderable->storageBufferSize * renderable->instanceCount, 0,
 				&renderable->storageBufferCache[currentFrame]);
-		memcpy(renderable->storageBufferCache, data, renderable->storageBufferSize);
+		char *basePtr = renderable->storageBufferCache[currentFrame];
+		memcpy(&basePtr[renderable->storageBufferSize * instanceId], data, renderable->storageBufferSize);
 		vkUnmapMemory(engine.vulkanContext.device, deviceMemory);
 	}
 
@@ -597,7 +616,7 @@ int renderableCreateDescriptorSets(renderable renderable)
 		{
 			storageBufferInfo.buffer = renderable->storageBuffer[i];
 			storageBufferInfo.offset = 0;
-			storageBufferInfo.range = renderable->storageBufferSize; // could use VK_WHOLE_SIZE here
+			storageBufferInfo.range = renderable->storageBufferSize * renderable->instanceCount; // could use VK_WHOLE_SIZE here
 
 			descriptorWrites[descriptorWriteCount].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[descriptorWriteCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -636,6 +655,7 @@ int renderableCreateDescriptorSets(renderable renderable)
 
 int renderableUpdatePushConstant(renderable renderable, void *value)
 {
+	// todo make this configurable through user push constant indices ?
 	return renderableUpdatePushConstantInternal(renderable, value, renderable->pushConstants.count - 1);
 }
 
@@ -660,12 +680,9 @@ int renderableUpdatePushConstantInternal(renderable renderable, void *value, uin
 
 void renderableSetMatrix(renderable renderable, mat4 matrix)
 {
-	// TODO fix this awful hack
-	glm_mat4_copy(matrix, renderable->modelMatrix);
-
 	mat4 matrices[3];
 
-	glm_mat4_copy(renderable->modelMatrix, matrices[0]);
+	glm_mat4_copy(matrix, matrices[0]);
 	cameraGetView(sceneGetCamera(engine.scene), matrices[1]);
 	cameraGetProj(sceneGetCamera(engine.scene), matrices[2]);
 
@@ -679,14 +696,43 @@ void renderableSetMatrix(renderable renderable, mat4 matrix)
 		if(renderable->sendMVPAsPushConstant)
 			renderableUpdatePushConstantInternal(renderable, mvp, 0);
 		else if(renderable->sendMVPAsStorageBuffer)
-			renderableUpdateStorageBuffer(renderable, mvp);
+			renderableUpdateStorageBuffer(renderable, mvp, 0);
 		else
 			renderableUpdateUniformsBuffer(renderable, mvp);
 	}
 	else if(renderable->sendMVPAsStorageBuffer)
-		renderableUpdateStorageBuffer(renderable, matrices);
+		renderableUpdateStorageBuffer(renderable, matrices, 0);
 	else
 		renderableUpdateUniformsBuffer(renderable, matrices);
+}
+
+
+void renderableSetMatrixInstance(renderable renderable, mat4 matrix, uint32_t instanceId)
+{
+	if(instanceId >= renderable->instanceCount)
+	{
+		logWarning("Renderable has only %u instances, instance %u doesn't exist",
+			renderable->instanceCount, instanceId);
+
+		return;
+	}
+
+	mat4 matrices[3];
+
+	glm_mat4_copy(matrix, matrices[0]);
+	cameraGetView(sceneGetCamera(engine.scene), matrices[1]);
+	cameraGetProj(sceneGetCamera(engine.scene), matrices[2]);
+
+	if(renderable->compactMVP)
+	{
+		mat4 mvp;
+
+		glm_mat4_mul(matrices[2], matrices[1], mvp);
+		glm_mat4_mul(mvp, matrices[0], mvp);
+		renderableUpdateStorageBuffer(renderable, mvp, instanceId);
+	}
+	else
+		renderableUpdateStorageBuffer(renderable, matrices, instanceId);
 }
 
 
