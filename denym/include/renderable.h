@@ -24,11 +24,11 @@ typedef struct renderable_t
 	VkDescriptorSet descriptorSets[MAX_FRAMES_IN_FLIGHT];
 
 	// uniforms
-	VkBuffer uniformBuffers[MAX_FRAMES_IN_FLIGHT]; // TODO : use a single buffer for both frames
-	VkDeviceMemory uniformBuffersMemory[MAX_FRAMES_IN_FLIGHT];
+	VkBuffer uniformBuffers;
+	VkDeviceMemory uniformBuffersMemory;
 	VkBool32 useUniforms;
 	VkDeviceSize uniformSize;
-	void *uniformCache[MAX_FRAMES_IN_FLIGHT];
+	void *uniformCache;
 
 	// storage buffer
 	VkBuffer storageBuffer;

@@ -30,11 +30,6 @@ int main(void)
 	cameraLookAt(camera, eye, center);
 	sceneSetCamera(denymGetScene(), camera);
 
-	renderable grid = createGrid(8, 3);
-	mat4 matrix;
-	glm_mat4_identity(matrix);
-	renderableSetMatrix(grid, matrix);
-
 	renderableCreateParams params = {
 		.textureName = "viking_room.png",
 		.vertShaderName = "texture_v2.vert.spv",
@@ -65,11 +60,13 @@ int main(void)
 	renderable sphere_holes = modelLoad("sphere.obj", &params, 1, 0);
 	params.textureName = "this file doesn't exist";
 	renderable sphere_missing_texture = modelLoad("sphere.obj", &params, 1, 0);
+	renderable grid = createGrid(8, 3);
 
 	while (denymKeepRunning())
 	{
 		float angle = glm_rad(getUptime() * 20);
 
+		setModelMatrix(grid, 0, 0, 0);
 		setModelMatrix(room, -3, -3, angle);
 		setModelMatrix(room_indexed, -1, -3, angle);
 		setModelMatrix(room_normals, 1, -3, angle);
