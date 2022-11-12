@@ -173,12 +173,9 @@ void geometryDraw(geometry geometry, VkCommandBuffer commandBuffer, uint32_t ins
 		VkDeviceSize offsets[GEOMETRY_MAX_ATTRIBS] = { 0 };
 
 		if(geometry->indexCount)
-		{
-			vkCmdBindVertexBuffers(commandBuffer, 0, geometry->attribCount, geometry->buffers, offsets);
 			vkCmdBindIndexBuffer(commandBuffer, geometry->buffers[geometry->attribCount], 0, geometry->indexType);
-		}
-		else
-			vkCmdBindVertexBuffers(commandBuffer, 0, geometry->attribCount, geometry->buffers, offsets);
+
+		vkCmdBindVertexBuffers(commandBuffer, 0, geometry->attribCount, geometry->buffers, offsets);
 	}
 
 	if(geometry->indexCount)

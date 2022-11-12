@@ -394,7 +394,7 @@ int renderableUpdateUniformsBuffer(renderable renderable, const void *data)
 		return -1;
 
 	uint32_t currentFrame = engine.vulkanContext.currentFrame;
-	int offset = renderable->uniformSize * currentFrame;
+	uint64_t offset = renderable->uniformSize * currentFrame;
 
 	if(engine.settings.cacheUniformMemory)
 	{
@@ -421,7 +421,7 @@ int renderableUpdateStorageBuffer(renderable renderable, const void *data, uint3
 
 	uint32_t currentFrame = engine.vulkanContext.currentFrame;
 	VkDeviceSize totalSize = renderable->storageBufferSize * renderable->instanceCount;
-	int offset = totalSize * currentFrame + renderable->storageBufferSize * instanceId;
+	uint64_t offset = totalSize * currentFrame + renderable->storageBufferSize * instanceId;
 
 	if(engine.settings.cacheStorageBufferMemory)
 	{
@@ -673,10 +673,12 @@ int renderableUpdatePushConstantInternal(renderable renderable, void *value, uin
 
 void renderableSetMatrix(renderable renderable, mat4 matrix)
 {
+	// TODO: both here and in renderableSetMatrixInstance(), we need to save the matrix and keep track of the
+	// fact that it has been updated, and is then not up to date for a given frame
+	// actual write to the uniform buffer or buffer storage can then be done at render time
 	if(renderable->instanceCount > 1)
 	{
-		logWarning("Renderable is instanciated, can't set matrix without specifying instance Id",
-			renderable->instanceCount);
+		logWarning("Renderable is instanciated, can't set matrix without specifying instance Id");
 
 		return;
 	}
