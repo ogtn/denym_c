@@ -83,5 +83,7 @@ void destroyCaches(void);
 
 void updateMetrics(void);
 
+void updateCamera(void);
+
 
 #endif

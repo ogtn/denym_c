@@ -17,6 +17,10 @@ typedef struct camera_t
     mat4 view;
 	mat4 proj;
     cameraType type;
+
+    // perspective
+    vec3 pos;
+    vec3 target;
 } camera_t;
 
 
@@ -31,6 +35,10 @@ void cameraResize(camera camera, int with, int height);
 void cameraGetView(camera camera, mat4 out);
 
 void cameraGetProj(camera camera, mat4 out);
+
+void cameraMove(camera camera, float x, float y, float z);
+
+void cameraRotate(camera camera, float yaw, float pitch, float roll);
 
 
 #endif

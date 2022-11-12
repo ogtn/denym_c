@@ -96,7 +96,7 @@ void denymRender(void)
 
 	engine.metrics.time.currentFrame = getUptime();
 	engine.metrics.time.sinceLastFrame = engine.metrics.time.currentFrame - engine.metrics.time.lastFrame;
-
+	updateCamera();
 	render(&engine.vulkanContext);
 	updateMetrics();
 }
@@ -1282,5 +1282,48 @@ void updateMetrics(void)
 		char title[128];
 		snprintf(title, sizeof title, "%s - FPS: %.1f", APP_NAME, engine.metrics.frames.fps);
 		glfwSetWindowTitle(engine.window, title);
+	}
+}
+
+
+void updateCamera(void)
+{
+	if(engine.scene->camera)
+	{
+		float speed = engine.metrics.time.sinceLastFrame * 5;
+		float speed_x = 0;
+		float speed_y = 0;
+		float speed_z = 0;
+
+		if(glfwGetKey(engine.window, GLFW_KEY_W) == GLFW_PRESS)
+			speed_x = speed;
+		if(glfwGetKey(engine.window, GLFW_KEY_S) == GLFW_PRESS)
+			speed_x = -speed;
+		if(glfwGetKey(engine.window, GLFW_KEY_D) == GLFW_PRESS)
+			speed_y = speed;
+		if(glfwGetKey(engine.window, GLFW_KEY_A) == GLFW_PRESS)
+			speed_y = -speed;
+		if(glfwGetKey(engine.window, GLFW_KEY_SPACE) == GLFW_PRESS)
+			speed_z = speed;
+		if(glfwGetKey(engine.window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+			speed_z = -speed;
+
+		cameraMove(engine.scene->camera, speed_x, speed_y, speed_z);
+
+		float angle = engine.metrics.time.sinceLastFrame * 1;
+		float yaw = 0;
+		float pitch = 0;
+		float roll = 0;
+
+		if(glfwGetKey(engine.window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+			yaw = angle;
+		if(glfwGetKey(engine.window, GLFW_KEY_LEFT) == GLFW_PRESS)
+			yaw = -angle;
+		if(glfwGetKey(engine.window, GLFW_KEY_UP) == GLFW_PRESS)
+			pitch = angle;
+		if(glfwGetKey(engine.window, GLFW_KEY_DOWN) == GLFW_PRESS)
+			pitch = -angle;
+
+		cameraRotate(engine.scene->camera, yaw, pitch, roll);
 	}
 }
