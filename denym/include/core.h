@@ -104,12 +104,26 @@ typedef struct denym
 	int framebufferHeigt;
 	VkBool32 isFullScreen;
 
-	// TODO: add moar metrics : fps, render time etc.
-	struct timespec uptime;
-	uint64_t frameCount;
-	struct timespec lastFrameDuration;
-	float lastTime;
-	uint32_t fps;
+	struct
+	{
+		struct
+		{
+			struct timespec startTime;
+			float lastFrame;
+			float sinceLastFrame;
+			float currentFrame;
+			float lastRenderTime;
+			float frameWindowStart;
+		} time;
+
+		struct
+		{
+			uint64_t totalCount;
+			uint32_t lastWindowCount;
+			float fps;
+		} frames;
+
+	} metrics;
 
 	texture textureFallback;
 	scene scene;

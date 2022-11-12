@@ -81,5 +81,7 @@ int createCaches(void);
 
 void destroyCaches(void);
 
+void updateMetrics(void);
+
 
 #endif

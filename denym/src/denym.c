@@ -18,7 +18,7 @@ int denymInit(int window_width, int window_height)
 {
 	int result = -1;
 
-	timespec_get(&engine.uptime, TIME_UTC);
+	timespec_get(&engine.metrics.time.startTime, TIME_UTC);
 
 	// TODO make this configurable
 	engine.settings.useMSAA = VK_TRUE;
@@ -48,13 +48,16 @@ int denymInit(int window_width, int window_height)
 	{
 		result = 0;
 		engine.vulkanContext.currentFrame = 0;
-		engine.frameCount = 0;
-		engine.fps = 0;
-		engine.lastTime = 0;
 		engine.scene = sceneCreate();
 
 		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 			engine.vulkanContext.needCommandBufferUpdate[i] = VK_TRUE;
+
+		float now = getUptime();
+
+		engine.metrics.time.currentFrame = now;
+		engine.metrics.time.lastFrame = now;
+		engine.metrics.time.frameWindowStart = now;
 	}
 	else
 	{
@@ -91,36 +94,18 @@ void denymRender(void)
 	vkWaitForFences(engine.vulkanContext.device, 1, &engine.vulkanContext.inFlightFences[engine.vulkanContext.currentFrame], VK_TRUE, UINT64_MAX);
 	updateCommandBuffers(engine.vulkanContext.currentFrame);
 
-	struct timespec start, end;
-    timespec_get(&start, TIME_UTC);
+	engine.metrics.time.currentFrame = getUptime();
+	engine.metrics.time.sinceLastFrame = engine.metrics.time.currentFrame - engine.metrics.time.lastFrame;
+
 	render(&engine.vulkanContext);
-	timespec_get(&end, TIME_UTC);
-    timespec_diff(&start, &end, &engine.lastFrameDuration);
-	engine.vulkanContext.currentFrame = (engine.vulkanContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-	engine.frameCount++;
-
-	float uptime = getUptime();
-
-	if(uptime - engine.lastTime > 1)
-	{
-		char title[128];
-
-		snprintf(title, sizeof title, "%s - FPS: %.1f", APP_NAME, (float)engine.fps / (uptime - engine.lastTime));
-		glfwSetWindowTitle(engine.window, title);
-		engine.fps = 0;
-		engine.lastTime = uptime;
-	}
-	else
-		engine.fps++;
+	updateMetrics();
 }
 
 
 void denymWaitForNextFrame(void)
 {
-	struct timespec target = { .tv_nsec = 1660000 };
-	struct timespec wait;
-	timespec_diff(&target, &engine.lastFrameDuration, &wait);
-	denymSleep(&wait);
+	float target = 1.f / 60.f;
+	denymSleep(target - engine.metrics.time.lastRenderTime);
 }
 
 
@@ -1275,4 +1260,27 @@ void destroyCaches(void)
 	resourceCacheDestroy(engine.caches.textureCache);
 	resourceCacheDestroy(engine.caches.shaderCache);
 	vkDestroyPipelineCache(engine.vulkanContext.device, engine.caches.pipelineCache, NULL);
+}
+
+
+void updateMetrics(void)
+{
+	float now = getUptime();
+
+	engine.metrics.time.lastRenderTime = now - engine.metrics.time.currentFrame;
+	engine.metrics.time.lastFrame = engine.metrics.time.currentFrame;
+	engine.vulkanContext.currentFrame = (engine.vulkanContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+	engine.metrics.frames.totalCount;
+	engine.metrics.frames.lastWindowCount++;
+
+	if(now - engine.metrics.time.frameWindowStart > 1)
+	{
+		engine.metrics.frames.fps = engine.metrics.frames.lastWindowCount / (now - engine.metrics.time.frameWindowStart);
+		engine.metrics.frames.lastWindowCount = 0;
+		engine.metrics.time.frameWindowStart = now;
+
+		char title[128];
+		snprintf(title, sizeof title, "%s - FPS: %.1f", APP_NAME, engine.metrics.frames.fps);
+		glfwSetWindowTitle(engine.window, title);
+	}
 }

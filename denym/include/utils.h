@@ -6,11 +6,13 @@
 #include <time.h>
 
 
- void timespec_diff(const struct timespec *lhs, const struct timespec *rhs, struct timespec *result);
+void timespec_diff(const struct timespec *lhs, const struct timespec *rhs, struct timespec *result);
 
- float getUptime(void);
+float getUptime(void);
 
- void denymSleep(const struct timespec *duration);
+void denymSleepTimespec(const struct timespec *duration);
+
+void denymSleep(float duration);
 
 
 #endif
