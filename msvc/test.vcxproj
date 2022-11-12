@@ -71,7 +71,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)\denym\include;$(SolutionDir)\dependencies\cglm\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\tests\include;$(SolutionDir)\denym\include;$(SolutionDir)\dependencies\cglm\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -132,7 +132,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="\\wsl.localhost\Ubuntu-18.04\home\olivier\denym\tests\src\obj_model.c" />
+    <ClInclude Include="..\tests\include\grid.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\tests\src\obj_array_instances.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

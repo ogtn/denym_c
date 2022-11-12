@@ -15,7 +15,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="\\wsl.localhost\Ubuntu-18.04\home\olivier\denym\tests\src\obj_model.c">
+    <ClInclude Include="..\tests\include\grid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\tests\src\obj_array_instances.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
