@@ -26,5 +26,5 @@ The initial goal was to see what it takes to display a simple triangle with C an
 - [ ] Physic
 - [ ] Tilling
 - [ ] Scrolling
-- [ ] FPS camera
+- [x] FPS camera
 - [ ] 2D camera

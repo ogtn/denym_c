@@ -19,6 +19,7 @@ typedef struct texture_t *texture;
 typedef struct scene_t *scene;
 typedef struct camera_t *camera;
 typedef struct shader_t *shader;
+typedef struct input_t *input;
 
 
 typedef struct renderableCreateParams

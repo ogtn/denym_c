@@ -7,6 +7,9 @@ camera cameraCreatePerspective(float fov, float near, float far)
 {
     camera camera = calloc(1, sizeof *camera);
 
+    camera->fov = fov;
+    camera->near = near;
+    camera->far = far;
     float aspect = (float)engine.framebufferWidth / (float)engine.framebufferHeigt;
 	glm_perspective(glm_rad(fov), aspect, near, far, camera->proj);
     camera->proj[1][1] *= -1;
@@ -22,6 +25,22 @@ camera cameraCreatePerspective(float fov, float near, float far)
 void cameraDestroy(camera camera)
 {
     free(camera);
+}
+
+
+void cameraSetFov(camera camera, float fov)
+{
+    if(camera->type != CAMERA_TYPE_3D)
+    {
+        logWarning("Can't set look at on this type of camera");
+
+        return;
+    }
+
+    camera->fov = fov;
+    float aspect = (float)engine.framebufferWidth / (float)engine.framebufferHeigt;
+	glm_perspective(glm_rad(fov), aspect, camera->near, camera->far, camera->proj);
+    camera->proj[1][1] *= -1;
 }
 
 
@@ -42,11 +61,11 @@ void cameraLookAt(camera camera, vec3 eye, vec3 target)
 }
 
 
-void cameraResize(camera camera, int with, int height)
+void cameraResize(camera camera, int width, int height)
 {
     if(camera->type == CAMERA_TYPE_3D)
     {
-        float aspect = (float)with / (float)height;
+        float aspect = (float)width / (float)height;
         glm_perspective_resize(-aspect, camera->proj);
     }
     else

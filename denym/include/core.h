@@ -4,6 +4,7 @@
 
 #include "denym_common.h"
 #include "resource_cache.h"
+#include "input.h"
 
 #include <time.h>
 
@@ -103,6 +104,7 @@ typedef struct denym
 	int framebufferWidth;
 	int framebufferHeigt;
 	VkBool32 isFullScreen;
+	input_t input;
 
 	struct
 	{
@@ -141,6 +143,7 @@ typedef struct denym
 		VkBool32 useDepthBuffer;
 		VkBool32 cacheUniformMemory;
 		VkBool32 cacheStorageBufferMemory;
+		VkBool32 captureMouse;
 	} settings;
 } denym;
 

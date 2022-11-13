@@ -5,6 +5,7 @@
 #include "scene.h"
 #include "camera.h"
 #include "logger.h"
+#include "input.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,6 +28,7 @@ int denymInit(int window_width, int window_height)
 	engine.settings.cacheStorageBufferMemory = VK_TRUE;
 
 	if ((engine.window = createWindow(window_width, window_height)) != NULL &&
+		!inputCreate() &&
 		!createVulkanInstance(&engine.vulkanContext) &&
 		!glfwCreateWindowSurface(engine.vulkanContext.instance, engine.window, NULL, &engine.vulkanContext.surface) &&
 		!getPhysicalDevice(&engine.vulkanContext) &&
@@ -82,7 +84,6 @@ void denymTerminate(void)
 
 int denymKeepRunning(void)
 {
-	glfwPollEvents();
 
 	return !glfwWindowShouldClose(engine.window) && !glfwGetKey(engine.window, GLFW_KEY_ESCAPE);
 }
@@ -96,6 +97,7 @@ void denymRender(void)
 
 	engine.metrics.time.currentFrame = getUptime();
 	engine.metrics.time.sinceLastFrame = engine.metrics.time.currentFrame - engine.metrics.time.lastFrame;
+	inputUpdate();
 	updateCamera();
 	render(&engine.vulkanContext);
 	updateMetrics();
@@ -116,29 +118,6 @@ void glfwFramebufferResizeCallback(GLFWwindow* window, int width, int height)
 	engine.framebufferHeigt = height;
 
 	cameraResize(sceneGetCamera(engine.scene), width, height);
-}
-
-
-void glfwKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
-{
-	if(key == GLFW_KEY_F && action == GLFW_PRESS)
-	{
-		if(engine.isFullScreen)
-		{
-			glfwSetWindowMonitor(engine.window, NULL, engine.windowPosX, engine.windowPosY, engine.windowWidth, engine.windowHeight, GLFW_DONT_CARE);
-			engine.isFullScreen = VK_FALSE;
-		}
-		else
-		{
-			int width, height;
-			GLFWmonitor *monitor = glfwGetPrimaryMonitor();
-			glfwGetMonitorWorkarea(monitor, NULL, NULL, &width, &height);
-			glfwGetWindowPos(engine.window, &engine.windowPosX, &engine.windowPosY);
-			glfwGetWindowSize(engine.window, &engine.windowWidth, &engine.windowHeight);
-			glfwSetWindowMonitor(engine.window, monitor, 0, 0, width, height, GLFW_DONT_CARE);
-			engine.isFullScreen = VK_TRUE;
-		}
-	}
 }
 
 
@@ -185,7 +164,6 @@ GLFWwindow* createWindow(int width, int height)
 
 	// set callbacks
 	glfwSetFramebufferSizeCallback(window, glfwFramebufferResizeCallback);
-	glfwSetKeyCallback(window, glfwKeyCallback);
 
 	return window;
 }
@@ -1296,34 +1274,40 @@ void updateCamera(void)
 		float speed_z = 0;
 
 		if(glfwGetKey(engine.window, GLFW_KEY_W) == GLFW_PRESS)
-			speed_x = speed;
+			speed_x += speed;
 		if(glfwGetKey(engine.window, GLFW_KEY_S) == GLFW_PRESS)
-			speed_x = -speed;
+			speed_x -= speed;
 		if(glfwGetKey(engine.window, GLFW_KEY_D) == GLFW_PRESS)
-			speed_y = speed;
+			speed_y += speed;
 		if(glfwGetKey(engine.window, GLFW_KEY_A) == GLFW_PRESS)
-			speed_y = -speed;
+			speed_y -= speed;
 		if(glfwGetKey(engine.window, GLFW_KEY_SPACE) == GLFW_PRESS)
-			speed_z = speed;
+			speed_z += speed;
 		if(glfwGetKey(engine.window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-			speed_z = -speed;
+			speed_z -= speed;
 
 		cameraMove(engine.scene->camera, speed_x, speed_y, speed_z);
 
-		float angle = engine.metrics.time.sinceLastFrame * 1;
-		float yaw = 0;
-		float pitch = 0;
-		float roll = 0;
+		float angularSpeed = engine.metrics.time.sinceLastFrame * 0.1;
+		float yaw = engine.input.mouse.cursor.diff.x * angularSpeed;
+		float pitch = engine.input.mouse.cursor.diff.y * angularSpeed;
 
-		if(glfwGetKey(engine.window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-			yaw = angle;
-		if(glfwGetKey(engine.window, GLFW_KEY_LEFT) == GLFW_PRESS)
-			yaw = -angle;
-		if(glfwGetKey(engine.window, GLFW_KEY_UP) == GLFW_PRESS)
-			pitch = angle;
-		if(glfwGetKey(engine.window, GLFW_KEY_DOWN) == GLFW_PRESS)
-			pitch = -angle;
+		if(engine.input.mouse.buttons.left)
+			cameraRotate(engine.scene->camera, yaw, pitch, 0);
 
-		cameraRotate(engine.scene->camera, yaw, pitch, roll);
+		if(engine.input.mouse.scroll.y)
+		{
+			float fov = engine.scene->camera->fov;
+
+			fov -= engine.input.mouse.scroll.y;
+
+			if(fov > 90)
+				fov = 90;
+
+			if(fov < 60)
+				fov = 60;
+
+			cameraSetFov(engine.scene->camera, fov);
+		}
 	}
 }

@@ -21,6 +21,9 @@ typedef struct camera_t
     // perspective
     vec3 pos;
     vec3 target;
+    float near;
+    float far;
+    float fov;
 } camera_t;
 
 
@@ -28,9 +31,11 @@ camera cameraCreatePerspective(float fov, float near, float far);
 
 void cameraDestroy(camera camera);
 
+void cameraSetFov(camera camera, float fov);
+
 void cameraLookAt(camera camera, vec3 eye, vec3 target);
 
-void cameraResize(camera camera, int with, int height);
+void cameraResize(camera camera, int width, int height);
 
 void cameraGetView(camera camera, mat4 out);
 
