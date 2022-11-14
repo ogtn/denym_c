@@ -85,7 +85,9 @@ void denymTerminate(void)
 int denymKeepRunning(void)
 {
 
-	return !glfwWindowShouldClose(engine.window) && !glfwGetKey(engine.window, GLFW_KEY_ESCAPE);
+	return !glfwWindowShouldClose(engine.window) &&
+		!glfwGetKey(engine.window, GLFW_KEY_ESCAPE) &&
+		!engine.input.controller.buttons.home;
 }
 
 
@@ -107,7 +109,7 @@ void denymRender(void)
 void denymWaitForNextFrame(void)
 {
 	float target = 1.f / 60.f;
-	denymSleep(target - engine.metrics.time.lastRenderTime);
+	//denymSleep(target - engine.metrics.time.lastRenderTime);
 }
 
 
@@ -1294,6 +1296,29 @@ void updateCamera(void)
 
 		if(engine.input.mouse.buttons.left)
 			cameraRotate(engine.scene->camera, yaw, pitch, 0);
+
+		if(glfwJoystickPresent(0))
+		{
+			if(engine.input.controller.triggers.zl)
+				speed = engine.metrics.time.sinceLastFrame * 15;
+			else
+				speed = engine.metrics.time.sinceLastFrame * 5;
+
+			if(engine.input.controller.triggers.l)
+				cameraSetFov(engine.scene->camera, 60);
+			else
+				cameraSetFov(engine.scene->camera, 90);
+
+			angularSpeed *= 25;
+
+			speed_x = -engine.input.controller.leftStick.axis.y * speed;
+			speed_y = engine.input.controller.leftStick.axis.x * speed;
+			yaw = engine.input.controller.rightStick.axis.x * angularSpeed;
+			pitch = -engine.input.controller.rightStick.axis.y * angularSpeed;
+
+			cameraMove(engine.scene->camera, speed_x, speed_y, speed_z);
+			cameraRotate(engine.scene->camera, yaw, pitch, 0);
+		}
 
 		if(engine.input.mouse.scroll.y)
 		{
