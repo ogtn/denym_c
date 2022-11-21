@@ -89,6 +89,8 @@ renderable modelLoad(const char *objFile, renderableCreateParams *renderablePara
 
 renderable modelLoadInstances(const char *objFile, renderableCreateParams *renderableParams, uint32_t instancesCount, int useIndices, int useNormals);
 
+renderable primitiveCreateGrid(float size, uint32_t level);
+
 scene denymGetScene(void);
 
 void sceneSetCamera(scene scene, camera camera);

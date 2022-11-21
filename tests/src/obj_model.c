@@ -1,5 +1,4 @@
 #include "denym.h"
-#include "grid.h"
 
 #include <stdlib.h>
 
@@ -21,7 +20,7 @@ int main(void)
 	renderable model = modelLoad("viking_room.obj", &params, 0, 0);
 	params.textureName = "missing.png";
 	renderable model2 = modelLoad("sphere.obj", &params, 1, 1);
-	renderable grid = createGrid(8, 3);
+	renderable grid = primitiveCreateGrid(8, 3);
 
 	vec3 eye = {4, 0, 2};
 	vec3 center = { 0, 0, 0.5};

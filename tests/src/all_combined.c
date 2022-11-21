@@ -1,5 +1,4 @@
 #include "denym.h"
-#include "grid.h"
 
 #include <stdlib.h>
 
@@ -60,7 +59,7 @@ int main(void)
 	renderable sphere_holes = modelLoad("sphere.obj", &params, 1, 0);
 	params.textureName = "this file doesn't exist";
 	renderable sphere_missing_texture = modelLoad("sphere.obj", &params, 1, 0);
-	renderable grid = createGrid(8, 3);
+	renderable grid = primitiveCreateGrid(8, 3);
 
 	while (denymKeepRunning())
 	{

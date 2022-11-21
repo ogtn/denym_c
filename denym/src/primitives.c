@@ -1,9 +1,9 @@
-#include "denym.h"
+#include "primitives.h"
 
 #include <string.h>
 
 
-static renderable createGrid(float size, uint32_t level)
+renderable primitiveCreateGrid(float size, uint32_t level)
 {
     static const float black[] = {0, 0, 0};
     static const float grey[] = {0.2f, 0.2f, 0.2f};

@@ -1,5 +1,4 @@
 #include "denym.h"
-#include "grid.h"
 
 #include <stdlib.h>
 
@@ -15,7 +14,7 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 
-	renderable grid = createGrid(32, 5);
+	renderable grid = primitiveCreateGrid(32, 5);
     renderable objects[ARRAY_SIZE][ARRAY_SIZE][ARRAY_SIZE];
 
 	renderableCreateParams params = {
