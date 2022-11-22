@@ -60,3 +60,14 @@ camera sceneGetCamera(scene scene)
 {
     return scene->camera;
 }
+
+
+void sceneUpdate(scene scene)
+{
+    // TODO Here we force because camera has probably changed since last frame
+    // Check camera state (keep last modified frame ?)
+    // Or never provide camera trough renderable specific buffer (uniform or storage)
+    // If view/projection matrices are in a global buffer, no need to update every renderable
+    for(uint32_t i = 0; i < scene->renderableCount; i++)
+        renderableUpdateMVP(scene->renderables[i], VK_TRUE);
+}

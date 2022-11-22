@@ -84,7 +84,6 @@ void denymTerminate(void)
 
 int denymKeepRunning(void)
 {
-
 	return !glfwWindowShouldClose(engine.window) &&
 		!glfwGetKey(engine.window, GLFW_KEY_ESCAPE) &&
 		!engine.input.controller.buttons.home;
@@ -93,15 +92,17 @@ int denymKeepRunning(void)
 
 void denymRender(void)
 {
-	// Wait for fence, so we limit the number of in flight frames
-	vkWaitForFences(engine.vulkanContext.device, 1, &engine.vulkanContext.inFlightFences[engine.vulkanContext.currentFrame], VK_TRUE, UINT64_MAX);
-	updateCommandBuffers(engine.vulkanContext.currentFrame);
-
 	engine.metrics.time.currentFrame = getUptime();
 	engine.metrics.time.sinceLastFrame = engine.metrics.time.currentFrame - engine.metrics.time.lastFrame;
+
+	// Wait for fence, so we limit the number of in flight frames
+	vkWaitForFences(engine.vulkanContext.device, 1, &engine.vulkanContext.inFlightFences[engine.vulkanContext.currentFrame], VK_TRUE, UINT64_MAX);
 	inputUpdate();
 	updateCamera();
+	sceneUpdate(engine.scene);
+	updateCommandBuffers(engine.vulkanContext.currentFrame);
 	render(&engine.vulkanContext);
+	engine.vulkanContext.currentFrame = (engine.vulkanContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	updateMetrics();
 }
 
@@ -1249,8 +1250,7 @@ void updateMetrics(void)
 
 	engine.metrics.time.lastRenderTime = now - engine.metrics.time.currentFrame;
 	engine.metrics.time.lastFrame = engine.metrics.time.currentFrame;
-	engine.vulkanContext.currentFrame = (engine.vulkanContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-	engine.metrics.frames.totalCount;
+	engine.metrics.frames.totalCount++;
 	engine.metrics.frames.lastWindowCount++;
 
 	if(now - engine.metrics.time.frameWindowStart > 1)

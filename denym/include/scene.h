@@ -26,5 +26,7 @@ void sceneSetCamera(scene scene, camera camera);
 
 camera sceneGetCamera(scene scene);
 
+void sceneUpdate(scene scene);
+
 
 #endif

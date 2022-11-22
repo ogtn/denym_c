@@ -34,6 +34,11 @@ renderable renderableCreateInstances(const renderableCreateParams *params, uint3
 
 	if(params->sendMVP)
 	{
+		glm_mat4_identity(renderable->modelMatrix);
+
+		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+			renderable->needMVPUpdate[i] = VK_TRUE;
+
 		if(params->sendMVPAsPushConstant)
 		{
 			if(renderable->instanceCount > 1)
@@ -530,7 +535,6 @@ int renderableCreateDescriptorPool(renderable renderable)
 		poolSizeCount++;
 	}
 
-
 	if(poolSizeCount > MAX_BINDINGS)
 	{
 		logError("Reached MAX_BINDINGS");
@@ -591,7 +595,7 @@ int renderableCreateDescriptorSets(renderable renderable)
 		{
 			uniformBufferInfo.buffer = renderable->uniformBuffers;
 			uniformBufferInfo.range = renderable->uniformSize;
-			uniformBufferInfo.offset = uniformBufferInfo.range;
+			uniformBufferInfo.offset = i * uniformBufferInfo.range;
 
 			descriptorWrites[descriptorWriteCount].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[descriptorWriteCount].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -673,9 +677,6 @@ int renderableUpdatePushConstantInternal(renderable renderable, void *value, uin
 
 void renderableSetMatrix(renderable renderable, mat4 matrix)
 {
-	// TODO: both here and in renderableSetMatrixInstance(), we need to save the matrix and keep track of the
-	// fact that it has been updated, and is then not up to date for a given frame
-	// actual write to the uniform buffer or buffer storage can then be done at render time
 	if(renderable->instanceCount > 1)
 	{
 		logWarning("Renderable is instanciated, can't set matrix without specifying instance Id");
@@ -683,11 +684,34 @@ void renderableSetMatrix(renderable renderable, mat4 matrix)
 		return;
 	}
 
+	glm_mat4_copy(matrix, renderable->modelMatrix);
+
+	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		renderable->needMVPUpdate[i] = VK_TRUE;
+}
+
+
+void renderableUpdateMVP(renderable renderable, VkBool32 force)
+{
+	if(renderable->needMVPUpdate[engine.vulkanContext.currentFrame] == VK_FALSE && force == VK_FALSE)
+		return;
+
 	mat4 matrices[3];
 
-	glm_mat4_copy(matrix, matrices[0]);
-	cameraGetView(sceneGetCamera(engine.scene), matrices[1]);
-	cameraGetProj(sceneGetCamera(engine.scene), matrices[2]);
+	glm_mat4_copy(renderable->modelMatrix, matrices[0]);
+
+	camera camera = sceneGetCamera(engine.scene);
+
+	if(camera)
+	{
+		cameraGetView(camera, matrices[1]);
+		cameraGetProj(camera, matrices[2]);
+	}
+	else
+	{
+		glm_mat4_identity(matrices[1]);
+		glm_mat4_identity(matrices[2]);
+	}
 
 	if(renderable->compactMVP)
 	{
@@ -707,6 +731,8 @@ void renderableSetMatrix(renderable renderable, mat4 matrix)
 		renderableUpdateStorageBuffer(renderable, matrices, 0);
 	else
 		renderableUpdateUniformsBuffer(renderable, matrices);
+
+	renderable->needMVPUpdate[engine.vulkanContext.currentFrame] = VK_FALSE;
 }
 
 

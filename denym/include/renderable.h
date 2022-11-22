@@ -64,6 +64,8 @@ typedef struct renderable_t
 	VkBool32 sendMVPAsStorageBuffer;
 
 	uint32_t instanceCount;
+	mat4 modelMatrix;
+	VkBool32 needMVPUpdate[MAX_FRAMES_IN_FLIGHT];
 } renderable_t;
 
 
@@ -100,6 +102,8 @@ int renderableUpdatePushConstant(renderable renderable, void *value);
 int renderableUpdatePushConstantInternal(renderable renderable, void *value, uint32_t pushConstantNumber);
 
 void renderableSetMatrix(renderable renderable, mat4 matrix);
+
+void renderableUpdateMVP(renderable renderable, VkBool32 force);
 
 void renderableSetMatrixInstance(renderable renderable, mat4 matrix, uint32_t instanceId);
 

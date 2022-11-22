@@ -5,7 +5,7 @@
 int main(void)
 {
 	const int width = 640;
-	const int height = 480;
+	const int height = 640;
 
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
@@ -17,6 +17,13 @@ int main(void)
 		.fragShaderName = "basic_color_interp.frag.spv"
 	};
 	renderableCreate(&renderableParams);
+
+	renderable grid = primitiveCreateGrid(2, 3);
+	mat4 matrix;
+	glm_mat4_identity(matrix);
+	glm_rotate_x(matrix, glm_rad(90), matrix);
+	glm_translate_y(matrix, 0.5);
+	renderableSetMatrix(grid, matrix);
 
 	while (denymKeepRunning())
 	{
