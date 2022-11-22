@@ -27,14 +27,17 @@ typedef struct renderable_t
 	VkBuffer uniformBuffers;
 	VkDeviceMemory uniformBuffersMemory;
 	VkBool32 useUniforms;
-	VkDeviceSize uniformSize;
+	VkDeviceSize uniformSizePerFrame;
+	VkDeviceSize uniformTotalSize;
 	void *uniformCache;
 
 	// storage buffer
 	VkBuffer storageBuffer;
 	VkDeviceMemory storageBufferMemory;
 	VkBool32 useStorageBuffer;
-	VkDeviceSize storageBufferSize;
+	VkDeviceSize storageBufferSizePerFrameAndInstance;
+	VkDeviceSize storageBufferSizePerFrame;
+	VkDeviceSize storageBufferTotalSize;
 	void *storageBufferCache;
 
 	// push constant

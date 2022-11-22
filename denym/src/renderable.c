@@ -57,9 +57,12 @@ renderable renderableCreateInstances(const renderableCreateParams *params, uint3
 			renderable->sendMVPAsStorageBuffer = VK_TRUE;
 
 			if(renderable->compactMVP)
-				renderable->storageBufferSize = sizeof(mat4); // only one mvp matrix per instance
+				renderable->storageBufferSizePerFrameAndInstance = sizeof(mat4); // only one mvp matrix per instance
 			else
-				renderable->storageBufferSize = sizeof(mat4) * 3; // model, view, proj for each instance
+				renderable->storageBufferSizePerFrameAndInstance = sizeof(mat4) * 3; // model, view, proj for each instance
+
+			renderable->storageBufferSizePerFrame = renderable->storageBufferSizePerFrameAndInstance * renderable->instanceCount;
+			renderable->storageBufferTotalSize = renderable->storageBufferSizePerFrame * MAX_FRAMES_IN_FLIGHT;
 		}
 		else
 		{
@@ -72,9 +75,11 @@ renderable renderableCreateInstances(const renderableCreateParams *params, uint3
 			renderable->useUniforms = VK_TRUE;
 
 			if(renderable->compactMVP)
-				renderable->uniformSize = sizeof(mat4); // only one mvp matrix
+				renderable->uniformSizePerFrame = sizeof(mat4); // only one mvp matrix
 			else
-				renderable->uniformSize = sizeof(mat4) * 3; // model, view, proj
+				renderable->uniformSizePerFrame = sizeof(mat4) * 3; // model, view, proj
+
+			renderable->uniformTotalSize = renderable->uniformSizePerFrame * MAX_FRAMES_IN_FLIGHT;
 		}
 	}
 
@@ -136,12 +141,24 @@ void renderableDestroy(renderable renderable)
 
 	if(renderable->useUniforms)
 	{
+		if(engine.settings.cacheUniformMemory)
+		{
+			vkUnmapMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory);
+			renderable->uniformCache = NULL;
+		}
+
 		vkDestroyBuffer(engine.vulkanContext.device, renderable->uniformBuffers, NULL);
 		vkFreeMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory, NULL);
 	}
 
 	if(renderable->useStorageBuffer)
 	{
+		if(engine.settings.cacheStorageBufferMemory)
+		{
+			vkUnmapMemory(engine.vulkanContext.device, renderable->storageBufferMemory);
+			renderable->storageBufferCache = NULL;
+		}
+
 		vkDestroyBuffer(engine.vulkanContext.device, renderable->storageBuffer, NULL);
 		vkFreeMemory(engine.vulkanContext.device, renderable->storageBufferMemory, NULL);
 	}
@@ -368,10 +385,13 @@ int renderableCreateUniformsBuffer(renderable renderable)
 	if(renderable->useUniforms)
 	{
 		bufferCreate(
-			renderable->uniformSize * MAX_FRAMES_IN_FLIGHT,
+			renderable->uniformTotalSize,
 			&renderable->uniformBuffers,
 			&renderable->uniformBuffersMemory,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+
+		if(engine.settings.cacheUniformMemory)
+			vkMapMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory, 0, renderable->uniformTotalSize, 0, &renderable->uniformCache);
 	}
 
 	return 0;
@@ -383,10 +403,13 @@ int renderableCreateStorageBuffer(renderable renderable)
 	if(renderable->useStorageBuffer)
 	{
 		bufferCreate(
-			renderable->storageBufferSize * renderable->instanceCount * MAX_FRAMES_IN_FLIGHT,
+			renderable->storageBufferTotalSize,
 			&renderable->storageBuffer,
 			&renderable->storageBufferMemory,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+
+		if(engine.settings.cacheStorageBufferMemory)
+			vkMapMemory(engine.vulkanContext.device, renderable->storageBufferMemory, 0, renderable->storageBufferTotalSize, 0, &renderable->storageBufferCache);
 	}
 
 	return 0;
@@ -398,21 +421,16 @@ int renderableUpdateUniformsBuffer(renderable renderable, const void *data)
 	if(renderable->useUniforms == VK_FALSE)
 		return -1;
 
-	uint32_t currentFrame = engine.vulkanContext.currentFrame;
-	uint64_t offset = renderable->uniformSize * currentFrame;
+	uint64_t offset = renderable->uniformSizePerFrame * engine.vulkanContext.currentFrame;
 
 	if(engine.settings.cacheUniformMemory)
-	{
-		if(renderable->uniformCache == NULL)
-			vkMapMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory, 0, renderable->uniformSize, 0, &renderable->uniformCache);
-
-		memcpy(renderable->uniformCache + offset, data, renderable->uniformSize);
-	}
+		memcpy(renderable->uniformCache + offset, data, renderable->uniformSizePerFrame);
 	else
 	{
-		vkMapMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory, 0, renderable->uniformSize, 0, &renderable->uniformCache);
-		memcpy(renderable->uniformCache + offset, data, renderable->uniformSize);
+		vkMapMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory, offset, renderable->uniformSizePerFrame, 0, &renderable->uniformCache);
+		memcpy(renderable->uniformCache, data, renderable->uniformSizePerFrame);
 		vkUnmapMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory);
+		renderable->uniformCache = NULL;
 	}
 
 	return 0;
@@ -424,22 +442,17 @@ int renderableUpdateStorageBuffer(renderable renderable, const void *data, uint3
 	if(renderable->useStorageBuffer == VK_FALSE)
 		return -1;
 
-	uint32_t currentFrame = engine.vulkanContext.currentFrame;
-	VkDeviceSize totalSize = renderable->storageBufferSize * renderable->instanceCount;
-	uint64_t offset = totalSize * currentFrame + renderable->storageBufferSize * instanceId;
+	uint64_t offset = renderable->storageBufferSizePerFrame * engine.vulkanContext.currentFrame
+		+ renderable->storageBufferSizePerFrameAndInstance * instanceId;
 
 	if(engine.settings.cacheStorageBufferMemory)
-	{
-		if(renderable->storageBufferCache == NULL)
-			vkMapMemory(engine.vulkanContext.device, renderable->storageBufferMemory, 0, totalSize, 0, &renderable->storageBufferCache);
-
-		memcpy(renderable->storageBufferCache + offset, data, renderable->storageBufferSize);
-	}
+		memcpy(renderable->storageBufferCache + offset, data, renderable->storageBufferSizePerFrameAndInstance);
 	else
 	{
-		vkMapMemory(engine.vulkanContext.device, renderable->storageBufferMemory, 0, totalSize, 0, &renderable->storageBufferCache);
-		memcpy(renderable->storageBufferCache + offset, data, renderable->storageBufferSize);
+		vkMapMemory(engine.vulkanContext.device, renderable->storageBufferMemory, offset, renderable->storageBufferSizePerFrameAndInstance, 0, &renderable->storageBufferCache);
+		memcpy(renderable->storageBufferCache, data, renderable->storageBufferSizePerFrameAndInstance);
 		vkUnmapMemory(engine.vulkanContext.device, renderable->storageBufferMemory);
+		renderable->storageBufferCache = NULL;
 	}
 
 	return 0;
@@ -594,8 +607,8 @@ int renderableCreateDescriptorSets(renderable renderable)
 		if(renderable->useUniforms)
 		{
 			uniformBufferInfo.buffer = renderable->uniformBuffers;
-			uniformBufferInfo.range = renderable->uniformSize;
-			uniformBufferInfo.offset = i * uniformBufferInfo.range;
+			uniformBufferInfo.range = renderable->uniformSizePerFrame;
+			uniformBufferInfo.offset = renderable->uniformSizePerFrame * i;
 
 			descriptorWrites[descriptorWriteCount].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[descriptorWriteCount].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -612,8 +625,8 @@ int renderableCreateDescriptorSets(renderable renderable)
 		if(renderable->useStorageBuffer)
 		{
 			storageBufferInfo.buffer = renderable->storageBuffer;
-			storageBufferInfo.range = renderable->storageBufferSize * renderable->instanceCount;
-			storageBufferInfo.offset = i * storageBufferInfo.range;
+			storageBufferInfo.range = renderable->storageBufferSizePerFrame;
+			storageBufferInfo.offset = renderable->storageBufferSizePerFrame * i;
 
 			descriptorWrites[descriptorWriteCount].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[descriptorWriteCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
