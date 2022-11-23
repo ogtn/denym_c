@@ -91,6 +91,10 @@ renderable modelLoadInstances(const char *objFile, renderableCreateParams *rende
 
 renderable primitiveCreateGrid(float size, uint32_t level);
 
+renderable primitiveCreateCube(float size, uint32_t subdivisions, renderableCreateParams *params);
+
+renderable primitiveCreateSphere(float radius, uint32_t subdivisions, renderableCreateParams *params);
+
 scene denymGetScene(void);
 
 void sceneSetCamera(scene scene, camera camera);
@@ -98,5 +102,6 @@ void sceneSetCamera(scene scene, camera camera);
 camera cameraCreatePerspective(float fov, float near, float far);
 
 void cameraLookAt(camera camera, vec3 eye, vec3 target);
+
 
 #endif
