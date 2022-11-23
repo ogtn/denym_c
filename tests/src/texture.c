@@ -5,7 +5,6 @@
 
 static renderable makeSquare(const char *vertShader, const char *fragShader)
 {
-    // clip coordinates
 	float positions[] =
 	{
 		-0.5f, 0.5f,
@@ -64,6 +63,7 @@ int main(void)
 
     renderable coloredSquare = makeSquare("mvp_ubo_position_color_attribute.vert.spv", "basic_color_interp.frag.spv");
     renderable texturedSquare = makeSquare("texture.vert.spv", "texture.frag.spv");
+	primitiveCreateGrid(8, 3);
 
 	vec3 eye = {1, 1, 2};
 	vec3 center = { 0, 0, 0};

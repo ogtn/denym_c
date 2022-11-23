@@ -98,7 +98,7 @@ void cameraMove(camera camera, float x, float y, float z)
     glm_vec3_sub(camera->target, camera->pos, forward);
     forward[2] = 0;
     glm_vec3_normalize(forward);
-    vec3 right = { -forward[1], forward[0] };
+    vec3 right = { forward[1], -forward[0] };
     vec3 up = { 0, 0, 1 };
 
     glm_vec3_scale(forward, x, forward);
@@ -127,11 +127,12 @@ void cameraRotate(camera camera, float yaw, float pitch, float roll)
 
     vec3 forward;
     glm_vec3_sub(camera->target, camera->pos, forward);
-    vec3 right = { -forward[1], forward[0] };
+    vec3 right = { forward[1], -forward[0] };
     vec3 up = { 0, 0, 1 };
 
-    glm_vec3_rotate(forward, yaw, up);
-    glm_vec3_rotate(forward, pitch, right);
+    // minus for yaw and pitch, because we rotate CCW
+    glm_vec3_rotate(forward, -yaw, up);
+    glm_vec3_rotate(forward, -pitch, right);
     glm_vec3_add(camera->pos, forward, camera->target);
     cameraLookAt(camera, camera->pos, camera->target);
 }

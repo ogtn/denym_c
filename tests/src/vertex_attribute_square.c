@@ -10,23 +10,23 @@ int main(void)
 	// clip coordinates
 	float positions[] =
 	{
-		-0.5f, 0.5f,
 		-0.5f, -0.5f,
+		-0.5f, 0.5f,
 		0.5f, -0.5f,
 
-		0.5f, -0.5f,
         0.5f, 0.5f,
+		0.5f, -0.5f,
 		-0.5f, 0.5f
 	};
 
 	float colors[] =
 	{
-		0, 1, 0,
 		1, 0, 0,
+		0, 1, 0,
 		0, 0, 1,
 
-        0, 0, 1,
 		1, 1, 1,
+        0, 0, 1,
 		0, 1, 0
 	};
 
@@ -43,6 +43,7 @@ int main(void)
 		.fragShaderName = "basic_color_interp.frag.spv"
 	};
 	renderableCreate(&renderableParams);
+	primitiveCreateGrid(2, 3);
 
 	while (denymKeepRunning())
 	{

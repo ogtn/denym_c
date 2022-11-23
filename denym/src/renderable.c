@@ -268,7 +268,7 @@ int renderableCreatePipeline(renderable renderable)
 		.lineWidth = 1,
 		// culling
 		.cullMode = VK_CULL_MODE_BACK_BIT,
-		.frontFace = VK_FRONT_FACE_CLOCKWISE,
+		.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
 		.depthBiasEnable = VK_FALSE // see rasterizer.depth* for moar depth control
 	};
 

@@ -5,9 +5,8 @@
 int main(void)
 {
 	const int width = 640;
-	const int height = 640;
+	const int height = 480;
 
-	// clip coordinates
 	float positions[] =
 	{
 		-0.5f, 0.5f,
@@ -24,7 +23,7 @@ int main(void)
 		1, 1, 1
 	};
 
-    uint16_t indices[] =
+	uint16_t indices[] =
 	{
 		0, 1, 2,
 		2, 3, 0
@@ -45,6 +44,7 @@ int main(void)
 		.sendMVP = 1
 	};
 	renderable square = renderableCreate(&renderableParams);
+	primitiveCreateGrid(8, 3);
 
 	vec3 eye = {2, 2, 2};
 	vec3 center = { 0, 0, 0};

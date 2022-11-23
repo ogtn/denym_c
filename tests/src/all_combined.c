@@ -23,8 +23,8 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 
-	vec3 eye = {0, 5, 5};
-	vec3 center = { 0, 0, 0.5};
+	vec3 eye = {0, -5, 5};
+	vec3 center = { 0, 0, 0};
 	camera camera = cameraCreatePerspective(60, 0.01f, 1000.f);
 	cameraLookAt(camera, eye, center);
 	sceneSetCamera(denymGetScene(), camera);
@@ -76,18 +76,18 @@ int main(void)
 	{
 		float angle = glm_rad(getUptime() * 20);
 
-		setModelMatrix(room, -3, -3, angle);
-		setModelMatrix(room_indexed, -1, -3, angle);
-		setModelMatrix(room_normals, 1, -3, angle);
-		setModelMatrix(room_indexed_normals, 3, -3, angle);
-		setModelMatrix(room_compact_mvp, -3, -1, angle);
-		setModelMatrix(room_push_cst_mvp, -1, -1, angle);
-		setModelMatrix(room_sbbo, 1, -1, angle);
-		setModelMatrix(sphere_holes, 3, -1, angle);
-		setModelMatrix(sphere_missing_texture, -3, 1, angle);
-		setModelMatrix(cube_gouraud, -1, 1, angle);
-		setModelMatrix(sphere_gouraud, 1, 1, angle);
-		setModelMatrix(sphere_blinn, 3, 1, angle);
+		setModelMatrix(room, -3, 3, angle);
+		setModelMatrix(room_indexed, -1, 3, angle);
+		setModelMatrix(room_normals, 1, 3, angle);
+		setModelMatrix(room_indexed_normals, 3, 3, angle);
+		setModelMatrix(room_compact_mvp, -3, 1, angle);
+		setModelMatrix(room_push_cst_mvp, -1, 1, angle);
+		setModelMatrix(room_sbbo, 1, 1, angle);
+		setModelMatrix(sphere_holes, 3, 1, angle);
+		setModelMatrix(sphere_missing_texture, -3, -1, angle);
+		setModelMatrix(cube_gouraud, -1, -1, angle);
+		setModelMatrix(sphere_gouraud, 1, -1, angle);
+		setModelMatrix(sphere_blinn, 3, -1, angle);
 
 		denymRender();
 		denymWaitForNextFrame();

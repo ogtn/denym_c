@@ -20,7 +20,7 @@ int main(void)
 	renderable model = modelLoad("viking_room.obj", &params, 0, 0);
 	params.textureName = "missing.png";
 	renderable model2 = modelLoad("sphere.obj", &params, 1, 1);
-	renderable grid = primitiveCreateGrid(8, 3);
+	primitiveCreateGrid(8, 3);
 
 	vec3 eye = {4, 0, 2};
 	vec3 center = { 0, 0, 0.5};
@@ -33,8 +33,6 @@ int main(void)
 	{
 		float elapsed_since_start = getUptime();
 		mat4 matrix;
-		glm_mat4_identity(matrix);
-		renderableSetMatrix(grid, matrix);
 
 		glm_mat4_identity(matrix);
 		glm_translate_y(matrix, -1);

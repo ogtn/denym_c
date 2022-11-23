@@ -17,13 +17,7 @@ int main(void)
 		.fragShaderName = "basic_color_interp.frag.spv"
 	};
 	renderableCreate(&renderableParams);
-
-	renderable grid = primitiveCreateGrid(2, 3);
-	mat4 matrix;
-	glm_mat4_identity(matrix);
-	glm_rotate_x(matrix, glm_rad(90), matrix);
-	glm_translate_y(matrix, 0.5);
-	renderableSetMatrix(grid, matrix);
+	primitiveCreateGrid(2, 3);
 
 	while (denymKeepRunning())
 	{

@@ -6,9 +6,8 @@
 int main(void)
 {
 	const int width = 640;
-	const int height = 640;
+	const int height = 480;
 
-	// clip coordinates
 	float positions[] =
 	{
 		-0.5f, 0.5f,
@@ -48,6 +47,7 @@ int main(void)
 	};
 
 	renderable square = renderableCreate(&renderableParams);
+	primitiveCreateGrid(8, 3);
 
 	vec3 eye = {2, 2, 2};
 	vec3 center = { 0, 0, 0};

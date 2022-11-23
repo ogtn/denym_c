@@ -14,7 +14,7 @@ int main(void)
 	if (denymInit(width, height))
 		return EXIT_FAILURE;
 
-	renderable grid = primitiveCreateGrid(32, 5);
+	primitiveCreateGrid(32, 5);
 
 	renderableCreateParams params = {
 		.textureName = "missing.png",
@@ -43,8 +43,6 @@ int main(void)
 	{
 		float elapsed_since_start = getUptime();
 		mat4 matrix;
-		glm_mat4_identity(matrix);
-		renderableSetMatrix(grid, matrix);
 		uint32_t instance = 0;
 
 		for(uint32_t i = 0; i < ARRAY_SIZE; i++)

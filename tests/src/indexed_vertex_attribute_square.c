@@ -26,8 +26,8 @@ int main(void)
 
     uint16_t indices[] =
     {
-        0, 1, 2,
-        2, 3, 0
+        0, 2, 1,
+        2, 0, 3
     };
 
 	if (denymInit(width, height))
@@ -44,6 +44,7 @@ int main(void)
 		.fragShaderName = "basic_color_interp.frag.spv"
 	};
 	renderableCreate(&renderableParams);
+	primitiveCreateGrid(2, 3);
 
 	while (denymKeepRunning())
 	{

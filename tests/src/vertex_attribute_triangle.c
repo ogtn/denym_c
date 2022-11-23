@@ -5,13 +5,13 @@
 int main(void)
 {
 	const int width = 640;
-	const int height = 480;
+	const int height = 640;
 
 	// clip coordinates
 	float positions[] =
 	{
-		0.0f, -0.5f,
 		0.5f, 0.5f,
+		0.0f, -0.5f,
 		-0.5f, 0.5f
 	};
 
@@ -35,6 +35,7 @@ int main(void)
 		.fragShaderName = "basic_color_interp.frag.spv"
 	};
 	renderableCreate(&renderableParams);
+	primitiveCreateGrid(2, 3);
 
 	while (denymKeepRunning())
 	{
