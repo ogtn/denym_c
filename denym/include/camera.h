@@ -7,8 +7,8 @@
 
 typedef enum cameraType
 {
-    CAMERA_TYPE_3D,
-    CAMERA_TYPE_2D
+    CAMERA_TYPE_PERSPECTIVE,
+    CAMERA_TYPE_ORTHOGRAPHIC
 } cameraType;
 
 
@@ -18,20 +18,28 @@ typedef struct camera_t
 	mat4 proj;
     cameraType type;
 
-    // perspective
     vec3 pos;
     vec3 target;
     float near;
     float far;
+
+    // perspective
     float fov;
+
+    // orthographic
+    float zoom;
 } camera_t;
 
 
 camera cameraCreatePerspective(float fov, float near, float far);
 
+camera cameraCreateOrtho(float zoom, float near, float far);
+
 void cameraDestroy(camera camera);
 
 void cameraSetFov(camera camera, float fov);
+
+void cameraSetZoom(camera camera, float zoom);
 
 void cameraLookAt(camera camera, vec3 eye, vec3 target);
 

@@ -59,7 +59,9 @@ int createSynchronizationObjects(vulkanContext* context);
 
 void render(vulkanContext *context);
 
-uint32_t clamp(uint32_t n, uint32_t min, uint32_t max);
+uint32_t clampu(uint32_t n, uint32_t min, uint32_t max);
+
+float clampf(float f, float min, float max);
 
 VkExtent2D clampExtent2D(VkExtent2D e, VkExtent2D min, VkExtent2D max);
 

@@ -100,6 +100,8 @@ void sceneSetCamera(scene scene, camera camera);
 
 camera cameraCreatePerspective(float fov, float near, float far);
 
+camera cameraCreateOrtho(float zoom, float near, float far);
+
 void cameraLookAt(camera camera, vec3 eye, vec3 target);
 
 

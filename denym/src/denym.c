@@ -118,7 +118,7 @@ void glfwFramebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
 	engine.vulkanContext.framebufferResized = VK_TRUE;
 	engine.framebufferWidth = width;
-	engine.framebufferHeigt = height;
+	engine.framebufferHeight = height;
 
 	cameraResize(sceneGetCamera(engine.scene), width, height);
 }
@@ -131,7 +131,7 @@ GLFWwindow* createWindow(int width, int height)
 	GLFWmonitor* monitor;
 
 	engine.framebufferWidth = width;
-	engine.framebufferHeigt = height;
+	engine.framebufferHeight = height;
 
 	if (!glfwInit())
 	{
@@ -616,7 +616,7 @@ int createSwapchain(vulkanContext* context)
 	if(context->surfaceCapabilities.maxImageCount == 0)
 		imageCount = context->surfaceCapabilities.minImageCount + 1;
 	else
-		imageCount = clamp(
+		imageCount = clampu(
 			context->surfaceCapabilities.minImageCount + 1,
 			context->surfaceCapabilities.minImageCount,
 			context->surfaceCapabilities.maxImageCount);
@@ -627,7 +627,7 @@ int createSwapchain(vulkanContext* context)
 	}
 	else
 	{
-		VkExtent2D windowExtent = { (uint32_t)engine.framebufferWidth, (uint32_t)engine.framebufferHeigt };
+		VkExtent2D windowExtent = { (uint32_t)engine.framebufferWidth, (uint32_t)engine.framebufferHeight };
 
 		context->swapchainExtent = clampExtent2D(
 			windowExtent,
@@ -1105,7 +1105,7 @@ void render(vulkanContext *context)
 }
 
 
-uint32_t clamp(uint32_t n, uint32_t min, uint32_t max)
+uint32_t clampu(uint32_t n, uint32_t min, uint32_t max)
 {
 	if (n < min)
 		return min;
@@ -1117,11 +1117,23 @@ uint32_t clamp(uint32_t n, uint32_t min, uint32_t max)
 }
 
 
+float clampf(float f, float min, float max)
+{
+	if (f < min)
+		return min;
+
+	if (f > max)
+		return max;
+
+	return f;
+}
+
+
 VkExtent2D clampExtent2D(VkExtent2D e, VkExtent2D min, VkExtent2D max)
 {
 	VkExtent2D res = {
-		.height = clamp(e.height, min.height, max.height),
-		.width = clamp(e.width, min.width, max.width)
+		.height = clampu(e.height, min.height, max.height),
+		.width = clampu(e.width, min.width, max.width)
 	};
 
 	return res;
@@ -1255,7 +1267,7 @@ void updateMetrics(void)
 
 	if(now - engine.metrics.time.frameWindowStart > 1)
 	{
-		engine.metrics.frames.fps = engine.metrics.frames.lastWindowCount / (now - engine.metrics.time.frameWindowStart);
+		engine.metrics.frames.fps = (float)engine.metrics.frames.lastWindowCount / (now - engine.metrics.time.frameWindowStart);
 		engine.metrics.frames.lastWindowCount = 0;
 		engine.metrics.time.frameWindowStart = now;
 
@@ -1290,7 +1302,7 @@ void updateCamera(void)
 
 		cameraMove(engine.scene->camera, speed_x, speed_y, speed_z);
 
-		float angularSpeed = engine.metrics.time.sinceLastFrame * 0.1;
+		float angularSpeed = engine.metrics.time.sinceLastFrame * 0.1f;
 		float yaw = engine.input.mouse.cursor.diff.x * angularSpeed;
 		float pitch = engine.input.mouse.cursor.diff.y * angularSpeed;
 
@@ -1320,19 +1332,20 @@ void updateCamera(void)
 			cameraRotate(engine.scene->camera, yaw, pitch, 0);
 		}
 
-		if(engine.input.mouse.scroll.y)
+		if(engine.input.mouse.scroll.y != 0)
 		{
-			float fov = engine.scene->camera->fov;
+			if(engine.scene->camera->type == CAMERA_TYPE_PERSPECTIVE)
+			{
+				float fov = clampf(engine.scene->camera->fov - engine.input.mouse.scroll.y, 60, 90);
 
-			fov -= engine.input.mouse.scroll.y;
+				cameraSetFov(engine.scene->camera, fov);
+			}
+			else if(engine.scene->camera->type == CAMERA_TYPE_ORTHOGRAPHIC)
+			{
+				float zoom = clampf(engine.scene->camera->zoom - engine.input.mouse.scroll.y, 1, 1000);
 
-			if(fov > 90)
-				fov = 90;
-
-			if(fov < 60)
-				fov = 60;
-
-			cameraSetFov(engine.scene->camera, fov);
+				cameraSetZoom(engine.scene->camera, zoom);
+			}
 		}
 	}
 }

@@ -7,13 +7,37 @@ camera cameraCreatePerspective(float fov, float near, float far)
 {
     camera camera = calloc(1, sizeof *camera);
 
+    camera->type = CAMERA_TYPE_PERSPECTIVE;
     camera->fov = fov;
     camera->near = near;
     camera->far = far;
-    float aspect = (float)engine.framebufferWidth / (float)engine.framebufferHeigt;
+
+    float aspect = (float)engine.framebufferWidth / (float)engine.framebufferHeight;
+
 	glm_perspective(glm_rad(fov), aspect, near, far, camera->proj);
     camera->proj[1][1] *= -1;
-    camera->type = CAMERA_TYPE_3D;
+
+    camera->target[0] = 1;
+    cameraLookAt(camera, camera->pos, camera->target);
+
+    return camera;
+}
+
+
+camera cameraCreateOrtho(float zoom, float near, float far)
+{
+    camera camera = calloc(1, sizeof *camera);
+
+    camera->type = CAMERA_TYPE_ORTHOGRAPHIC;
+    camera->zoom = zoom;
+    camera->near = near;
+    camera->far = far;
+
+    float x = (float)engine.framebufferWidth / zoom / 2;
+    float y = (float)engine.framebufferHeight / zoom / 2;
+
+	glm_ortho(-x, x, -y, y, near, far, camera->proj);
+    camera->proj[1][1] *= -1;
 
     camera->target[0] = 1;
     cameraLookAt(camera, camera->pos, camera->target);
@@ -30,15 +54,15 @@ void cameraDestroy(camera camera)
 
 void cameraSetFov(camera camera, float fov)
 {
-    if(camera->type != CAMERA_TYPE_3D)
+    if(camera->type != CAMERA_TYPE_PERSPECTIVE)
     {
-        logWarning("Can't set look at on this type of camera");
+        logWarning("Can't set FoV at on this type of camera");
 
         return;
     }
 
     camera->fov = fov;
-    float aspect = (float)engine.framebufferWidth / (float)engine.framebufferHeigt;
+    float aspect = (float)engine.framebufferWidth / (float)engine.framebufferHeight;
 	glm_perspective(glm_rad(fov), aspect, camera->near, camera->far, camera->proj);
     camera->proj[1][1] *= -1;
 }
@@ -48,28 +72,47 @@ void cameraLookAt(camera camera, vec3 eye, vec3 target)
 {
     static vec3 up = { 0, 0, 1 };
 
-    if(camera->type != CAMERA_TYPE_3D)
-    {
-        logWarning("Can't set look at on this type of camera");
-
-        return;
-    }
-
     glm_vec3_copy(eye, camera->pos);
     glm_vec3_copy(target, camera->target);
     glm_lookat(eye, target, up, camera->view);
 }
 
 
+void cameraSetZoom(camera camera, float zoom)
+{
+    if(camera->type != CAMERA_TYPE_ORTHOGRAPHIC)
+    {
+        logWarning("Can't set zoom at on this type of camera");
+
+        return;
+    }
+
+    camera->zoom = zoom;
+    float x = (float)engine.framebufferWidth / zoom / 2;
+    float y = (float)engine.framebufferHeight / zoom / 2;
+
+	glm_ortho(-x, x, -y, y, camera->near, camera->far, camera->proj);
+    camera->proj[1][1] *= -1;
+}
+
+
 void cameraResize(camera camera, int width, int height)
 {
-    if(camera->type == CAMERA_TYPE_3D)
+    if(camera->type == CAMERA_TYPE_PERSPECTIVE)
     {
         float aspect = (float)width / (float)height;
         glm_perspective_resize(-aspect, camera->proj);
     }
+    else if(camera->type == CAMERA_TYPE_ORTHOGRAPHIC)
+    {
+        float x = (float)width / camera->zoom / 2;
+        float y = (float)height / camera->zoom / 2;
+
+        glm_ortho(-x, x, -y, y, camera->near, camera->far, camera->proj);
+        camera->proj[1][1] *= -1;
+    }
     else
-        logWarning("Resizing non perpective camera has no effect");
+        logWarning("Resizing this type of camera has no effect");
 }
 
 
@@ -87,7 +130,7 @@ void cameraGetProj(camera camera, mat4 out)
 
 void cameraMove(camera camera, float x, float y, float z)
 {
-    if(camera->type != CAMERA_TYPE_3D)
+    if(camera->type != CAMERA_TYPE_PERSPECTIVE && camera->type != CAMERA_TYPE_ORTHOGRAPHIC)
     {
         logWarning("Can't move this type of camera");
 
@@ -118,7 +161,7 @@ void cameraMove(camera camera, float x, float y, float z)
 
 void cameraRotate(camera camera, float yaw, float pitch, float roll)
 {
-    if(camera->type != CAMERA_TYPE_3D)
+    if(camera->type != CAMERA_TYPE_PERSPECTIVE && camera->type != CAMERA_TYPE_ORTHOGRAPHIC)
     {
         logWarning("Can't move this type of camera");
 

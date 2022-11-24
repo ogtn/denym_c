@@ -102,7 +102,7 @@ typedef struct denym
 	int windowPosX;
 	int windowPosY;
 	int framebufferWidth;
-	int framebufferHeigt;
+	int framebufferHeight;
 	VkBool32 isFullScreen;
 	input_t input;
 
