@@ -1316,15 +1316,24 @@ void updateCamera(void)
 			else
 				speed = engine.metrics.time.sinceLastFrame * 5;
 
-			if(engine.input.controller.triggers.l)
-				cameraSetFov(engine.scene->camera, 60);
-			else
-				cameraSetFov(engine.scene->camera, 90);
+			if(engine.scene->camera->type == CAMERA_TYPE_PERSPECTIVE)
+			{
+				if(engine.input.controller.triggers.l)
+					cameraSetFov(engine.scene->camera, 60);
+				else
+					cameraSetFov(engine.scene->camera, 90);
+			}
 
 			angularSpeed *= 25;
 
 			speed_x = -engine.input.controller.leftStick.axis.y * speed;
 			speed_y = engine.input.controller.leftStick.axis.x * speed;
+
+			if(engine.input.controller.buttons.x)
+				speed_z += speed;
+			if(engine.input.controller.buttons.b)
+				speed_z -= speed;
+
 			yaw = engine.input.controller.rightStick.axis.x * angularSpeed;
 			pitch = -engine.input.controller.rightStick.axis.y * angularSpeed;
 

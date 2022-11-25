@@ -5,7 +5,7 @@
 #include <string.h>
 
 
-static const float defaultJoystickDeadZone = 0.05f;
+static const float defaultJoystickDeadZone = 0.1f;
 
 
 static void inputGlfwKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
