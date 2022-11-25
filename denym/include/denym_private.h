@@ -87,5 +87,7 @@ void updateMetrics(void);
 
 void updateCamera(void);
 
+int createTextureSamplers(void);
+
 
 #endif

@@ -109,7 +109,7 @@ renderable renderableCreateInstances(const renderableCreateParams *params, uint3
 		!renderableCreateDescriptorPool(renderable) &&
 		!renderableCreateUniformsBuffer(renderable) &&
 		!renderableCreateStorageBuffer(renderable) &&
-		!renderableCreateDescriptorSets(renderable) &&
+		!renderableCreateDescriptorSets(renderable, params->useNearestSampler) &&
 		!renderableLoadShaders(renderable) &&
 		!renderableCreatePipelineLayout(renderable) &&
 		!renderableCreatePipeline(renderable))
@@ -573,7 +573,7 @@ int renderableCreateDescriptorPool(renderable renderable)
 }
 
 
-int renderableCreateDescriptorSets(renderable renderable)
+int renderableCreateDescriptorSets(renderable renderable, VkBool32 useNearestSampler)
 {
 	VkDescriptorSetLayout layouts[MAX_FRAMES_IN_FLIGHT];
 
@@ -642,7 +642,11 @@ int renderableCreateDescriptorSets(renderable renderable)
 
 		if(renderable->useTexture)
 		{
-			imageInfo.sampler = engine.vulkanContext.textureSampler;
+			if(useNearestSampler)
+				imageInfo.sampler = engine.vulkanContext.textureSamplers.nearest;
+			else
+				imageInfo.sampler = engine.vulkanContext.textureSamplers.linear;
+
 			imageInfo.imageView = renderable->texture->imageView;
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 

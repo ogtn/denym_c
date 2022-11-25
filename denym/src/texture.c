@@ -112,11 +112,11 @@ int textureCreateImage2D(texture texture)
 }
 
 
-int textureCreateSampler(VkSampler *sampler)
+int textureCreateSampler(VkSampler *sampler, VkFilter filter)
 {
     VkSamplerCreateInfo samplerParams = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
-    samplerParams.minFilter = VK_FILTER_LINEAR;
-    samplerParams.magFilter = VK_FILTER_LINEAR;
+    samplerParams.minFilter = filter;
+    samplerParams.magFilter = filter;
 
     samplerParams.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     samplerParams.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;

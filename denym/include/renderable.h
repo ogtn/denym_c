@@ -98,7 +98,7 @@ int renderableCreateDescriptorPool(renderable renderable);
 
 int renderableCreateDescriptorSetLayout(renderable renderable);
 
-int renderableCreateDescriptorSets(renderable renderable);
+int renderableCreateDescriptorSets(renderable renderable, VkBool32 useNearestSampler);
 
 int renderableUpdatePushConstant(renderable renderable, void *value);
 

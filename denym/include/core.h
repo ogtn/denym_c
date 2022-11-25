@@ -64,8 +64,14 @@ typedef struct vulkanContext
 	VkBool32 needCommandBufferUpdate[MAX_FRAMES_IN_FLIGHT];
 	VkCommandBuffer commandBuffers[MAX_FRAMES_IN_FLIGHT];
 
+	// TODO: find a better place for this
 	// texture samplers
-	VkSampler textureSampler; // TODO: find a better place
+	struct
+	{
+		VkSampler linear;
+		VkSampler nearest;
+	} textureSamplers;
+
 
 	// instance extension functions
 	DECL_VK_PFN(GetDeviceProcAddr);

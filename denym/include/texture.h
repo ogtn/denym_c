@@ -22,7 +22,7 @@ void textureDestroy(texture texture);
 
 int textureCreateImage2D(texture texture);
 
-int textureCreateSampler(VkSampler *sampler);
+int textureCreateSampler(VkSampler *sampler, VkFilter filter);
 
 
 #endif

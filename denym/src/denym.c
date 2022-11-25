@@ -44,7 +44,7 @@ int denymInit(int window_width, int window_height)
 		!createCommandPool(&engine.vulkanContext) &&
 		!createCommandBuffers() &&
 		!createSynchronizationObjects(&engine.vulkanContext) &&
-		!textureCreateSampler(&engine.vulkanContext.textureSampler) &&
+		!createTextureSamplers() &&
 		!createCaches() &&
 		!textureCreate("missing.png", &engine.textureFallback))
 	{
@@ -1147,7 +1147,8 @@ void destroyVulkanContext(vulkanContext* context)
 		vkDeviceWaitIdle(context->device);
 		cleanSwapchain(context);
 		vkDestroyRenderPass(context->device, context->renderPass, NULL);
-		vkDestroySampler(engine.vulkanContext.device, engine.vulkanContext.textureSampler, NULL);
+		vkDestroySampler(engine.vulkanContext.device, engine.vulkanContext.textureSamplers.linear, NULL);
+		vkDestroySampler(engine.vulkanContext.device, engine.vulkanContext.textureSamplers.nearest, NULL);
 
 		for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
@@ -1357,4 +1358,11 @@ void updateCamera(void)
 			}
 		}
 	}
+}
+
+
+int createTextureSamplers(void)
+{
+	return textureCreateSampler(&engine.vulkanContext.textureSamplers.linear, VK_FILTER_LINEAR) ||
+		textureCreateSampler(&engine.vulkanContext.textureSamplers.nearest, VK_FILTER_NEAREST);
 }
