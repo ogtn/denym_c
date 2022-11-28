@@ -100,6 +100,10 @@ sprite spriteCreate(const char *textureName, float sizeU, float sizeV, uint32_t 
 
 void spriteSetSpriteCoordinates(sprite sprite, uint32_t u, uint32_t v);
 
+void spriteSetPosition(sprite sprite, float x, float y);
+
+void spriteFlip(sprite sprite, int verticalAxis, int horizontalAxis);
+
 scene denymGetScene(void);
 
 void sceneSetCamera(scene scene, camera camera);

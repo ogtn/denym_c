@@ -1,6 +1,6 @@
 #include "denym.h"
 
-#include <stdlib.h>
+#include <math.h>
 
 
 int main(void)
@@ -13,17 +13,21 @@ int main(void)
 
     sprite sprite = spriteCreate("mario_walk.png", 1, 2, 3, 1);
 
-	vec3 eye = {0, -0.01, 5};
+	vec3 eye = {0, -0.01f, 5};
 	vec3 center = { 0, 0, 0};
-    camera camera = cameraCreateOrtho(60, 0.1f, 1000.f);
-    camera = cameraCreatePerspective(60, 0.1f, 1000);
+    camera camera = cameraCreateOrtho(80, 0.1f, 1000.f);
 	cameraLookAt(camera, eye, center);
 	sceneSetCamera(denymGetScene(), camera);
     primitiveCreateGrid(8, 3);
 
 	while (denymKeepRunning())
 	{
-		spriteSetSpriteCoordinates(sprite, (int)(getUptime() * 10) % 3, 0);
+		float time = getUptime();
+		float pos = sinf(time * 1.5f) * 4 - 0.5f;
+
+		spriteFlip(sprite, pos < 0, 0);
+		spriteSetPosition(sprite, pos, 0);
+		spriteSetSpriteCoordinates(sprite, (uint32_t)(time * 15) % 3, 0);
 		denymRender();
 		denymWaitForNextFrame();
 	}

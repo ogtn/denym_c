@@ -49,5 +49,37 @@ void spriteSetSpriteCoordinates(sprite sprite, uint32_t u, uint32_t v)
 
 	float coords[] = { start_u, start_v, end_u, end_v };
 
+	if(sprite->flipVertical)
+	{
+		float tmp = coords[0];
+		coords[0] = coords[2];
+		coords[2] = tmp;
+	}
+
+	if(sprite->flipHorizontal)
+	{
+		float tmp = coords[1];
+		coords[1] = coords[3];
+		coords[3] = tmp;
+	}
+
 	renderableUpdatePushConstant(sprite->renderable, &coords);
+}
+
+
+void spriteSetPosition(sprite sprite, float x, float y)
+{
+	mat4 matrix;
+	vec3 pos = { x, y, 0 };
+
+	glm_mat4_identity(matrix);
+	glm_translate(matrix, pos);
+	renderableSetMatrix(sprite->renderable, matrix);
+}
+
+
+void spriteFlip(sprite sprite, int verticalAxis, int horizontalAxis)
+{
+	sprite->flipVertical = verticalAxis;
+	sprite->flipHorizontal = horizontalAxis;
 }

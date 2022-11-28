@@ -17,5 +17,6 @@
         "**/*.spv": true,
         "**/x64":true
     },
-    "cmake.configureOnOpen": false
+    "cmake.configureOnOpen": false,
+    "files.trimTrailingWhitespace": true
 }
