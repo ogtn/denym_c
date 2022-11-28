@@ -6,7 +6,7 @@ WIN_LIB_DENYM = $(DIR_DENYM)/$(WIN_DIR_BIN)/$(WIN_LIB_NAME)
 DIR_SHADERS = resources/shaders
 
 LFLAGS = -lvulkan -lglfw -ldenym -L$(DIR_DENYM)/$(DIR_BIN) -lm
-WIN_LFLAGS = -lvulkan-1.lib -lglfw3_mt.lib -ldenym -L$(DIR_DENYM)/$(WIN_DIR_BIN) -L$(DIR_GLFW) -L"C:\VulkanSDK\1.3.224.1\Lib"
+WIN_LFLAGS = -lvulkan-1.lib -lglfw3_mt.lib -ldenym -L$(DIR_DENYM)/$(WIN_DIR_BIN) -L$(DIR_GLFW) -L"C:\VulkanSDK\1.3.231.1\Lib"
 WIN_LFLAGS += -lkernel32.lib -luser32.lib -lgdi32.lib -lwinspool.lib -lcomdlg32.lib -ladvapi32.lib -lshell32.lib -lole32.lib -loleaut32.lib -luuid.lib -lodbc32.lib -lodbccp32.lib -llibucrt.lib
 
 INC = -I$(DIR_INC) -I$(DIR_DENYM)/include -I$(DIR_CGLM)

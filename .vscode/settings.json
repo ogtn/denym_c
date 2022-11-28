@@ -16,5 +16,6 @@
         "**/msvc*": true,
         "**/*.spv": true,
         "**/x64":true
-    }
+    },
+    "cmake.configureOnOpen": false
 }

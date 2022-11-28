@@ -3,7 +3,7 @@ DIR_INC = include
 DIR_BIN = bin/linux
 DIR_DEP = dep
 WIN_DIR_BIN = bin/win
-WIN_DIR_VULKAN = "C:\VulkanSDK\1.3.224.1\Include"
+WIN_DIR_VULKAN = "C:\VulkanSDK\1.3.231.1\Include"
 WIN_DIR_VULKAN_ = "$(cmd.exe /c echo %VULKAN_SDK% | tr -d '\r')"
 
 DIR_CGLM = ../dependencies/cglm/include/
