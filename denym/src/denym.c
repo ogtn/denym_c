@@ -5,7 +5,7 @@
 #include "scene.h"
 #include "camera.h"
 #include "logger.h"
-#include "input.h"
+#include "input_internal.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -97,7 +97,7 @@ void denymRender(void)
 
 	// Wait for fence, so we limit the number of in flight frames
 	vkWaitForFences(engine.vulkanContext.device, 1, &engine.vulkanContext.inFlightFences[engine.vulkanContext.currentFrame], VK_TRUE, UINT64_MAX);
-	inputUpdate();
+	inputUpdate(NULL);
 	updateCamera();
 	sceneUpdate(engine.scene);
 	updateCommandBuffers(engine.vulkanContext.currentFrame);

@@ -1,4 +1,4 @@
-#include "input.h"
+#include "input_internal.h"
 #include "core.h"
 #include "logger.h"
 
@@ -41,11 +41,20 @@ int inputCreate(void)
 }
 
 
-void inputUpdate(void)
+void inputUpdate(input input)
 {
     inputUpdateMouse();
     inputUpdateController();
     glfwPollEvents();
+
+    if(input)
+        memcpy(input, &engine.input, sizeof *input);
+}
+
+
+int inputIsKeyPressed(inputKeyId key)
+{
+    return glfwGetKey(engine.window, key) == GLFW_PRESS;
 }
 
 
@@ -111,6 +120,8 @@ static void inputUpdateMouse(void)
     engine.input.mouse.buttons.left = glfwGetMouseButton(engine.window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
     engine.input.mouse.buttons.middle = glfwGetMouseButton(engine.window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
     engine.input.mouse.buttons.right = glfwGetMouseButton(engine.window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+    engine.input.mouse.buttons.next = glfwGetMouseButton(engine.window, GLFW_MOUSE_BUTTON_4) == GLFW_PRESS;
+    engine.input.mouse.buttons.previous = glfwGetMouseButton(engine.window, GLFW_MOUSE_BUTTON_5) == GLFW_PRESS;
 }
 
 
