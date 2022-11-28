@@ -19,6 +19,7 @@ typedef struct scene_t *scene;
 typedef struct camera_t *camera;
 typedef struct shader_t *shader;
 typedef struct input_t *input;
+typedef struct sprite_t *sprite;
 
 
 typedef struct renderableCreateParams
@@ -94,6 +95,10 @@ renderable primitiveCreateGrid(float size, uint32_t level);
 renderable primitiveCreateCube(float size, uint32_t subdivisions, renderableCreateParams *params);
 
 renderable primitiveCreateSphere(float radius, uint32_t subdivisions, renderableCreateParams *params);
+
+sprite spriteCreate(const char *textureName, float sizeU, float sizeV, uint32_t spriteCountU, uint32_t spriteCountV);
+
+void spriteSetSpriteCoordinates(sprite sprite, uint32_t u, uint32_t v);
 
 scene denymGetScene(void);
 

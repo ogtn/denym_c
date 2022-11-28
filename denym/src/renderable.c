@@ -84,7 +84,7 @@ renderable renderableCreateInstances(const renderableCreateParams *params, uint3
 	}
 
 	if(params->pushConstantSize)
-		renderableAddPushConstant(renderable, params->pushConstantSize, VK_SHADER_STAGE_FRAGMENT_BIT);
+		renderableAddPushConstant(renderable, params->pushConstantSize, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT);
 
 	if(params->useWireFrame)
 	{
