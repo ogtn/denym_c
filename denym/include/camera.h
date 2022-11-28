@@ -41,6 +41,8 @@ void cameraSetFov(camera camera, float fov);
 
 void cameraSetZoom(camera camera, float zoom);
 
+void cameraZoom(camera camera, float zoomOffset);
+
 void cameraLookAt(camera camera, vec3 eye, vec3 target);
 
 void cameraResize(camera camera, int width, int height);

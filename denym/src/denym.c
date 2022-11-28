@@ -82,11 +82,17 @@ void denymTerminate(void)
 }
 
 
-int denymKeepRunning(void)
+int denymKeepRunning(input input)
 {
-	return !glfwWindowShouldClose(engine.window) &&
-		!glfwGetKey(engine.window, GLFW_KEY_ESCAPE) &&
-		!engine.input.controller.buttons.home;
+	inputUpdate(input);
+
+	return !engine.shouldStop;
+}
+
+
+float denymGetTimeSinceLastFrame(void)
+{
+	return engine.metrics.time.sinceLastFrame;
 }
 
 
@@ -97,8 +103,6 @@ void denymRender(void)
 
 	// Wait for fence, so we limit the number of in flight frames
 	vkWaitForFences(engine.vulkanContext.device, 1, &engine.vulkanContext.inFlightFences[engine.vulkanContext.currentFrame], VK_TRUE, UINT64_MAX);
-	inputUpdate(NULL);
-	updateCamera();
 	sceneUpdate(engine.scene);
 	updateCommandBuffers(engine.vulkanContext.currentFrame);
 	render(&engine.vulkanContext);
@@ -1275,88 +1279,6 @@ void updateMetrics(void)
 		char title[128];
 		snprintf(title, sizeof title, "%s - FPS: %.1f", APP_NAME, engine.metrics.frames.fps);
 		glfwSetWindowTitle(engine.window, title);
-	}
-}
-
-
-void updateCamera(void)
-{
-	if(engine.scene->camera)
-	{
-		float speed = engine.metrics.time.sinceLastFrame * 5;
-		float speed_x = 0;
-		float speed_y = 0;
-		float speed_z = 0;
-
-		if(glfwGetKey(engine.window, GLFW_KEY_W) == GLFW_PRESS)
-			speed_x += speed;
-		if(glfwGetKey(engine.window, GLFW_KEY_S) == GLFW_PRESS)
-			speed_x -= speed;
-		if(glfwGetKey(engine.window, GLFW_KEY_D) == GLFW_PRESS)
-			speed_y += speed;
-		if(glfwGetKey(engine.window, GLFW_KEY_A) == GLFW_PRESS)
-			speed_y -= speed;
-		if(glfwGetKey(engine.window, GLFW_KEY_SPACE) == GLFW_PRESS)
-			speed_z += speed;
-		if(glfwGetKey(engine.window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-			speed_z -= speed;
-
-		cameraMove(engine.scene->camera, speed_x, speed_y, speed_z);
-
-		float angularSpeed = engine.metrics.time.sinceLastFrame * 0.1f;
-		float yaw = engine.input.mouse.cursor.diff.x * angularSpeed;
-		float pitch = engine.input.mouse.cursor.diff.y * angularSpeed;
-
-		if(engine.input.mouse.buttons.left)
-			cameraRotate(engine.scene->camera, yaw, pitch, 0);
-
-		if(glfwJoystickPresent(0))
-		{
-			if(engine.input.controller.triggers.zl)
-				speed = engine.metrics.time.sinceLastFrame * 15;
-			else
-				speed = engine.metrics.time.sinceLastFrame * 5;
-
-			if(engine.scene->camera->type == CAMERA_TYPE_PERSPECTIVE)
-			{
-				if(engine.input.controller.triggers.l)
-					cameraSetFov(engine.scene->camera, 60);
-				else
-					cameraSetFov(engine.scene->camera, 90);
-			}
-
-			angularSpeed *= 25;
-
-			speed_x = -engine.input.controller.leftStick.axis.y * speed;
-			speed_y = engine.input.controller.leftStick.axis.x * speed;
-
-			if(engine.input.controller.buttons.x)
-				speed_z += speed;
-			if(engine.input.controller.buttons.b)
-				speed_z -= speed;
-
-			yaw = engine.input.controller.rightStick.axis.x * angularSpeed;
-			pitch = -engine.input.controller.rightStick.axis.y * angularSpeed;
-
-			cameraMove(engine.scene->camera, speed_x, speed_y, speed_z);
-			cameraRotate(engine.scene->camera, yaw, pitch, 0);
-		}
-
-		if(engine.input.mouse.scroll.y != 0)
-		{
-			if(engine.scene->camera->type == CAMERA_TYPE_PERSPECTIVE)
-			{
-				float fov = clampf(engine.scene->camera->fov - engine.input.mouse.scroll.y, 60, 90);
-
-				cameraSetFov(engine.scene->camera, fov);
-			}
-			else if(engine.scene->camera->type == CAMERA_TYPE_ORTHOGRAPHIC)
-			{
-				float zoom = clampf(engine.scene->camera->zoom - engine.input.mouse.scroll.y, 1, 1000);
-
-				cameraSetZoom(engine.scene->camera, zoom);
-			}
-		}
 	}
 }
 

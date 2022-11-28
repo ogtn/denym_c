@@ -47,6 +47,10 @@ void inputUpdate(input input)
     inputUpdateController();
     glfwPollEvents();
 
+    engine.shouldStop = glfwWindowShouldClose(engine.window) ||
+		glfwGetKey(engine.window, GLFW_KEY_ESCAPE) ||
+		engine.input.controller.buttons.home;
+
     if(input)
         memcpy(input, &engine.input, sizeof *input);
 }
@@ -132,6 +136,7 @@ static void inputUpdateController(void)
         int count;
         const float *axes = glfwGetJoystickAxes(0, &count);
 
+        engine.input.controller.isPresent = 1;
         engine.input.controller.leftStick.axis.x = removeJoystickDeadZone(axes[0], defaultJoystickDeadZone);
         engine.input.controller.leftStick.axis.y = removeJoystickDeadZone(axes[1], defaultJoystickDeadZone);
         engine.input.controller.rightStick.axis.x = removeJoystickDeadZone(axes[2], defaultJoystickDeadZone);
@@ -175,6 +180,8 @@ static void inputUpdateController(void)
             axes[2], axes[3], engine.input.controller.rightStick.axis.x, engine.input.controller.rightStick.axis.y);
         */
     }
+
+    engine.input.controller.isPresent = 0;
 }
 
 

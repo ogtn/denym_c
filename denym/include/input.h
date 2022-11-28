@@ -2,9 +2,6 @@
 #define __input_h_
 
 
-#include "denym_common.h"
-
-
 typedef enum inputKeyId
 {
     // special characters
@@ -182,6 +179,7 @@ typedef struct input_t
     // switch pro controller
     struct
     {
+        uint8_t isPresent;
         joystick leftStick;
         joystick rightStick;
 
@@ -217,8 +215,6 @@ typedef struct input_t
 
 typedef input_t *input;
 
-
-void inputUpdate(input input);
 
 int inputIsKeyPressed(inputKeyId key);
 

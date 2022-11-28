@@ -7,5 +7,7 @@
 
 int inputCreate(void);
 
+void inputUpdate(input input);
+
 
 #endif

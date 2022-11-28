@@ -1,4 +1,4 @@
-#include "denym.h"
+#include "camera_update.h"
 
 #include <stdlib.h>
 
@@ -25,6 +25,7 @@ int main(void)
 
 	vec3 eye = {0, -5, 5};
 	vec3 center = { 0, 0, 0};
+	input_t input;
 	camera camera = cameraCreatePerspective(60, 0.01f, 1000.f);
 	cameraLookAt(camera, eye, center);
 	sceneSetCamera(denymGetScene(), camera);
@@ -72,10 +73,11 @@ int main(void)
 
 	primitiveCreateGrid(8, 3);
 
-	while (denymKeepRunning())
+	while (denymKeepRunning(&input))
 	{
 		float angle = glm_rad(getUptime() * 20);
 
+		updateCameraPerspective(&input, camera);
 		setModelMatrix(room, -3, 3, angle);
 		setModelMatrix(room_indexed, -1, 3, angle);
 		setModelMatrix(room_normals, 1, 3, angle);

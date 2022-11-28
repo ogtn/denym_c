@@ -1,4 +1,5 @@
 #include "denym.h"
+
 #include <stdlib.h>
 
 
@@ -19,7 +20,7 @@ int main(void)
 	renderableCreate(&renderableParams);
 	primitiveCreateGrid(2, 3);
 
-	while (denymKeepRunning())
+	while (denymKeepRunning(NULL))
 	{
 		denymRender();
 		denymWaitForNextFrame();

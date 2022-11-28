@@ -1,4 +1,5 @@
-#include "denym.h"
+#include "camera_update.h"
+
 #include <stdlib.h>
 #include <math.h>
 
@@ -68,15 +69,17 @@ int main(void)
 	vec3 eye = {1, 1, 2};
 	vec3 center = { 0, 0, 0};
 
+	input_t input;
 	camera camera = cameraCreatePerspective(60, 0.01f, 1000.f);
 	cameraLookAt(camera, eye, center);
 	sceneSetCamera(denymGetScene(), camera);
 
-	while (denymKeepRunning())
+	while(denymKeepRunning(&input))
 	{
         float elapsed_since_start = getUptime();
 		mat4 matrix;
 
+		updateCameraPerspective(&input, camera);
 	    glm_mat4_identity(matrix);
 		glm_translate_z(matrix, -0.5f);
 		glm_rotate_z(matrix, -glm_rad(elapsed_since_start * 100), matrix);

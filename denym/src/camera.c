@@ -61,10 +61,16 @@ void cameraSetFov(camera camera, float fov)
         return;
     }
 
-    camera->fov = fov;
+    camera->fov = glm_clamp(fov, 60, 90);
     float aspect = (float)engine.framebufferWidth / (float)engine.framebufferHeight;
-	glm_perspective(glm_rad(fov), aspect, camera->near, camera->far, camera->proj);
+	glm_perspective(glm_rad(camera->fov), aspect, camera->near, camera->far, camera->proj);
     camera->proj[1][1] *= -1;
+}
+
+
+void cameraFov(camera camera, float fovOffset)
+{
+    cameraSetFov(camera, camera->fov + fovOffset);
 }
 
 
@@ -87,12 +93,18 @@ void cameraSetZoom(camera camera, float zoom)
         return;
     }
 
-    camera->zoom = zoom;
-    float x = (float)engine.framebufferWidth / zoom / 2;
-    float y = (float)engine.framebufferHeight / zoom / 2;
+    camera->zoom = glm_clamp(zoom, 1, 1000);
+    float x = (float)engine.framebufferWidth / camera->zoom / 2;
+    float y = (float)engine.framebufferHeight / camera->zoom / 2;
 
 	glm_ortho(-x, x, -y, y, camera->near, camera->far, camera->proj);
     camera->proj[1][1] *= -1;
+}
+
+
+void cameraZoom(camera camera, float zoomOffset)
+{
+    cameraSetZoom(camera, camera->zoom + zoomOffset);
 }
 
 

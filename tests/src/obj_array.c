@@ -1,4 +1,4 @@
-#include "denym.h"
+#include "camera_update.h"
 
 #include <stdlib.h>
 
@@ -39,14 +39,17 @@ int main(void)
 
 	vec3 eye = {16, 16, 16};
 	vec3 center = { 0, 0, 0};
+	input_t input;
 	camera camera = cameraCreatePerspective(60, 0.01f, 1000.f);
 	cameraLookAt(camera, eye, center);
 	sceneSetCamera(denymGetScene(), camera);
 
-	while (denymKeepRunning())
+	while(denymKeepRunning(&input))
 	{
 		float elapsed_since_start = getUptime();
 		mat4 matrix;
+
+		updateCameraPerspective(&input, camera);
 
 		for(uint32_t i = 0; i < ARRAY_SIZE; i++)
         {

@@ -85,8 +85,6 @@ void destroyCaches(void);
 
 void updateMetrics(void);
 
-void updateCamera(void);
-
 int createTextureSamplers(void);
 
 

@@ -1,4 +1,4 @@
-#include "denym.h"
+#include "camera_update.h"
 
 #include <math.h>
 
@@ -20,7 +20,7 @@ int main(void)
 	sceneSetCamera(denymGetScene(), camera);
     primitiveCreateGrid(8, 3);
 
-	while (denymKeepRunning())
+	while(denymKeepRunning(NULL))
 	{
 		float time = getUptime();
 		float pos = sinf(time * 1.5f) * 4 - 0.5f;

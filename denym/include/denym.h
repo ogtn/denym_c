@@ -42,7 +42,9 @@ int denymInit(int window_width, int window_height);
 
 void denymTerminate(void);
 
-int denymKeepRunning(void);
+int denymKeepRunning(input input);
+
+float denymGetTimeSinceLastFrame(void);
 
 void denymRender(void);
 
@@ -112,7 +114,19 @@ camera cameraCreatePerspective(float fov, float near, float far);
 
 camera cameraCreateOrtho(float zoom, float near, float far);
 
+void cameraSetFov(camera camera, float fov);
+
+void cameraFov(camera camera, float fovOffset);
+
+void cameraSetZoom(camera camera, float zoom);
+
+void cameraZoom(camera camera, float zoomOffset);
+
 void cameraLookAt(camera camera, vec3 eye, vec3 target);
+
+void cameraMove(camera camera, float x, float y, float z);
+
+void cameraRotate(camera camera, float yaw, float pitch, float roll);
 
 
 #endif
