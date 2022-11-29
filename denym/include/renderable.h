@@ -4,7 +4,8 @@
 #include "denym_common.h"
 
 
-#define RENDERABLE_MAX_PUSH_CONSTANTS 2
+#define RENDERABLE_MAX_PUSH_CONSTANTS 	2
+#define RENDERABLE_MAX_UNIFORMS			1
 
 
 typedef struct renderable_t
@@ -24,12 +25,15 @@ typedef struct renderable_t
 	VkDescriptorSet descriptorSets[MAX_FRAMES_IN_FLIGHT];
 
 	// uniforms
-	VkBuffer uniformBuffers;
-	VkDeviceMemory uniformBuffersMemory;
-	VkBool32 useUniforms;
-	VkDeviceSize uniformSizePerFrame;
-	VkDeviceSize uniformTotalSize;
-	void *uniformCache;
+	struct
+	{
+		VkBuffer buffers[RENDERABLE_MAX_UNIFORMS];
+		VkDeviceMemory buffersMemory[RENDERABLE_MAX_UNIFORMS];
+		uint32_t count;
+		VkDeviceSize sizePerFrame[RENDERABLE_MAX_UNIFORMS];
+		VkDeviceSize totalSize[RENDERABLE_MAX_UNIFORMS];
+		void *cache[RENDERABLE_MAX_UNIFORMS];
+	} uniforms;
 
 	// storage buffer
 	VkBuffer storageBuffer;
@@ -86,11 +90,11 @@ int renderableCreatePipeline(renderable renderable);
 
 void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer);
 
-int renderableCreateUniformsBuffer(renderable renderable);
+int renderableCreateUniformsBuffers(renderable renderable);
 
 int renderableCreateStorageBuffer(renderable renderable);
 
-int renderableUpdateUniformsBuffer(renderable renderable, const void *data);
+int renderableUpdateUniformsBuffer(renderable renderable, uint32_t id, const void *data);
 
 int renderableUpdateStorageBuffer(renderable renderable, const void *data, uint32_t instanceId);
 

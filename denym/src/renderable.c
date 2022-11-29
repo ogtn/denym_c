@@ -72,14 +72,13 @@ renderable renderableCreateInstances(const renderableCreateParams *params, uint3
 				goto error;
 			}
 
-			renderable->useUniforms = VK_TRUE;
-
 			if(renderable->compactMVP)
-				renderable->uniformSizePerFrame = sizeof(mat4); // only one mvp matrix
+				renderable->uniforms.sizePerFrame[renderable->uniforms.count] = sizeof(mat4); // only one mvp matrix
 			else
-				renderable->uniformSizePerFrame = sizeof(mat4) * 3; // model, view, proj
+				renderable->uniforms.sizePerFrame[renderable->uniforms.count] = sizeof(mat4) * 3; // model, view, proj
 
-			renderable->uniformTotalSize = renderable->uniformSizePerFrame * MAX_FRAMES_IN_FLIGHT;
+			renderable->uniforms.totalSize[renderable->uniforms.count] = renderable->uniforms.sizePerFrame[renderable->uniforms.count] * MAX_FRAMES_IN_FLIGHT;
+			renderable->uniforms.count++;
 		}
 	}
 
@@ -107,7 +106,7 @@ renderable renderableCreateInstances(const renderableCreateParams *params, uint3
 
 	if(	!renderableCreateDescriptorSetLayout(renderable) &&
 		!renderableCreateDescriptorPool(renderable) &&
-		!renderableCreateUniformsBuffer(renderable) &&
+		!renderableCreateUniformsBuffers(renderable) &&
 		!renderableCreateStorageBuffer(renderable) &&
 		!renderableCreateDescriptorSets(renderable, params->useNearestSampler) &&
 		!renderableLoadShaders(renderable) &&
@@ -139,16 +138,16 @@ void renderableDestroy(renderable renderable)
 	shaderDestroy(renderable->fragShader);
 	vkDestroyPipelineLayout(engine.vulkanContext.device, renderable->pipelineLayout, NULL);
 
-	if(renderable->useUniforms)
+	for(uint32_t id = 0; id < renderable->uniforms.count; id++)
 	{
 		if(engine.settings.cacheUniformMemory)
 		{
-			vkUnmapMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory);
-			renderable->uniformCache = NULL;
+			vkUnmapMemory(engine.vulkanContext.device, renderable->uniforms.buffersMemory[id]);
+			renderable->uniforms.cache[id] = NULL;
 		}
 
-		vkDestroyBuffer(engine.vulkanContext.device, renderable->uniformBuffers, NULL);
-		vkFreeMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory, NULL);
+		vkDestroyBuffer(engine.vulkanContext.device, renderable->uniforms.buffers[id], NULL);
+		vkFreeMemory(engine.vulkanContext.device, renderable->uniforms.buffersMemory[id], NULL);
 	}
 
 	if(renderable->useStorageBuffer)
@@ -203,7 +202,7 @@ int renderableCreatePipelineLayout(renderable renderable)
 	// Required here even when we don't use it
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
 
-	if(renderable->useUniforms || renderable->useStorageBuffer || renderable->useTexture)
+	if(renderable->uniforms.count || renderable->useStorageBuffer || renderable->useTexture)
 	{
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.pSetLayouts = &renderable->descriptorSetLayout;
@@ -368,8 +367,8 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 {
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipeline);
 
-	// bind descriptor set to send uniforms
-	if(renderable->useUniforms || renderable->useStorageBuffer || renderable->useTexture)
+	// bind descriptor set to send uniforms, storage buffer and texture sampler
+	if(renderable->uniforms.count || renderable->useStorageBuffer || renderable->useTexture)
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->pipelineLayout, 0, 1, &renderable->descriptorSets[engine.vulkanContext.currentFrame], 0, NULL);
 
 	// push constant
@@ -380,18 +379,20 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 }
 
 
-int renderableCreateUniformsBuffer(renderable renderable)
+int renderableCreateUniformsBuffers(renderable renderable)
 {
-	if(renderable->useUniforms)
+	for(uint32_t id = 0; id < renderable->uniforms.count; id++)
 	{
 		bufferCreate(
-			renderable->uniformTotalSize,
-			&renderable->uniformBuffers,
-			&renderable->uniformBuffersMemory,
+			renderable->uniforms.totalSize[id],
+			&renderable->uniforms.buffers[id],
+			&renderable->uniforms.buffersMemory[id],
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
 		if(engine.settings.cacheUniformMemory)
-			vkMapMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory, 0, renderable->uniformTotalSize, 0, &renderable->uniformCache);
+			vkMapMemory(
+				engine.vulkanContext.device, renderable->uniforms.buffersMemory[id], 0,
+				renderable->uniforms.totalSize[id], 0, &renderable->uniforms.cache[id]);
 	}
 
 	return 0;
@@ -416,21 +417,27 @@ int renderableCreateStorageBuffer(renderable renderable)
 }
 
 
-int renderableUpdateUniformsBuffer(renderable renderable, const void *data)
+int renderableUpdateUniformsBuffer(renderable renderable, uint32_t id, const void *data)
 {
-	if(renderable->useUniforms == VK_FALSE)
-		return -1;
+	if(id >= renderable->uniforms.count)
+	{
+		logError("Can't update uniform %u, renderable has only %u", id, renderable->uniforms.count);
 
-	uint64_t offset = renderable->uniformSizePerFrame * engine.vulkanContext.currentFrame;
+		return -1;
+	}
+
+	uint64_t offset = renderable->uniforms.sizePerFrame[id] * engine.vulkanContext.currentFrame;
 
 	if(engine.settings.cacheUniformMemory)
-		memcpy(renderable->uniformCache + offset, data, renderable->uniformSizePerFrame);
+		memcpy(renderable->uniforms.cache[id] + offset, data, renderable->uniforms.sizePerFrame[id]);
 	else
 	{
-		vkMapMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory, offset, renderable->uniformSizePerFrame, 0, &renderable->uniformCache);
-		memcpy(renderable->uniformCache, data, renderable->uniformSizePerFrame);
-		vkUnmapMemory(engine.vulkanContext.device, renderable->uniformBuffersMemory);
-		renderable->uniformCache = NULL;
+		vkMapMemory(
+			engine.vulkanContext.device, renderable->uniforms.buffersMemory[id], offset,
+			renderable->uniforms.sizePerFrame[id], 0, &renderable->uniforms.cache[id]);
+		memcpy(renderable->uniforms.cache[id], data, renderable->uniforms.sizePerFrame[id]);
+		vkUnmapMemory(engine.vulkanContext.device, renderable->uniforms.buffersMemory[id]);
+		renderable->uniforms.cache[id] = NULL;
 	}
 
 	return 0;
@@ -464,7 +471,7 @@ int renderableCreateDescriptorSetLayout(renderable renderable)
 	VkDescriptorSetLayoutBinding bindings[MAX_BINDINGS];
 	uint32_t bindingCount = 0;
 
-	if(renderable->useUniforms)
+	for(uint32_t id = 0; id < renderable->uniforms.count; id++)
 	{
 		VkDescriptorSetLayoutBinding vertexAttributesLayoutBinding = {
 			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -527,7 +534,7 @@ int renderableCreateDescriptorPool(renderable renderable)
 	VkDescriptorPoolSize poolSizes[MAX_BINDINGS];
 	uint32_t poolSizeCount = 0;
 
-	if(renderable->useUniforms)
+	for(uint32_t id = 0; id < renderable->uniforms.count; id++)
 	{
 		poolSizes[poolSizeCount].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSizes[poolSizeCount].descriptorCount = MAX_FRAMES_IN_FLIGHT;
@@ -604,11 +611,11 @@ int renderableCreateDescriptorSets(renderable renderable, VkBool32 useNearestSam
 
 		VkDescriptorBufferInfo uniformBufferInfo;
 
-		if(renderable->useUniforms)
+		for(uint32_t id = 0; id < renderable->uniforms.count; id++)
 		{
-			uniformBufferInfo.buffer = renderable->uniformBuffers;
-			uniformBufferInfo.range = renderable->uniformSizePerFrame;
-			uniformBufferInfo.offset = renderable->uniformSizePerFrame * i;
+			uniformBufferInfo.buffer = renderable->uniforms.buffers[id];
+			uniformBufferInfo.range = renderable->uniforms.sizePerFrame[id];
+			uniformBufferInfo.offset = renderable->uniforms.sizePerFrame[id] * i;
 
 			descriptorWrites[descriptorWriteCount].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[descriptorWriteCount].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -742,12 +749,12 @@ void renderableUpdateMVP(renderable renderable, VkBool32 force)
 		else if(renderable->sendMVPAsStorageBuffer)
 			renderableUpdateStorageBuffer(renderable, mvp, 0);
 		else
-			renderableUpdateUniformsBuffer(renderable, mvp);
+			renderableUpdateUniformsBuffer(renderable, 0, mvp);
 	}
 	else if(renderable->sendMVPAsStorageBuffer)
 		renderableUpdateStorageBuffer(renderable, matrices, 0);
 	else
-		renderableUpdateUniformsBuffer(renderable, matrices);
+		renderableUpdateUniformsBuffer(renderable, 0, matrices);
 
 	renderable->needMVPUpdate[engine.vulkanContext.currentFrame] = VK_FALSE;
 }
