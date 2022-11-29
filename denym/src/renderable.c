@@ -26,8 +26,6 @@ renderable renderableCreateInstances(const renderableCreateParams *params, uint3
 {
 	renderable renderable = calloc(1, sizeof(*renderable));
 
-	strncpy(renderable->vertShaderName, params->vertShaderName, sizeof renderable->vertShaderName);
-	strncpy(renderable->fragShaderName, params->fragShaderName, sizeof renderable->fragShaderName);
 	renderable->geometry = params->geometry;
 	renderable->compactMVP = params->compactMVP;
 	renderable->instanceCount = instanceCount;
@@ -109,7 +107,7 @@ renderable renderableCreateInstances(const renderableCreateParams *params, uint3
 		!renderableCreateUniformsBuffers(renderable) &&
 		!renderableCreateStorageBuffer(renderable) &&
 		!renderableCreateDescriptorSets(renderable, params->useNearestSampler) &&
-		!renderableLoadShaders(renderable) &&
+		!renderableLoadShaders(renderable, params->vertShaderName, params->fragShaderName) &&
 		!renderableCreatePipelineLayout(renderable) &&
 		!renderableCreatePipeline(renderable))
 	{
@@ -174,12 +172,12 @@ void renderableDestroy(renderable renderable)
 }
 
 
-int renderableLoadShaders(renderable renderable)
+int renderableLoadShaders(renderable renderable, const char *vertShaderName, const char *fragShaderName)
 {
-	if((renderable->vertShader = shaderCreate(engine.vulkanContext.device, renderable->vertShaderName)) ==  NULL)
+	if((renderable->vertShader = shaderCreate(engine.vulkanContext.device, vertShaderName)) ==  NULL)
 		return -1;
 
-	if((renderable->fragShader = shaderCreate(engine.vulkanContext.device, renderable->fragShaderName)) == NULL)
+	if((renderable->fragShader = shaderCreate(engine.vulkanContext.device, fragShaderName)) == NULL)
 		return -1;
 
 	renderable->shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

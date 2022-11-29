@@ -13,8 +13,6 @@ typedef struct renderable_t
 	geometry geometry;
 
 	// shaders
-	char vertShaderName[FILENAME_MAX];
-	char fragShaderName[FILENAME_MAX];
 	shader vertShader;
 	shader fragShader;
 	VkPipelineShaderStageCreateInfo shaderStages[2];
@@ -82,7 +80,7 @@ renderable renderableCreateInstances(const renderableCreateParams *params, uint3
 
 void renderableDestroy(renderable renderable);
 
-int renderableLoadShaders(renderable renderable);
+int renderableLoadShaders(renderable renderable, const char *vertShaderName, const char *fragShaderName);
 
 int renderableCreatePipelineLayout(renderable renderable);
 
