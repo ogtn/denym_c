@@ -65,6 +65,7 @@ int main(void)
 	params.textureName = "debug.png",
 	params.vertShaderName = "gouraud.vert.spv";
 	params.fragShaderName = "gouraud.frag.spv";
+	params.sendLigths = 1;
 	renderable cube_gouraud = primitiveCreateCube(1.5f, 4, &params);
 	renderable sphere_gouraud = primitiveCreateSphere(2, 4, &params);
 	params.vertShaderName = "blinn_phong.vert.spv";

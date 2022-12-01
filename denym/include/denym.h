@@ -20,6 +20,7 @@ typedef struct camera_t *camera;
 typedef struct shader_t *shader;
 #include "input.h"
 typedef struct sprite_t *sprite;
+typedef struct light_t *light;
 
 
 typedef struct renderableCreateParams
@@ -35,6 +36,7 @@ typedef struct renderableCreateParams
 	uint32_t sendMVPAsPushConstant;
 	uint32_t sendMVPAsStorageBuffer;
 	uint32_t useNearestSampler;
+	uint32_t sendLigths;
 } renderableCreateParams;
 
 

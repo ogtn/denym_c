@@ -11,6 +11,7 @@ typedef struct scene_t
     uint32_t renderableCount;
     uint32_t maxRenderableCount;
     camera camera;
+    light light;
 } scene_t;
 
 

@@ -1,6 +1,7 @@
 #include "scene.h"
 #include "renderable.h"
 #include "camera.h"
+#include "light.h"
 #include "logger.h"
 
 
@@ -12,6 +13,7 @@ scene sceneCreate(void)
     scene->maxRenderableCount = 32;
     scene->renderables = malloc(sizeof(renderable) * scene->maxRenderableCount);
     scene->camera = NULL;
+    scene->light = lightCreate();
 
     return scene;
 }
@@ -68,6 +70,10 @@ void sceneUpdate(scene scene)
     // Check camera state (keep last modified frame ?)
     // Or never provide camera trough renderable specific buffer (uniform or storage)
     // If view/projection matrices are in a global buffer, no need to update every renderable
+    // Same goes for lights
     for(uint32_t i = 0; i < scene->renderableCount; i++)
+    {
+        renderableUpdateLighting(scene->renderables[i]);
         renderableUpdateMVP(scene->renderables[i], VK_TRUE);
+    }
 }

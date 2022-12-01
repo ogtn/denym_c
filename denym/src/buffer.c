@@ -91,7 +91,7 @@ int bufferCreate(VkDeviceSize size, VkBuffer *buffer, VkDeviceMemory *bufferMemo
 
 	char name[16];
 	snprintf(name, sizeof name, "buffer_%d", cpt++);
-	logInfo("%s", name);
+	logInfo("%s = %p", name, *buffer);
 	objectNameInfo.pObjectName = name;
 	objectNameInfo.objectHandle = (uint64_t)*buffer;
 	engine.vulkanContext.SetDebugUtilsObjectNameEXT(engine.vulkanContext.device, &objectNameInfo);

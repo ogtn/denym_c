@@ -6,6 +6,7 @@
 #include "texture.h"
 #include "scene.h"
 #include "camera.h"
+#include "light.h"
 #include "logger.h"
 
 #include <stdlib.h>
@@ -100,6 +101,17 @@ renderable renderableCreateInstances(const renderableCreateParams *params, uint3
 			goto error;
 		else
 			renderable->useTexture = VK_TRUE;
+	}
+
+	if(params->sendLigths)
+	{
+		uint32_t id = renderable->uniforms.count;
+
+		renderable->uniforms.sizePerFrame[id] = sizeof(light_t);
+		renderable->uniforms.totalSize[id] = renderable->uniforms.sizePerFrame[id] * MAX_FRAMES_IN_FLIGHT;
+
+		renderable->uniforms.count++;
+		renderable->sendLights = VK_TRUE;
 	}
 
 	if(	!renderableCreateDescriptorSetLayout(renderable) &&
@@ -475,7 +487,7 @@ int renderableCreateDescriptorSetLayout(renderable renderable)
 			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 			.binding = bindingCount,
 			.descriptorCount = 1, // number of element, > 1 if we pass an array
-			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, // * shader stage
+			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, // * shader stage
 			.pImmutableSamplers = NULL // for images
 		};
 
@@ -607,13 +619,13 @@ int renderableCreateDescriptorSets(renderable renderable, VkBool32 useNearestSam
 		memset(descriptorWrites, 0, sizeof descriptorWrites);
 		uint32_t descriptorWriteCount = 0;
 
-		VkDescriptorBufferInfo uniformBufferInfo;
+		VkDescriptorBufferInfo uniformBufferInfo[RENDERABLE_MAX_UNIFORMS];
 
 		for(uint32_t id = 0; id < renderable->uniforms.count; id++)
 		{
-			uniformBufferInfo.buffer = renderable->uniforms.buffers[id];
-			uniformBufferInfo.range = renderable->uniforms.sizePerFrame[id];
-			uniformBufferInfo.offset = renderable->uniforms.sizePerFrame[id] * i;
+			uniformBufferInfo[id].buffer = renderable->uniforms.buffers[id];
+			uniformBufferInfo[id].range = renderable->uniforms.sizePerFrame[id];
+			uniformBufferInfo[id].offset = renderable->uniforms.sizePerFrame[id] * i;
 
 			descriptorWrites[descriptorWriteCount].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[descriptorWriteCount].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -621,7 +633,7 @@ int renderableCreateDescriptorSets(renderable renderable, VkBool32 useNearestSam
 			descriptorWrites[descriptorWriteCount].dstBinding = descriptorWriteCount;	// * here is the binding that matches the glsl code
 			descriptorWrites[descriptorWriteCount].dstArrayElement = 0; // * this is an offset, here 0 because we're not sending an array
 			descriptorWrites[descriptorWriteCount].descriptorCount = 1; // * only one element to transfer
-			descriptorWrites[descriptorWriteCount].pBufferInfo = &uniformBufferInfo;
+			descriptorWrites[descriptorWriteCount].pBufferInfo = &uniformBufferInfo[id];
 			descriptorWriteCount++;
 		}
 
@@ -746,15 +758,23 @@ void renderableUpdateMVP(renderable renderable, VkBool32 force)
 			renderableUpdatePushConstantInternal(renderable, mvp, 0);
 		else if(renderable->sendMVPAsStorageBuffer)
 			renderableUpdateStorageBuffer(renderable, mvp, 0);
-		else
+		else // TODO: no more hardcoded uniform id
 			renderableUpdateUniformsBuffer(renderable, 0, mvp);
 	}
 	else if(renderable->sendMVPAsStorageBuffer)
 		renderableUpdateStorageBuffer(renderable, matrices, 0);
-	else
+	else // TODO: no more hardcoded uniform id
 		renderableUpdateUniformsBuffer(renderable, 0, matrices);
 
 	renderable->needMVPUpdate[engine.vulkanContext.currentFrame] = VK_FALSE;
+}
+
+
+void renderableUpdateLighting(renderable renderable)
+{
+	// TODO: no more hardcoded uniform id
+	if(renderable->sendLights)
+		renderableUpdateUniformsBuffer(renderable, 1, engine.scene->light);
 }
 
 

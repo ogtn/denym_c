@@ -4,8 +4,9 @@
 struct light_t
 {
     vec3 direction;
-    vec3 color;
     float intensity;
+    vec3 color;
+    float ambiant;
 };
 
 struct material_t
@@ -20,7 +21,13 @@ layout(binding = 0) uniform UBO
     mat4 view;
     mat4 proj;
 } ubo;
-layout(binding = 1) uniform sampler2D textureSampler;
+
+layout(binding = 1) uniform LIGHTS
+{
+    light_t light_0;
+} lights;
+
+layout(binding = 2) uniform sampler2D textureSampler;
 
 layout(location = 0) in vec3 in_normal;
 layout(location = 1) in vec2 in_texCoord;
@@ -30,11 +37,8 @@ layout(location = 0) out vec4 out_color;
 
 void main()
 {
-    // setup hardcoded directional light
-    light_t light;
-    light.direction = vec3(1, 0, 1);
-    light.color = vec3(1, 1, 1);
-    light.intensity = 1;
+    // single directionnal light
+    light_t light = lights.light_0;
 
     // setup hardcoded material
     material_t material;
@@ -42,7 +46,7 @@ void main()
     material.shininess = 100;
 
     // ambiant light
-    vec3 color = /*material.color * */light.color * 0.005;
+    vec3 color = /*material.color * */light.color * light.ambiant;
 
     vec3 normal = normalize(in_normal);
     vec3 lightDirection = normalize((ubo.view * vec4(light.direction, 0)).xyz);

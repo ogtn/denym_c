@@ -5,7 +5,7 @@
 
 
 #define RENDERABLE_MAX_PUSH_CONSTANTS 	2
-#define RENDERABLE_MAX_UNIFORMS			1
+#define RENDERABLE_MAX_UNIFORMS			2
 
 
 typedef struct renderable_t
@@ -67,6 +67,7 @@ typedef struct renderable_t
 	VkBool32 compactMVP;
 	VkBool32 sendMVPAsPushConstant;
 	VkBool32 sendMVPAsStorageBuffer;
+	VkBool32 sendLights;
 
 	uint32_t instanceCount;
 	mat4 modelMatrix;
@@ -109,6 +110,8 @@ int renderableUpdatePushConstantInternal(renderable renderable, void *value, uin
 void renderableSetMatrix(renderable renderable, mat4 matrix);
 
 void renderableUpdateMVP(renderable renderable, VkBool32 force);
+
+void renderableUpdateLighting(renderable renderable);
 
 void renderableSetMatrixInstance(renderable renderable, mat4 matrix, uint32_t instanceId);
 
