@@ -76,9 +76,7 @@ geometry geometryCreate(const geometryParams params);
 
 void geometryDestroy(geometry geometry);
 
-renderable renderableCreate(const renderableCreateParams *createParams);
-
-renderable renderableCreateInstances(const renderableCreateParams *params, uint32_t instanceCount);
+renderable renderableCreate(const renderableCreateParams *params, uint32_t instanceCount);
 
 void renderableDestroy(renderable renderable);
 
@@ -90,15 +88,13 @@ void renderableSetMatrixInstance(renderable renderable, mat4 matrix, uint32_t in
 
 float getUptime(void);
 
-renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, int useIndices, int useNormals);
-
-renderable modelLoadInstances(const char *objFile, renderableCreateParams *renderableParams, uint32_t instancesCount, int useIndices, int useNormals);
+renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, uint32_t instancesCount, int useIndices, int useNormals);
 
 renderable primitiveCreateGrid(float size, uint32_t level);
 
-renderable primitiveCreateCube(float size, uint32_t subdivisions, renderableCreateParams *params);
+renderable primitiveCreateCube(float size, uint32_t subdivisions, renderableCreateParams *params, uint32_t instanceCount);
 
-renderable primitiveCreateSphere(float radius, uint32_t subdivisions, renderableCreateParams *params);
+renderable primitiveCreateSphere(float radius, uint32_t subdivisions, renderableCreateParams *params, uint32_t instanceCount);
 
 sprite spriteCreate(const char *textureName, float sizeU, float sizeV, uint32_t spriteCountU, uint32_t spriteCountV);
 

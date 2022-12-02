@@ -14,13 +14,7 @@
 #include <stdio.h>
 
 
-renderable renderableCreate(const renderableCreateParams *params)
-{
-	return renderableCreateInstances(params, 1);
-}
-
-
-renderable renderableCreateInstances(const renderableCreateParams *params, uint32_t instanceCount)
+renderable renderableCreate(const renderableCreateParams *params, uint32_t instanceCount)
 {
 	renderable renderable = calloc(1, sizeof(*renderable));
 

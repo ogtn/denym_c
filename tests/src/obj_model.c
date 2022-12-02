@@ -17,9 +17,9 @@ int main(void)
 		.fragShaderName = "texture_v2.frag.spv",
 		.sendMVP = 1
 	};
-	renderable model = modelLoad("viking_room.obj", &params, 0, 0);
+	renderable model = modelLoad("viking_room.obj", &params, 1, 0, 0);
 	params.textureName = "missing.png";
-	renderable model2 = modelLoad("sphere.obj", &params, 1, 1);
+	renderable model2 = modelLoad("sphere.obj", &params, 1, 1, 1);
 	primitiveCreateGrid(8, 3);
 
 	vec3 eye = {4, 0, 2};

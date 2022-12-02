@@ -5,9 +5,7 @@
 #include "denym_common.h"
 
 
-renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, int useIndices, int useNormals);
-
-renderable modelLoadInstances(const char *objFile, renderableCreateParams *renderableParams, uint32_t instancesCount, int useIndices, int useNormals);
+renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, uint32_t instancesCount, int useIndices, int useNormals);
 
 
 #endif

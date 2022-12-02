@@ -227,17 +227,11 @@ static geometry modelLoadInternal(const char *objFile, int useIndices, int useNo
 }
 
 
-renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, int useIndices, int useNormals)
-{
-    return modelLoadInstances(objFile, renderableParams, 1, useIndices, useNormals);
-}
-
-
-renderable modelLoadInstances(const char *objFile, renderableCreateParams *renderableParams, uint32_t instancesCount, int useIndices, int useNormals)
+renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, uint32_t instancesCount, int useIndices, int useNormals)
 {
     float start = getUptime();
     renderableParams->geometry = modelLoadInternal(objFile, useIndices, useNormals);
-    renderable renderable = renderableCreateInstances(renderableParams, instancesCount);
+    renderable renderable = renderableCreate(renderableParams, instancesCount);
     logInfo("Model loaded in: %fs", getUptime() - start);
 
     return renderable;

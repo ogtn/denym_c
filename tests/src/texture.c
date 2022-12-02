@@ -50,7 +50,7 @@ static renderable makeSquare(const char *vertShader, const char *fragShader)
 		.sendMVP = 1
 	};
 
-    return renderableCreate(&renderableParams);
+    return renderableCreate(&renderableParams, 1);
 }
 
 

@@ -75,9 +75,7 @@ typedef struct renderable_t
 } renderable_t;
 
 
-renderable renderableCreate(const renderableCreateParams *params);
-
-renderable renderableCreateInstances(const renderableCreateParams *params, uint32_t instanceCount);
+renderable renderableCreate(const renderableCreateParams *params, uint32_t instanceCount);
 
 void renderableDestroy(renderable renderable);
 

@@ -44,7 +44,7 @@ int main(void)
 		.fragShaderName = "basic_color_interp.frag.spv",
 		.sendMVP = 1
 	};
-	renderable square = renderableCreate(&renderableParams);
+	renderable square = renderableCreate(&renderableParams, 1);
 	primitiveCreateGrid(8, 3);
 
 	vec3 eye = {2, 2, 2};

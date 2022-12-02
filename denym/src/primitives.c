@@ -79,7 +79,7 @@ renderable primitiveCreateGrid(float size, uint32_t level)
     free(positions);
     free(colors);
 
-    return renderableCreate(&renderableParams);
+    return renderableCreate(&renderableParams, 1);
 }
 
 
@@ -172,7 +172,7 @@ static void createCubeData(float size, uint32_t subdivisions, vec3f **positions,
 }
 
 
-renderable primitiveCreateCube(float size, uint32_t subdivisions, renderableCreateParams *params)
+renderable primitiveCreateCube(float size, uint32_t subdivisions, renderableCreateParams *params, uint32_t instancesCount)
 {
     vec3f *positions;
     vec2f *texCoords;
@@ -192,11 +192,11 @@ renderable primitiveCreateCube(float size, uint32_t subdivisions, renderableCrea
     free(texCoords);
     free(normals);
 
-    return renderableCreate(params);
+    return renderableCreate(params, instancesCount);
 }
 
 
-renderable primitiveCreateSphere(float radius, uint32_t subdivisions, renderableCreateParams *params)
+renderable primitiveCreateSphere(float radius, uint32_t subdivisions, renderableCreateParams *params, uint32_t instancesCount)
 {
     vec3f *positions;
     vec2f *texCoords;
@@ -223,5 +223,5 @@ renderable primitiveCreateSphere(float radius, uint32_t subdivisions, renderable
     free(texCoords);
     free(normals);
 
-    return renderableCreate(params);
+    return renderableCreate(params, instancesCount);
 }

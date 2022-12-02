@@ -32,7 +32,7 @@ sprite spriteCreate(const char *textureName, float sizeU, float sizeV, uint32_t 
 		.geometry = geometryCreate(geometryParams)
 	};
 
-	sprite->renderable = renderableCreate(&params);
+	sprite->renderable = renderableCreate(&params, 1);
 	sprite->spriteCount.u = spriteCountU;
 	sprite->spriteCount.v = spriteCountV;
 

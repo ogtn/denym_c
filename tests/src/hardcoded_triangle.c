@@ -17,7 +17,7 @@ int main(void)
 		.vertShaderName = "hardcoded_triangle.vert.spv",
 		.fragShaderName = "basic_color_interp.frag.spv"
 	};
-	renderableCreate(&renderableParams);
+	renderableCreate(&renderableParams, 1);
 	primitiveCreateGrid(2, 3);
 
 	while (denymKeepRunning(NULL))

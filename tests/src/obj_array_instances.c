@@ -27,7 +27,7 @@ int main(void)
 
 	float start = getUptime();
 
-	renderable spheres = modelLoadInstances("sphere.obj", &params,  ARRAY_SIZE * ARRAY_SIZE * ARRAY_SIZE, 1, 0);
+	renderable spheres = modelLoad("sphere.obj", &params,  ARRAY_SIZE * ARRAY_SIZE * ARRAY_SIZE, 1, 0);
 
 	printf("%d objects loaded in %.3fs\n",
 		ARRAY_SIZE * ARRAY_SIZE * ARRAY_SIZE,

@@ -42,7 +42,7 @@ int main(void)
 		.vertShaderName = "basic_position_color_attribute.vert.spv",
 		.fragShaderName = "basic_color_interp.frag.spv"
 	};
-	renderableCreate(&renderableParams);
+	renderableCreate(&renderableParams, 1);
 	primitiveCreateGrid(2, 3);
 
 	while (denymKeepRunning(NULL))
