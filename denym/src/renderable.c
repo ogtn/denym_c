@@ -14,9 +14,6 @@
 #include <stdio.h>
 
 
-#define MAX_BINDINGS 3
-
-
 renderable renderableCreate(const renderableCreateParams *params)
 {
 	return renderableCreateInstances(params, 1);
@@ -71,13 +68,7 @@ renderable renderableCreateInstances(const renderableCreateParams *params, uint3
 				goto error;
 			}
 
-			if(renderable->compactMVP)
-				renderable->uniforms.sizePerFrame[renderable->uniforms.count] = sizeof(mat4); // only one mvp matrix
-			else
-				renderable->uniforms.sizePerFrame[renderable->uniforms.count] = sizeof(mat4) * 3; // model, view, proj
-
-			renderable->uniforms.totalSize[renderable->uniforms.count] = renderable->uniforms.sizePerFrame[renderable->uniforms.count] * MAX_FRAMES_IN_FLIGHT;
-			renderable->uniforms.count++;
+			renderableAddUniformInternal(renderable, renderable->compactMVP ? sizeof(mat4) : sizeof(mat4) * 3);
 		}
 	}
 
@@ -105,12 +96,7 @@ renderable renderableCreateInstances(const renderableCreateParams *params, uint3
 
 	if(params->sendLigths)
 	{
-		uint32_t id = renderable->uniforms.count;
-
-		renderable->uniforms.sizePerFrame[id] = sizeof(light_t);
-		renderable->uniforms.totalSize[id] = renderable->uniforms.sizePerFrame[id] * MAX_FRAMES_IN_FLIGHT;
-
-		renderable->uniforms.count++;
+		renderableAddUniformInternal(renderable, sizeof(light_t));
 		renderable->sendLights = VK_TRUE;
 	}
 
@@ -389,12 +375,30 @@ void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer)
 }
 
 
+uint32_t renderableAddUniformInternal(renderable renderable, VkDeviceSize size)
+{
+	uint32_t id = renderable->uniforms.count;
+
+	if(id >= RENDERABLE_MAX_UNIFORMS)
+	{
+		logError("Reached RENDERABLE_MAX_UNIFORMS");
+
+		return UINT32_MAX;
+	}
+
+	renderable->uniforms.sizePerFrame[id] = size;
+	renderable->uniforms.count++;
+
+	return id;
+}
+
+
 int renderableCreateUniformsBuffers(renderable renderable)
 {
 	for(uint32_t id = 0; id < renderable->uniforms.count; id++)
 	{
 		bufferCreate(
-			renderable->uniforms.totalSize[id],
+			renderable->uniforms.sizePerFrame[id] * MAX_FRAMES_IN_FLIGHT,
 			&renderable->uniforms.buffers[id],
 			&renderable->uniforms.buffersMemory[id],
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
@@ -402,7 +406,7 @@ int renderableCreateUniformsBuffers(renderable renderable)
 		if(engine.settings.cacheUniformMemory)
 			vkMapMemory(
 				engine.vulkanContext.device, renderable->uniforms.buffersMemory[id], 0,
-				renderable->uniforms.totalSize[id], 0, &renderable->uniforms.cache[id]);
+				renderable->uniforms.sizePerFrame[id] * MAX_FRAMES_IN_FLIGHT, 0, &renderable->uniforms.cache[id]);
 	}
 
 	return 0;
@@ -478,7 +482,7 @@ int renderableUpdateStorageBuffer(renderable renderable, const void *data, uint3
 
 int renderableCreateDescriptorSetLayout(renderable renderable)
 {
-	VkDescriptorSetLayoutBinding bindings[MAX_BINDINGS];
+	VkDescriptorSetLayoutBinding bindings[RENDERABLE_MAX_BINDINGS];
 	uint32_t bindingCount = 0;
 
 	for(uint32_t id = 0; id < renderable->uniforms.count; id++)
@@ -491,7 +495,7 @@ int renderableCreateDescriptorSetLayout(renderable renderable)
 			.pImmutableSamplers = NULL // for images
 		};
 
-		bindings[bindingCount++ % MAX_BINDINGS] = vertexAttributesLayoutBinding;
+		bindings[bindingCount++ % RENDERABLE_MAX_BINDINGS] = vertexAttributesLayoutBinding;
 	}
 
 	if(renderable->useStorageBuffer)
@@ -503,7 +507,7 @@ int renderableCreateDescriptorSetLayout(renderable renderable)
 			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
 		};
 
-		bindings[bindingCount++ % MAX_BINDINGS] = storageBufferLayoutBinding;
+		bindings[bindingCount++ % RENDERABLE_MAX_BINDINGS] = storageBufferLayoutBinding;
 	}
 
 	if(renderable->useTexture)
@@ -516,12 +520,12 @@ int renderableCreateDescriptorSetLayout(renderable renderable)
 			.pImmutableSamplers = NULL
 		};
 
-		bindings[bindingCount++ % MAX_BINDINGS] = textureSamplerLayoutBinding;
+		bindings[bindingCount++ % RENDERABLE_MAX_BINDINGS] = textureSamplerLayoutBinding;
 	}
 
-	if(bindingCount > MAX_BINDINGS)
+	if(bindingCount > RENDERABLE_MAX_BINDINGS)
 	{
-		logError("Reached MAX_BINDINGS");
+		logError("Reached RENDERABLE_MAX_BINDINGS");
 
 		return -1;
 	}
@@ -541,7 +545,7 @@ int renderableCreateDescriptorSetLayout(renderable renderable)
 
 int renderableCreateDescriptorPool(renderable renderable)
 {
-	VkDescriptorPoolSize poolSizes[MAX_BINDINGS];
+	VkDescriptorPoolSize poolSizes[RENDERABLE_MAX_BINDINGS];
 	uint32_t poolSizeCount = 0;
 
 	for(uint32_t id = 0; id < renderable->uniforms.count; id++)
@@ -565,9 +569,9 @@ int renderableCreateDescriptorPool(renderable renderable)
 		poolSizeCount++;
 	}
 
-	if(poolSizeCount > MAX_BINDINGS)
+	if(poolSizeCount > RENDERABLE_MAX_BINDINGS)
 	{
-		logError("Reached MAX_BINDINGS");
+		logError("Reached RENDERABLE_MAX_BINDINGS");
 
 		return -1;
 	}
@@ -615,7 +619,7 @@ int renderableCreateDescriptorSets(renderable renderable, VkBool32 useNearestSam
 
 	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		VkWriteDescriptorSet descriptorWrites[MAX_BINDINGS];
+		VkWriteDescriptorSet descriptorWrites[RENDERABLE_MAX_BINDINGS];
 		memset(descriptorWrites, 0, sizeof descriptorWrites);
 		uint32_t descriptorWriteCount = 0;
 

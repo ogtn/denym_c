@@ -6,6 +6,7 @@
 
 #define RENDERABLE_MAX_PUSH_CONSTANTS 	2
 #define RENDERABLE_MAX_UNIFORMS			2
+#define RENDERABLE_MAX_BINDINGS 3
 
 
 typedef struct renderable_t
@@ -29,7 +30,6 @@ typedef struct renderable_t
 		VkDeviceMemory buffersMemory[RENDERABLE_MAX_UNIFORMS];
 		uint32_t count;
 		VkDeviceSize sizePerFrame[RENDERABLE_MAX_UNIFORMS];
-		VkDeviceSize totalSize[RENDERABLE_MAX_UNIFORMS];
 		void *cache[RENDERABLE_MAX_UNIFORMS];
 	} uniforms;
 
@@ -88,6 +88,8 @@ int renderableCreatePipelineLayout(renderable renderable);
 int renderableCreatePipeline(renderable renderable);
 
 void renderableDraw(renderable renderable, VkCommandBuffer commandBuffer);
+
+uint32_t renderableAddUniformInternal(renderable renderable, VkDeviceSize size);
 
 int renderableCreateUniformsBuffers(renderable renderable);
 
