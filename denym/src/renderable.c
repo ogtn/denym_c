@@ -91,6 +91,7 @@ renderable renderableCreate(const renderableCreateParams *params, uint32_t insta
 	if(params->sendLigths)
 	{
 		renderableAddUniformInternal(renderable, sizeof(dlight_t));
+		renderableAddUniformInternal(renderable, sizeof(plight_t));
 		renderable->sendLights = VK_TRUE;
 	}
 
@@ -380,7 +381,13 @@ uint32_t renderableAddUniformInternal(renderable renderable, VkDeviceSize size)
 		return UINT32_MAX;
 	}
 
-	renderable->uniforms.sizePerFrame[id] = size;
+	VkDeviceSize align = engine.vulkanContext.physicalDeviceProperties.limits.minUniformBufferOffsetAlignment;
+
+	if(size % align)
+		renderable->uniforms.sizePerFrame[id] = (size / align + 1) * align;
+	else
+		renderable->uniforms.sizePerFrame[id] = size;
+
 	renderable->uniforms.count++;
 
 	return id;
@@ -774,6 +781,7 @@ void renderableUpdateLighting(renderable renderable)
 	if(renderable->sendLights)
 	{
 		renderableUpdateUniformsBuffer(renderable, 1, engine.scene->dlight);
+		renderableUpdateUniformsBuffer(renderable, 2, engine.scene->plight);
 	}
 }
 

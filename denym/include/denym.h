@@ -21,6 +21,7 @@ typedef struct shader_t *shader;
 #include "input.h"
 typedef struct sprite_t *sprite;
 typedef struct dlight_t *dlight;
+typedef struct plight_t *plight;
 
 
 typedef struct renderableCreateParams
@@ -107,6 +108,8 @@ void spriteFlip(sprite sprite, int verticalAxis, int horizontalAxis);
 scene denymGetScene(void);
 
 void sceneSetCamera(scene scene, camera camera);
+
+void sceneSetLightPosition(scene scene, vec3 position);
 
 camera cameraCreatePerspective(float fov, float near, float far);
 

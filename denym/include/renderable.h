@@ -5,8 +5,8 @@
 
 
 #define RENDERABLE_MAX_PUSH_CONSTANTS 	2
-#define RENDERABLE_MAX_UNIFORMS			2
-#define RENDERABLE_MAX_BINDINGS 3
+#define RENDERABLE_MAX_UNIFORMS			3
+#define RENDERABLE_MAX_BINDINGS 		4
 
 
 typedef struct renderable_t

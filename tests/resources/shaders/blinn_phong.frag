@@ -9,6 +9,17 @@ struct dlight_t
     float ambiant;
 };
 
+struct plight_t
+{
+    vec3 position;
+    float intensity;
+    vec3 color;
+    float ambiant;
+    float constantAttenuation;
+    float linearAttenuation;
+    float quadraticAttenuation;
+};
+
 struct material_t
 {
     vec3 color;
@@ -22,12 +33,17 @@ layout(binding = 0) uniform UBO
     mat4 proj;
 } ubo;
 
-layout(binding = 1) uniform LIGHTS
+layout(binding = 1) uniform DLIGHTS
 {
     dlight_t light_0;
-} lights;
+} dlights;
 
-layout(binding = 2) uniform sampler2D textureSampler;
+layout(binding = 2) uniform PLIGHTS
+{
+    plight_t light_0;
+} plights;
+
+layout(binding = 3) uniform sampler2D textureSampler;
 
 layout(location = 0) in vec3 in_normal;
 layout(location = 1) in vec2 in_texCoord;
@@ -64,6 +80,45 @@ void computeDirectionalLightColor(dlight_t light, material_t material, vec4 pos,
 }
 
 
+void computePointLightColor(plight_t light, material_t material, vec4 pos, vec3 normal, out vec3 color, out vec3 specular)
+{
+    color = specular = vec3(0);
+
+    if(light.intensity == 0)
+        return;
+
+    // ambiant light
+    color += material.color * light.color * light.ambiant;
+
+    vec4 lightPosition = ubo.view * vec4(light.position, 1);
+    vec3 lightDirection = (lightPosition - pos).xyz;
+    float lightDst = length(lightDirection.xyz);
+    lightDirection = normalize(lightDirection);
+    float lightAngle = max(dot(normal, lightDirection), 0);
+
+    if(lightAngle > 0)
+    {
+        // diffuse light
+        color += material.color * light.color * light.intensity * lightAngle;
+
+        vec3 eye = normalize(-vec3(pos));
+        vec3 halfVector = normalize(lightDirection + eye);
+        float halfAngle = max(dot(normal, halfVector), 0);
+
+        // specular light
+        specular = /*material.color * */ light.color * light.intensity * pow(halfAngle, material.shininess);
+    }
+
+    float attenuation = 1 / (
+    light.constantAttenuation +
+    light.linearAttenuation * lightDst +
+    light.quadraticAttenuation * lightDst * lightDst);
+
+    color *= attenuation;
+    specular *= attenuation;
+}
+
+
 void main()
 {
     // setup hardcoded material
@@ -80,6 +135,11 @@ void main()
     computeDirectionalLightColor(dlights.light_0, material, in_position, normal, color, specular);
     lightColor = color;
     specularColor = specular;
+
+    // single point light
+    computePointLightColor(plights.light_0, material, in_position, normal, color, specular);
+    lightColor += color;
+    specularColor += specular;
 
     out_color = texture(textureSampler, in_texCoord) * vec4(lightColor, 1) + vec4(specularColor, 0);
 

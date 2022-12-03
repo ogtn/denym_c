@@ -12,6 +12,7 @@ typedef struct scene_t
     uint32_t maxRenderableCount;
     camera camera;
     dlight dlight;
+    plight plight;
 } scene_t;
 
 
@@ -28,6 +29,8 @@ void sceneSetCamera(scene scene, camera camera);
 camera sceneGetCamera(scene scene);
 
 void sceneUpdate(scene scene);
+
+void sceneSetLightPosition(scene scene, vec3 position);
 
 
 #endif

@@ -14,6 +14,7 @@ scene sceneCreate(void)
     scene->renderables = malloc(sizeof(renderable) * scene->maxRenderableCount);
     scene->camera = NULL;
     scene->dlight = dlightCreate();
+    scene->plight = plightCreate();
 
     return scene;
 }
@@ -76,4 +77,10 @@ void sceneUpdate(scene scene)
         renderableUpdateLighting(scene->renderables[i]);
         renderableUpdateMVP(scene->renderables[i], VK_TRUE);
     }
+}
+
+
+void sceneSetLightPosition(scene scene, vec3 position)
+{
+    glm_vec3_copy(position, scene->plight->position);
 }

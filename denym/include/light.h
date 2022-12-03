@@ -14,7 +14,22 @@ typedef struct dlight_t
 } dlight_t;
 
 
+typedef struct plight_t
+{
+    vec3 position;
+    float intensity;
+    vec3 color;
+    float ambiant;
+    float constantAttenuation;
+    float linearAttenuation;
+    float quadraticAttenuation;
+} plight_t;
+
+
 dlight dlightCreate(void);
+
+plight plightCreate(void);
 
 
 #endif
+

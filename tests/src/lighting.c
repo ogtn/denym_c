@@ -69,8 +69,27 @@ int main(void)
     glm_translate_z(matrix, 0.75);
     renderableSetMatrix(sphere_blinn, matrix);
 
+    params.vertShaderName = "texture_v4.vert.spv";
+	params.fragShaderName = "texture_v3.frag.spv";
+    params.sendMVPAsPushConstant = 1;
+    params.compactMVP = 1;
+    params.sendLigths = 0;
+    renderable light = primitiveCreateSphere(0.2f, 3, &params, 1);
+
 	while (denymKeepRunning(&input))
 	{
+		float angle = glm_rad(getUptime() * 200);
+
+        glm_mat4_identity(matrix);
+        vec3 position = {
+            sin(angle) * 3,
+            cos(angle) * 3,
+            sin(glm_rad(getUptime() * 80)) * 2 + 2.5
+        };
+        glm_translate(matrix, position);
+        renderableSetMatrix(light, matrix);
+        sceneSetLightPosition(denymGetScene(), position);
+
 		updateCameraPerspective(&input, camera);
 		denymRender();
 		denymWaitForNextFrame();
