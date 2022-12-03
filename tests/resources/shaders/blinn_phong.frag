@@ -24,7 +24,7 @@ layout(binding = 0) uniform UBO
 
 layout(binding = 1) uniform LIGHTS
 {
-    light_t light_0;
+    dlight_t light_0;
 } lights;
 
 layout(binding = 2) uniform sampler2D textureSampler;
@@ -35,38 +35,53 @@ layout(location = 2) in vec4 in_position;
 
 layout(location = 0) out vec4 out_color;
 
-void main()
-{
-    // single directionnal light
-    light_t light = lights.light_0;
 
-    // setup hardcoded material
-    material_t material;
-    material.color = vec3(1, 1, 1);
-    material.shininess = 100;
+void computeDirectionalLightColor(dlight_t light, material_t material, vec4 pos, vec3 normal, out vec3 color, out vec3 specular)
+{
+    color = specular = vec3(0);
+
+    if(light.intensity == 0)
+        return;
 
     // ambiant light
-    vec3 color = /*material.color * */light.color * light.ambiant;
+    color += material.color * light.color * light.ambiant;
 
-    vec3 normal = normalize(in_normal);
-    vec3 lightDirection = normalize((ubo.view * vec4(light.direction, 0)).xyz);
+    vec3 lightDirection = normalize(vec3(ubo.view * vec4(light.direction, 0)));
     float lightAngle = max(dot(normal, lightDirection), 0);
-    vec4 specular = vec4(0);
 
     if(lightAngle > 0)
     {
         // diffuse light
         color += material.color * light.color * light.intensity * lightAngle;
 
-        vec3 eye = -vec3(in_position);
+        vec3 eye = normalize(-vec3(pos));
         vec3 halfVector = normalize(lightDirection + eye);
         float halfAngle = max(dot(normal, halfVector), 0);
 
         // specular light
-        specular = vec4(/*material.color * */ light.color * light.intensity * pow(halfAngle, material.shininess), 1);
+        specular = /*material.color * */ light.color * light.intensity * pow(halfAngle, material.shininess);
     }
+}
 
-    out_color = texture(textureSampler, in_texCoord) * vec4(color, 1) + specular;
+
+void main()
+{
+    // setup hardcoded material
+    material_t material;
+    material.color = vec3(1, 1, 1);
+    material.shininess = 100;
+
+    vec3 color, specular;
+    vec3 lightColor, specularColor;
+
+    vec3 normal = normalize(in_normal);
+
+    // single directionnal light
+    computeDirectionalLightColor(dlights.light_0, material, in_position, normal, color, specular);
+    lightColor = color;
+    specularColor = specular;
+
+    out_color = texture(textureSampler, in_texCoord) * vec4(lightColor, 1) + vec4(specularColor, 0);
 
     if(out_color.a == 0)
         discard;
