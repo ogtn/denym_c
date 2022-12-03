@@ -13,7 +13,7 @@ scene sceneCreate(void)
     scene->maxRenderableCount = 32;
     scene->renderables = malloc(sizeof(renderable) * scene->maxRenderableCount);
     scene->camera = NULL;
-    scene->light = lightCreate();
+    scene->dlight = dlightCreate();
 
     return scene;
 }

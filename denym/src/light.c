@@ -1,9 +1,9 @@
 #include "light.h"
 
 
-light lightCreate(void)
+dlight dlightCreate(void)
 {
-    light light = calloc(1, sizeof *light);
+    dlight light = calloc(1, sizeof *light);
 
     light->direction[0] = 1;
     light->direction[1] = -1;

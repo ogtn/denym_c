@@ -5,16 +5,16 @@
 #include "denym_common.h"
 
 
-typedef struct light_t
+typedef struct dlight_t
 {
     vec3 direction;
     float intensity;
     vec3 color;
     float ambiant;
-} light_t;
+} dlight_t;
 
 
-light lightCreate(void);
+dlight dlightCreate(void);
 
 
 #endif

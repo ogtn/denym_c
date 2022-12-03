@@ -90,7 +90,7 @@ renderable renderableCreate(const renderableCreateParams *params, uint32_t insta
 
 	if(params->sendLigths)
 	{
-		renderableAddUniformInternal(renderable, sizeof(light_t));
+		renderableAddUniformInternal(renderable, sizeof(dlight_t));
 		renderable->sendLights = VK_TRUE;
 	}
 
@@ -772,7 +772,9 @@ void renderableUpdateLighting(renderable renderable)
 {
 	// TODO: no more hardcoded uniform id
 	if(renderable->sendLights)
-		renderableUpdateUniformsBuffer(renderable, 1, engine.scene->light);
+	{
+		renderableUpdateUniformsBuffer(renderable, 1, engine.scene->dlight);
+	}
 }
 
 

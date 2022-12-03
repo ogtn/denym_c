@@ -20,7 +20,7 @@ typedef struct camera_t *camera;
 typedef struct shader_t *shader;
 #include "input.h"
 typedef struct sprite_t *sprite;
-typedef struct light_t *light;
+typedef struct dlight_t *dlight;
 
 
 typedef struct renderableCreateParams

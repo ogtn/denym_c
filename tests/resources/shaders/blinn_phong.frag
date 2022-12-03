@@ -1,7 +1,7 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-struct light_t
+struct dlight_t
 {
     vec3 direction;
     float intensity;
