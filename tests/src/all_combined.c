@@ -70,7 +70,7 @@ int main(void)
 	renderable sphere_gouraud = primitiveCreateSphere(2, 4, &params, 1);
 	params.vertShaderName = "blinn_phong.vert.spv";
 	params.fragShaderName = "blinn_phong.frag.spv";
-	renderable sphere_blinn = primitiveCreateSphere(2, 4, &params);
+	renderable sphere_blinn = primitiveCreateSphere(2, 4, &params, 1);
 
 	primitiveCreateGrid(8, 3);
 
