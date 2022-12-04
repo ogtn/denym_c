@@ -1,44 +1,27 @@
 #include "light.h"
 
+#include <string.h>
 
-dlight dlightCreate(void)
+
+void dlightInit(dlight light)
 {
-    dlight light = calloc(1, sizeof *light);
+    memset(light, 0, sizeof *light);
 
-    light->direction[0] = 1;
-    light->direction[1] = -1;
-    light->direction[2] = 0.25;
-
-    light->intensity = 0;//0.5f;
-
-    light->color[0] = 255.f / 255.f;
-    light->color[1] = 234.f / 255.f;
-    light->color[2] = 173.f / 255.f;
-
+    light->direction[0] = light->direction[1] = light->direction[2] = 1;
+    light->intensity = 0.01f;
+    light->color[0] = light->color[1] = light->color[2] = 1;
     light->ambiant = 0.008f;
-
-    return light;
 }
 
 
-plight plightCreate(void)
+void plightInit(plight light)
 {
-    plight light = calloc(1, sizeof *light);
+    memset(light, 0, sizeof *light);
 
-    light->position[0] = 0;
-    light->position[1] = 0;
-    light->position[2] = 0.1;
-
-    light->intensity = 0.5f;
-
-    light->color[0] = 60.f / 255.f;
-    light->color[1] = 255.f / 255.f;
-    light->color[2] = 255.f / 255.f;
-
+    light->intensity = 2.f;
+    light->color[0] = light->color[1] = light->color[2] = 1;
     light->ambiant = 0.008f;
-    light->constantAttenuation = 1.f;
+    light->constantAttenuation = 1;
     light->linearAttenuation = 0.5f;
-    light->quadraticAttenuation = 0.5f;
-
-    return light;
+    light->quadraticAttenuation = 2.f;
 }

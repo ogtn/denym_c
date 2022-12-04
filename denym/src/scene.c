@@ -7,14 +7,10 @@
 
 scene sceneCreate(void)
 {
-    scene scene = malloc(sizeof *scene);
+    scene scene = calloc(1, sizeof *scene);
 
-    scene->renderableCount = 0;
     scene->maxRenderableCount = 32;
     scene->renderables = malloc(sizeof(renderable) * scene->maxRenderableCount);
-    scene->camera = NULL;
-    scene->dlight = dlightCreate();
-    scene->plight = plightCreate();
 
     return scene;
 }
@@ -80,7 +76,35 @@ void sceneUpdate(scene scene)
 }
 
 
-void sceneSetLightPosition(scene scene, vec3 position)
+dlight sceneAddDirectionalLight(scene scene)
 {
-    glm_vec3_copy(position, scene->plight->position);
+    if(scene->hasDirectionalLight)
+    {
+        logWarning("Scene already has a directional light");
+
+        return NULL;
+    }
+
+    dlightInit(&scene->dlight);
+    scene->hasDirectionalLight = VK_TRUE;
+
+    return &scene->dlight;
+}
+
+
+plight sceneAddPointLight(scene scene)
+{
+    uint32_t lightId = scene->plightsCount;
+
+    if(lightId >= SCENE_MAX_P_LIGHTS)
+    {
+        logWarning("Scene has reached the maximum (%u) of p lights", SCENE_MAX_P_LIGHTS);
+
+        return NULL;
+    }
+
+    plightInit(&scene->plights[lightId]);
+    scene->plightsCount++;
+
+    return &scene->plights[lightId];
 }

@@ -18,10 +18,9 @@ typedef struct texture_t *texture;
 typedef struct scene_t *scene;
 typedef struct camera_t *camera;
 typedef struct shader_t *shader;
-#include "input.h"
 typedef struct sprite_t *sprite;
-typedef struct dlight_t *dlight;
-typedef struct plight_t *plight;
+#include "input.h"
+#include "light.h"
 
 
 typedef struct renderableCreateParams
@@ -109,7 +108,9 @@ scene denymGetScene(void);
 
 void sceneSetCamera(scene scene, camera camera);
 
-void sceneSetLightPosition(scene scene, vec3 position);
+dlight sceneAddDirectionalLight(scene scene);
+
+plight sceneAddPointLight(scene scene);
 
 camera cameraCreatePerspective(float fov, float near, float far);
 

@@ -3,18 +3,6 @@
 #include <stdlib.h>
 
 
-static void setModelMatrix(renderable renderable, float x, float y, float angle)
-{
-	mat4 matrix;
-
-	glm_mat4_identity(matrix);
-	glm_translate_x(matrix, x);
-	glm_translate_y(matrix, y);
-	glm_rotate_z(matrix, angle, matrix);
-	renderableSetMatrix(renderable, matrix);
-}
-
-
 int main(void)
 {
 	const int width = 640;
@@ -28,7 +16,8 @@ int main(void)
 	input_t input;
 	camera camera = cameraCreatePerspective(60, 0.01f, 1000.f);
 	cameraLookAt(camera, eye, center);
-	sceneSetCamera(denymGetScene(), camera);
+	scene scene = denymGetScene();
+	sceneSetCamera(scene, camera);
 
 	renderableCreateParams params = {
 		.textureName = "white.png",
@@ -75,20 +64,65 @@ int main(void)
     params.compactMVP = 1;
     params.sendLigths = 0;
     renderable light = primitiveCreateSphere(0.2f, 3, &params, 1);
+	renderable light2 = primitiveCreateSphere(0.2f, 3, &params, 1);
+
+	dlight dlight = sceneAddDirectionalLight(scene);
+    plight plight1 = sceneAddPointLight(scene);
+	plight1->color[0] = plight1->color[1] = 0;
+	plight plight2 = sceneAddPointLight(scene);
+	plight2->color[0] = plight2->color[2] = 0;
+
+	int pause = 0;
+	int previousP = 0;
+	float pauseTime;
+	float delay = 0;
 
 	while (denymKeepRunning(&input))
 	{
-		float angle = glm_rad(getUptime() * 200);
+		if(inputIsKeyPressed(INPUT_KEY_P))
+		{
+			if(!previousP)
+			{
+				if(pause)
+				{
+					delay += getUptime() - pauseTime;
+					pause = 0;
+				}
+				else
+				{
+					pauseTime = getUptime();
+					pause = 1;
+				}
+			}
 
-        glm_mat4_identity(matrix);
-        vec3 position = {
-            sin(angle) * 3,
-            cos(angle) * 3,
-            sin(glm_rad(getUptime() * 80)) * 2 + 2.5
-        };
-        glm_translate(matrix, position);
-        renderableSetMatrix(light, matrix);
-        sceneSetLightPosition(denymGetScene(), position);
+			previousP = 1;
+		}
+		else
+			previousP = 0;
+
+		if(!pause)
+		{
+			float time = getUptime() - delay;
+			float angle = glm_rad(time * 200);
+
+			glm_mat4_identity(matrix);
+			vec3 position = {
+				sin(angle) * 3,
+				cos(angle) * 3,
+				sin(glm_rad(time * 80)) + 1.5
+			};
+			glm_translate(matrix, position);
+			glm_vec3_copy(position, plight1->position);
+			renderableSetMatrix(light, matrix);
+
+			glm_mat4_identity(matrix);
+			position[0] = cos(angle) * 3;
+			position[1] = sin(angle) * 3;
+			position[2] = cos(glm_rad(time * 80)) + 1.5;
+			glm_translate(matrix, position);
+			glm_vec3_copy(position, plight2->position);
+			renderableSetMatrix(light2, matrix);
+		}
 
 		updateCameraPerspective(&input, camera);
 		denymRender();

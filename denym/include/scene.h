@@ -3,6 +3,10 @@
 
 
 #include "denym_common.h"
+#include "light.h"
+
+
+#define SCENE_MAX_P_LIGHTS       2
 
 
 typedef struct scene_t
@@ -11,8 +15,10 @@ typedef struct scene_t
     uint32_t renderableCount;
     uint32_t maxRenderableCount;
     camera camera;
-    dlight dlight;
-    plight plight;
+    VkBool32 hasDirectionalLight;
+    dlight_t dlight;
+    uint32_t plightsCount;
+    plight_t plights[SCENE_MAX_P_LIGHTS];
 } scene_t;
 
 
@@ -30,7 +36,9 @@ camera sceneGetCamera(scene scene);
 
 void sceneUpdate(scene scene);
 
-void sceneSetLightPosition(scene scene, vec3 position);
+dlight sceneAddDirectionalLight(scene scene);
+
+plight sceneAddPointLight(scene scene);
 
 
 #endif

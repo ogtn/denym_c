@@ -40,7 +40,7 @@ layout(binding = 1) uniform DLIGHTS
 
 layout(binding = 2) uniform PLIGHTS
 {
-    plight_t light_0;
+    plight_t light[2];
 } plights;
 
 layout(binding = 3) uniform sampler2D textureSampler;
@@ -136,10 +136,12 @@ void main()
     lightColor = color;
     specularColor = specular;
 
-    // single point light
-    computePointLightColor(plights.light_0, material, in_position, normal, color, specular);
-    lightColor += color;
-    specularColor += specular;
+    for(int i = 0; i < 2; i++)
+    {
+        computePointLightColor(plights.light[i], material, in_position, normal, color, specular);
+        lightColor += color;
+        specularColor += specular;
+    }
 
     out_color = texture(textureSampler, in_texCoord) * vec4(lightColor, 1) + vec4(specularColor, 0);
 

@@ -91,7 +91,7 @@ renderable renderableCreate(const renderableCreateParams *params, uint32_t insta
 	if(params->sendLigths)
 	{
 		renderableAddUniformInternal(renderable, sizeof(dlight_t));
-		renderableAddUniformInternal(renderable, sizeof(plight_t));
+		renderableAddUniformInternal(renderable, sizeof engine.scene->plights);
 		renderable->sendLights = VK_TRUE;
 	}
 
@@ -780,8 +780,8 @@ void renderableUpdateLighting(renderable renderable)
 	// TODO: no more hardcoded uniform id
 	if(renderable->sendLights)
 	{
-		renderableUpdateUniformsBuffer(renderable, 1, engine.scene->dlight);
-		renderableUpdateUniformsBuffer(renderable, 2, engine.scene->plight);
+		renderableUpdateUniformsBuffer(renderable, 1, &engine.scene->dlight);
+		renderableUpdateUniformsBuffer(renderable, 2, engine.scene->plights);
 	}
 }
 

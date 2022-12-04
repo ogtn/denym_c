@@ -2,34 +2,35 @@
 #define _light_h_
 
 
-#include "denym_common.h"
-
-
 typedef struct dlight_t
 {
-    vec3 direction;
+    float direction[3];
     float intensity;
-    vec3 color;
+    float color[3];
     float ambiant;
 } dlight_t;
 
 
 typedef struct plight_t
 {
-    vec3 position;
+    float position[3];
     float intensity;
-    vec3 color;
+    float color[3];
     float ambiant;
     float constantAttenuation;
     float linearAttenuation;
     float quadraticAttenuation;
+    float padding;
 } plight_t;
 
 
-dlight dlightCreate(void);
+typedef struct dlight_t *dlight;
+typedef struct plight_t *plight;
 
-plight plightCreate(void);
+
+void dlightInit(dlight light);
+
+void plightInit(plight light);
 
 
 #endif
-

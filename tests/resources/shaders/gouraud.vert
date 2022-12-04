@@ -40,7 +40,7 @@ layout(binding = 1) uniform DLIGHTS
 
 layout(binding = 2) uniform PLIGHTS
 {
-    plight_t light_0;
+    plight_t light[2];
 } plights;
 
 
@@ -140,10 +140,12 @@ void main()
     out_lightColor = vec4(color, 1);
     out_specular = specular;
 
-    // single point light
-    computePointLightColor(plights.light_0, material, pos, normal, color, specular);
-    out_lightColor += vec4(color, 1);
-    out_specular += specular;
+    for(int i = 0; i < 2; i++)
+    {
+        computePointLightColor(plights.light[i], material, pos, normal, color, specular);
+        out_lightColor += vec4(color, 1);
+        out_specular += specular;
+    }
 
     out_texCoord = in_texCoord;
     gl_Position = ubo.proj * pos;
