@@ -27,6 +27,20 @@ int main(void)
         .sendLigths = 1
 	};
 
+	material_t matte_white = {
+		.color.r = 1,
+		.color.g = 1,
+		.color.b = 1,
+		.shininess = 1
+	};
+
+	material_t shiny_white = {
+		.color.r = 1,
+		.color.g = 1,
+		.color.b = 1,
+		.shininess = 200
+	};
+
     mat4 matrix;
     renderable floor_gouraud = primitiveCreateCube(10, 5, &params, 1);
     glm_mat4_identity(matrix);
@@ -45,6 +59,7 @@ int main(void)
     params.vertShaderName = "blinn_phong.vert.spv";
 	params.fragShaderName = "blinn_phong.frag.spv";
 
+	params.material = &matte_white;
     renderable floor_blinn = primitiveCreateCube(10, 5, &params, 1);
     glm_mat4_identity(matrix);
 	glm_translate_z(matrix, -0.5f);
@@ -52,11 +67,13 @@ int main(void)
     glm_translate_x(matrix, -5);
     renderableSetMatrix(floor_blinn, matrix);
 
+	params.material = &shiny_white;
     renderable sphere_blinn = primitiveCreateSphere(1.5f, 5, &params, 1);
     glm_mat4_identity(matrix);
 	glm_translate_x(matrix, -1);
     glm_translate_z(matrix, 0.75);
     renderableSetMatrix(sphere_blinn, matrix);
+	params.material = NULL;
 
     params.vertShaderName = "texture_v4.vert.spv";
 	params.fragShaderName = "texture_v3.frag.spv";
@@ -68,9 +85,9 @@ int main(void)
 
 	dlight dlight = sceneAddDirectionalLight(scene);
     plight plight1 = sceneAddPointLight(scene);
-	plight1->color[0] = plight1->color[1] = 0;
+	plight1->color.r = plight1->color.g = 0;
 	plight plight2 = sceneAddPointLight(scene);
-	plight2->color[0] = plight2->color[2] = 0;
+	plight2->color.r = plight2->color.b = 0;
 
 	int pause = 0;
 	int previousP = 0;
@@ -112,7 +129,7 @@ int main(void)
 				sin(glm_rad(time * 80)) + 1.5
 			};
 			glm_translate(matrix, position);
-			glm_vec3_copy(position, plight1->position);
+			glm_vec3_copy(position, plight1->position.v);
 			renderableSetMatrix(light, matrix);
 
 			glm_mat4_identity(matrix);
@@ -120,7 +137,7 @@ int main(void)
 			position[1] = sin(angle) * 3;
 			position[2] = cos(glm_rad(time * 80)) + 1.5;
 			glm_translate(matrix, position);
-			glm_vec3_copy(position, plight2->position);
+			glm_vec3_copy(position, plight2->position.v);
 			renderableSetMatrix(light2, matrix);
 		}
 

@@ -3,23 +3,6 @@
 #include <string.h>
 
 
-typedef struct vec3f
-{
-    union
-    {
-        vec3 v;
-        struct { float x, y, z; };
-    };
-} vec3f;
-
-
-typedef struct vec2f
-{
-    float u;
-    float v;
-} vec2f;
-
-
 static void createCubeData(float size, uint32_t subdivisions, vec3f **positions, vec2f **texCoords, vec3f **normals, uint32_t *vertexCount);
 
 static void createFace(float size, uint32_t subdivisions, uint32_t *axes, float dir, vec3f *positions, vec3f *normals, vec2f *texCoords, const uint32_t *coordBounds, const float *posBounds);

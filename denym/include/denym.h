@@ -30,6 +30,7 @@ typedef struct renderableCreateParams
 	const char *vertShaderName;
 	const char *fragShaderName;
 	geometry geometry;
+	material material;
 	uint32_t sendMVP;
 	uint32_t compactMVP;
 	uint32_t pushConstantSize;

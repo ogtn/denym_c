@@ -89,16 +89,26 @@ renderable renderableCreate(const renderableCreateParams *params, uint32_t insta
 			renderable->useTexture = VK_TRUE;
 	}
 
+	if(params->material)
+	{
+		renderable->material = *params->material;
+		renderable->sendMaterial = VK_TRUE;
+	}
+	else
+	{
+		// default material
+		renderable->material.color.r = 1;
+		renderable->material.color.g = 1;
+		renderable->material.color.b = 1;
+		renderable->material.shininess = 100;
+	}
+
 	if(params->sendLigths)
 	{
 		renderableAddUniformInternal(renderable, sizeof(dlight_t));
 		renderableAddUniformInternal(renderable, sizeof engine.scene->plights);
 		renderable->sendLights = VK_TRUE;
 
-		renderable->material.color.r = 1;
-		renderable->material.color.g = 1;
-		renderable->material.color.b = 1;
-		renderable->material.shininess = 100;
 		renderableAddUniformInternal(renderable, sizeof(material_t));
 		renderable->sendMaterial = VK_TRUE;
 	}

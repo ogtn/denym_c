@@ -2,20 +2,23 @@
 #define _light_h_
 
 
+#include "types.h"
+
+
 typedef struct dlight_t
 {
-    float direction[3];
+    vec3f direction;
     float intensity;
-    float color[3];
+    color color;
     float ambiant;
 } dlight_t;
 
 
 typedef struct plight_t
 {
-    float position[3];
+    vec3f position;
     float intensity;
-    float color[3];
+    color color;
     float ambiant;
     float constantAttenuation;
     float linearAttenuation;

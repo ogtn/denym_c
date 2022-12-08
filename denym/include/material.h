@@ -2,12 +2,7 @@
 #define _material_h_
 
 
-typedef struct color
-{
-    float r;
-    float g;
-    float b;
-} color;
+#include "types.h"
 
 
 typedef struct material_t
@@ -15,6 +10,8 @@ typedef struct material_t
     color color;
     float shininess;
 } material_t;
+
+typedef struct material_t *material;
 
 
 #endif
