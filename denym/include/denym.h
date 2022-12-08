@@ -19,6 +19,7 @@ typedef struct scene_t *scene;
 typedef struct camera_t *camera;
 typedef struct shader_t *shader;
 typedef struct sprite_t *sprite;
+#include "material.h"
 #include "input.h"
 #include "light.h"
 

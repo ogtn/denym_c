@@ -43,7 +43,12 @@ layout(binding = 2) uniform PLIGHTS
     plight_t light[2];
 } plights;
 
-layout(binding = 3) uniform sampler2D textureSampler;
+layout(binding = 3) uniform MATERIAL
+{
+    material_t material;
+} material;
+
+layout(binding = 4) uniform sampler2D textureSampler;
 
 layout(location = 0) in vec3 in_normal;
 layout(location = 1) in vec2 in_texCoord;
@@ -121,24 +126,19 @@ void computePointLightColor(plight_t light, material_t material, vec4 pos, vec3 
 
 void main()
 {
-    // setup hardcoded material
-    material_t material;
-    material.color = vec3(1, 1, 1);
-    material.shininess = 100;
-
     vec3 color, specular;
     vec3 lightColor, specularColor;
 
     vec3 normal = normalize(in_normal);
 
     // single directionnal light
-    computeDirectionalLightColor(dlights.light_0, material, in_position, normal, color, specular);
+    computeDirectionalLightColor(dlights.light_0, material.material, in_position, normal, color, specular);
     lightColor = color;
     specularColor = specular;
 
     for(int i = 0; i < 2; i++)
     {
-        computePointLightColor(plights.light[i], material, in_position, normal, color, specular);
+        computePointLightColor(plights.light[i], material.material, in_position, normal, color, specular);
         lightColor += color;
         specularColor += specular;
     }

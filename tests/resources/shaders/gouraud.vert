@@ -43,6 +43,10 @@ layout(binding = 2) uniform PLIGHTS
     plight_t light[2];
 } plights;
 
+layout(binding = 3) uniform MATERIAL
+{
+    material_t material;
+} material;
 
 layout(location = 0) in vec3 in_position;
 layout(location = 1) in vec2 in_texCoord;
@@ -122,11 +126,6 @@ void computePointLightColor(plight_t light, material_t material, vec4 pos, vec3 
 
 void main()
 {
-    // setup hardcoded material
-    material_t material;
-    material.color = vec3(1, 1, 1);
-    material.shininess = 100;
-
     // put everything in eye coordinates
     mat4 modelViewMatrix = ubo.view * ubo.model;
     vec4 pos = modelViewMatrix * vec4(in_position, 1);
@@ -136,13 +135,13 @@ void main()
     vec3 color, specular;
 
     // single directionnal light
-    computeDirectionalLightColor(dlights.light_0, material, pos, normal, color, specular);
+    computeDirectionalLightColor(dlights.light_0, material.material, pos, normal, color, specular);
     out_lightColor = vec4(color, 1);
     out_specular = specular;
 
     for(int i = 0; i < 2; i++)
     {
-        computePointLightColor(plights.light[i], material, pos, normal, color, specular);
+        computePointLightColor(plights.light[i], material.material, pos, normal, color, specular);
         out_lightColor += vec4(color, 1);
         out_specular += specular;
     }

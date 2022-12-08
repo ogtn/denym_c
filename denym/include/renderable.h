@@ -5,8 +5,8 @@
 
 
 #define RENDERABLE_MAX_PUSH_CONSTANTS 	2
-#define RENDERABLE_MAX_UNIFORMS			3
-#define RENDERABLE_MAX_BINDINGS 		4
+#define RENDERABLE_MAX_UNIFORMS			4
+#define RENDERABLE_MAX_BINDINGS 		(RENDERABLE_MAX_UNIFORMS + 1)
 
 
 typedef struct renderable_t
@@ -68,9 +68,11 @@ typedef struct renderable_t
 	VkBool32 sendMVPAsPushConstant;
 	VkBool32 sendMVPAsStorageBuffer;
 	VkBool32 sendLights;
+	VkBool32 sendMaterial;
 
 	uint32_t instanceCount;
 	mat4 modelMatrix;
+	material_t material;
 	VkBool32 needMVPUpdate[MAX_FRAMES_IN_FLIGHT];
 } renderable_t;
 

@@ -2,9 +2,6 @@
 #define _material_h_
 
 
-#include "denym_common.h"
-
-
 typedef struct color
 {
     float r;
@@ -13,14 +10,11 @@ typedef struct color
 } color;
 
 
-typedef struct material
+typedef struct material_t
 {
-    color diffuse;
-    color ambient;
-    color specular;
-    color emissive;
+    color color;
     float shininess;
-} material;
+} material_t;
 
 
 #endif

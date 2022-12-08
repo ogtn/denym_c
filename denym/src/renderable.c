@@ -7,6 +7,7 @@
 #include "scene.h"
 #include "camera.h"
 #include "light.h"
+#include "material.h"
 #include "logger.h"
 
 #include <stdlib.h>
@@ -93,6 +94,13 @@ renderable renderableCreate(const renderableCreateParams *params, uint32_t insta
 		renderableAddUniformInternal(renderable, sizeof(dlight_t));
 		renderableAddUniformInternal(renderable, sizeof engine.scene->plights);
 		renderable->sendLights = VK_TRUE;
+
+		renderable->material.color.r = 1;
+		renderable->material.color.g = 1;
+		renderable->material.color.b = 1;
+		renderable->material.shininess = 100;
+		renderableAddUniformInternal(renderable, sizeof(material_t));
+		renderable->sendMaterial = VK_TRUE;
 	}
 
 	if(	!renderableCreateDescriptorSetLayout(renderable) &&
@@ -682,6 +690,13 @@ int renderableCreateDescriptorSets(renderable renderable, VkBool32 useNearestSam
 			descriptorWriteCount++;
 		}
 
+		if(descriptorWriteCount > RENDERABLE_MAX_BINDINGS)
+		{
+			logError("Exceed max number of bindings");
+
+			return -1;
+		}
+
 		vkUpdateDescriptorSets(engine.vulkanContext.device, descriptorWriteCount, descriptorWrites, 0, NULL);
 	}
 
@@ -783,6 +798,9 @@ void renderableUpdateLighting(renderable renderable)
 		renderableUpdateUniformsBuffer(renderable, 1, &engine.scene->dlight);
 		renderableUpdateUniformsBuffer(renderable, 2, engine.scene->plights);
 	}
+
+	if(renderable->sendMaterial)
+		renderableUpdateUniformsBuffer(renderable, 3, &renderable->material);
 }
 
 
