@@ -75,7 +75,7 @@ void computeDirectionalLightColor(dlight_t light, material_t material, vec4 pos,
         float halfAngle = max(dot(normal, halfVector), 0);
 
         // specular light
-        specular = /*material.color * */ light.color * light.intensity * pow(halfAngle, material.shininess);
+        specular = light.color * light.intensity * pow(halfAngle, material.shininess);
     }
 }
 
@@ -106,7 +106,7 @@ void computePointLightColor(plight_t light, material_t material, vec4 pos, vec3 
         float halfAngle = max(dot(normal, halfVector), 0);
 
         // specular light
-        specular = /*material.color * */ light.color * light.intensity * pow(halfAngle, material.shininess);
+        specular = light.color * light.intensity * pow(halfAngle, material.shininess);
     }
 
     float attenuation = 1 / (
