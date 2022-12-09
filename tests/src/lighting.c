@@ -27,17 +27,17 @@ int main(void)
         .sendLigths = 1
 	};
 
+	color white = { 1, 1, 1 };
+	color green = { 0, 1, 0 };
+	color blue = { 0, 0, 1 };
+
 	material_t matte_white = {
-		.color.r = 1,
-		.color.g = 1,
-		.color.b = 1,
+		.color = white,
 		.shininess = 1
 	};
 
 	material_t shiny_white = {
-		.color.r = 1,
-		.color.g = 1,
-		.color.b = 1,
+		.color = white,
 		.shininess = 200
 	};
 
@@ -85,9 +85,9 @@ int main(void)
 
 	dlight dlight = sceneAddDirectionalLight(scene);
     plight plight1 = sceneAddPointLight(scene);
-	plight1->color.r = plight1->color.g = 0;
+	plight1->color = blue;
 	plight plight2 = sceneAddPointLight(scene);
-	plight2->color.r = plight2->color.b = 0;
+	plight2->color = green;
 
 	int pause = 0;
 	int previousP = 0;
