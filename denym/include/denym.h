@@ -90,7 +90,7 @@ void renderableSetMatrixInstance(renderable renderable, mat4 matrix, uint32_t in
 
 float getUptime(void);
 
-renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, uint32_t instancesCount, int useIndices, int useNormals);
+renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, uint32_t instancesCount, uint32_t useIndices, uint32_t useTexCoords, uint32_t useNormals);
 
 renderable primitiveCreateGrid(float size, uint32_t level);
 

@@ -31,7 +31,7 @@ int main(void)
 	for(uint32_t i = 0; i < ARRAY_SIZE; i++)
 		for(uint32_t j = 0; j < ARRAY_SIZE; j++)
 			for(uint32_t k = 0; k < ARRAY_SIZE; k++)
-				objects[i][j][k] = modelLoad("sphere.obj", &params, 1, 0, 0);
+				objects[i][j][k] = modelLoad("sphere.obj", &params, 1, 1, 1, 0);
 
 	printf("%d objects loaded in %.3fs\n",
 		ARRAY_SIZE * ARRAY_SIZE * ARRAY_SIZE,

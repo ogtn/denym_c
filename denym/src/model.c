@@ -49,7 +49,7 @@ typedef struct vertex_vt
 
 static int modelReadOBJ(const char *objFile, vertexData *vertexData);
 
-static geometry modelLoadInternal(const char *objFile, int useIndices, int useNormals);
+static geometry modelLoadInternal(const char *objFile, uint32_t useIndices, uint32_t useTexCoords, uint32_t useNormals);
 
 static void modelAddVertex(uint32_t indexSrc, uint32_t indexDst, fastObjMesh *mesh, vertexData *vertexData);
 
@@ -100,7 +100,7 @@ static int modelReadOBJ(const char *objFile, vertexData *vertexData)
 }
 
 
-static geometry modelLoadInternal(const char *objFile, int useIndices, int useNormals)
+static geometry modelLoadInternal(const char *objFile, uint32_t useIndices, uint32_t useTexCoords, uint32_t useNormals)
 {
     vertexData vertexData;
     modelReadOBJ(objFile, &vertexData);
@@ -121,10 +121,10 @@ static geometry modelLoadInternal(const char *objFile, int useIndices, int useNo
 
         for(uint32_t i = 0; i < vertexData.indexCount; i++)
         {
-            vertex_vt vertex = {
-                .position = vertexData.positions[i],
-                .texCoord = vertexData.texCoords[i],
-            };
+            vertex_vt vertex = { .position = vertexData.positions[i] };
+
+            if(useTexCoords)
+                vertex.texCoord = vertexData.texCoords[i];
 
             if(useNormals)
                 vertex.normal = vertexData.normals[i];
@@ -138,17 +138,7 @@ static geometry modelLoadInternal(const char *objFile, int useIndices, int useNo
 
                 newPositions[currentVertex] = vertex.position;
                 newTexCoords[currentVertex] = vertex.texCoord;
-
-                if(useNormals)
-                {
-                    newNormals[currentVertex] = vertex.normal;
-                }
-                else
-                {
-                    newNormals[currentVertex].x = 0;
-                    newNormals[currentVertex].y = 0;
-                    newNormals[currentVertex].z = 0;
-                }
+                newNormals[currentVertex] = vertex.normal;
 
                 if(vertexCount == UINT32_MAX)
                 {
@@ -161,12 +151,18 @@ static geometry modelLoadInternal(const char *objFile, int useIndices, int useNo
             indices32[i] = currentVertex;
         }
 
-        size_t initialSize = vertexData.indexCount * sizeof(pos_t) + sizeof(txc_t);
-        size_t finalSize = vertexCount * (sizeof(pos_t) + sizeof(txc_t));
-
         geometryParams geometryParams = geometryCreateParameters(vertexCount, vertexData.indexCount);
+
         geometryParamsAddPositions3D(geometryParams, (float*)newPositions);
-        geometryParamsAddTexCoords(geometryParams, (float*)newTexCoords);
+        size_t initialSize = vertexData.indexCount * sizeof(pos_t);
+        size_t finalSize = vertexCount * sizeof(pos_t);
+
+        if(useTexCoords)
+        {
+            geometryParamsAddTexCoords(geometryParams, (float*)newTexCoords);
+            initialSize += vertexData.indexCount * sizeof(txc_t);
+            finalSize += vertexCount * sizeof(txc_t);
+        }
 
         if(useNormals)
         {
@@ -211,7 +207,9 @@ static geometry modelLoadInternal(const char *objFile, int useIndices, int useNo
     {
         geometryParams geometryParams = geometryCreateParameters(vertexData.indexCount, 0);
         geometryParamsAddPositions3D(geometryParams, (float*)vertexData.positions);
-        geometryParamsAddTexCoords(geometryParams, (float*)vertexData.texCoords);
+
+        if(useTexCoords)
+            geometryParamsAddTexCoords(geometryParams, (float*)vertexData.texCoords);
 
         if(useNormals)
             geometryParamsAddNormals(geometryParams, (float*)vertexData.normals);
@@ -227,10 +225,10 @@ static geometry modelLoadInternal(const char *objFile, int useIndices, int useNo
 }
 
 
-renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, uint32_t instancesCount, int useIndices, int useNormals)
+renderable modelLoad(const char *objFile, renderableCreateParams *renderableParams, uint32_t instancesCount, uint32_t useIndices, uint32_t useTexCoords, uint32_t useNormals)
 {
     float start = getUptime();
-    renderableParams->geometry = modelLoadInternal(objFile, useIndices, useNormals);
+    renderableParams->geometry = modelLoadInternal(objFile, useIndices, useTexCoords, useNormals);
     renderable renderable = renderableCreate(renderableParams, instancesCount);
     logInfo("Model loaded in: %fs", getUptime() - start);
 
