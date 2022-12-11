@@ -2,6 +2,41 @@
 
 #include <stdlib.h>
 
+typedef struct orb
+{
+	renderable renderable;
+	plight light;
+} orb;
+
+
+static void initOrb(orb *orb, scene scene, color color)
+{
+	material_t mtl = {	.color = color };
+	renderableCreateParams params = {
+		.vertShaderName = "mtl_no_light.vert.spv",
+		.fragShaderName = "mtl_no_light.frag.spv",
+		.sendMVPAsPushConstant = 1,
+		.material = &mtl
+	};
+
+	orb->renderable = primitiveCreateSphere(0.2f, 3, &params, 1, 0, 0);
+	orb->light = sceneAddPointLight(scene);
+	orb->light->color = color;
+	orb->light->intensity = 0.5;
+}
+
+
+static void setOrbPosition(orb *orb, float x, float y, float z)
+{
+	mat4 matrix;
+	vec3 position = { x, y, z };
+
+	glm_mat4_identity(matrix);
+	glm_translate(matrix, position);
+	glm_vec3_copy(position, orb->light->position.v);
+	renderableSetMatrix(orb->renderable, matrix);
+}
+
 
 int main(void)
 {
@@ -20,11 +55,10 @@ int main(void)
 	sceneSetCamera(scene, camera);
 
 	renderableCreateParams params = {
-		.textureName = "white.png",
-		.vertShaderName = "gouraud.vert.spv",
-		.fragShaderName = "gouraud.frag.spv",
+		.vertShaderName = "gouraud_plain.vert.spv",
+		.fragShaderName = "gouraud_plain.frag.spv",
 		.sendMVP = 1,
-        .sendLigths = 1
+		.sendLigths = 1
 	};
 
 	color white = { 1, 1, 1 };
@@ -33,7 +67,7 @@ int main(void)
 
 	material_t matte_white = {
 		.color = white,
-		.shininess = 1
+		.shininess = 8
 	};
 
 	material_t shiny_white = {
@@ -41,53 +75,45 @@ int main(void)
 		.shininess = 200
 	};
 
-    mat4 matrix;
-    renderable floor_gouraud = primitiveCreateCube(10, 5, &params, 1);
-    glm_mat4_identity(matrix);
-	glm_translate_z(matrix, -0.5f);
-    vec3 v = {0.5, 1, 1.f / 10};
-    glm_scale(matrix, v);
-    glm_translate_x(matrix, 5);
-    renderableSetMatrix(floor_gouraud, matrix);
-
-    renderable sphere_gouraud = primitiveCreateSphere(1.5f, 5, &params, 1);
-    glm_mat4_identity(matrix);
-	glm_translate_x(matrix, 1);
-    glm_translate_z(matrix, 0.75f);
-    renderableSetMatrix(sphere_gouraud, matrix);
-
-    params.vertShaderName = "blinn_phong.vert.spv";
-	params.fragShaderName = "blinn_phong.frag.spv";
-
-	params.material = &matte_white;
-    renderable floor_blinn = primitiveCreateCube(10, 5, &params, 1);
-    glm_mat4_identity(matrix);
-	glm_translate_z(matrix, -0.5f);
-    glm_scale(matrix, v);
-    glm_translate_x(matrix, -5);
-    renderableSetMatrix(floor_blinn, matrix);
+	mat4 matrix;
 
 	params.material = &shiny_white;
-    renderable sphere_blinn = primitiveCreateSphere(1.5f, 5, &params, 1);
-    glm_mat4_identity(matrix);
+	renderable floor_gouraud = primitiveCreateCube(10, 5, &params, 1, 0, 1);
+	glm_mat4_identity(matrix);
+	glm_translate_z(matrix, -0.5f);
+	vec3 v = {0.5, 1, 1.f / 10};
+	glm_scale(matrix, v);
+	glm_translate_x(matrix, 5);
+	renderableSetMatrix(floor_gouraud, matrix);
+
+	params.material = &matte_white;
+	renderable sphere_gouraud = primitiveCreateSphere(1.5f, 5, &params, 1, 0, 1);
+	glm_mat4_identity(matrix);
+	glm_translate_x(matrix, 1);
+	glm_translate_z(matrix, 0.75f);
+	renderableSetMatrix(sphere_gouraud, matrix);
+
+	params.vertShaderName = "blinn_phong_plain.vert.spv",
+	params.fragShaderName = "blinn_phong_plain.frag.spv",
+
+	params.material = &shiny_white;
+	renderable floor_blinn = primitiveCreateCube(10, 5, &params, 1, 0, 1);
+	glm_mat4_identity(matrix);
+	glm_translate_z(matrix, -0.5f);
+	glm_scale(matrix, v);
+	glm_translate_x(matrix, -5);
+	renderableSetMatrix(floor_blinn, matrix);
+
+	params.material = &matte_white;
+	renderable sphere_blinn = primitiveCreateSphere(1.5f, 5, &params, 1, 0, 1);
+	glm_mat4_identity(matrix);
 	glm_translate_x(matrix, -1);
-    glm_translate_z(matrix, 0.75);
-    renderableSetMatrix(sphere_blinn, matrix);
-	params.material = NULL;
+	glm_translate_z(matrix, 0.75);
+	renderableSetMatrix(sphere_blinn, matrix);
 
-    params.vertShaderName = "texture_v4.vert.spv";
-	params.fragShaderName = "texture_v3.frag.spv";
-    params.sendMVPAsPushConstant = 1;
-    params.compactMVP = 1;
-    params.sendLigths = 0;
-    renderable light = primitiveCreateSphere(0.2f, 3, &params, 1);
-	renderable light2 = primitiveCreateSphere(0.2f, 3, &params, 1);
-
-	dlight dlight = sceneAddDirectionalLight(scene);
-    plight plight1 = sceneAddPointLight(scene);
-	plight1->color = blue;
-	plight plight2 = sceneAddPointLight(scene);
-	plight2->color = green;
+	orb orb1, orb2;
+	initOrb(&orb1, scene, blue);
+	initOrb(&orb2, scene, green);
 
 	int pause = 0;
 	int previousP = 0;
@@ -122,23 +148,8 @@ int main(void)
 			float time = getUptime() - delay;
 			float angle = glm_rad(time * 200);
 
-			glm_mat4_identity(matrix);
-			vec3 position = {
-				sin(angle) * 3,
-				cos(angle) * 3,
-				sin(glm_rad(time * 80)) + 1.5
-			};
-			glm_translate(matrix, position);
-			glm_vec3_copy(position, plight1->position.v);
-			renderableSetMatrix(light, matrix);
-
-			glm_mat4_identity(matrix);
-			position[0] = cos(angle) * 3;
-			position[1] = sin(angle) * 3;
-			position[2] = cos(glm_rad(time * 80)) + 1.5;
-			glm_translate(matrix, position);
-			glm_vec3_copy(position, plight2->position.v);
-			renderableSetMatrix(light2, matrix);
+			setOrbPosition(&orb1, sin(angle) * 3, cos(angle) * 3, sin(glm_rad(time * 80)) + 1.5);
+			setOrbPosition(&orb2, cos(angle) * 3, sin(angle) * 3, cos(glm_rad(time * 80)) + 1.5);
 		}
 
 		updateCameraPerspective(&input, camera);

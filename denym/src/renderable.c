@@ -23,48 +23,51 @@ renderable renderableCreate(const renderableCreateParams *params, uint32_t insta
 	renderable->compactMVP = params->compactMVP;
 	renderable->instanceCount = instanceCount;
 
-	if(params->sendMVP)
+	glm_mat4_identity(renderable->modelMatrix);
+
+	if(params->sendMVPAsPushConstant || params->sendMVPAsStorageBuffer || params->sendMVP)
 	{
-		glm_mat4_identity(renderable->modelMatrix);
+		renderable->sendMVP = VK_TRUE;
 
 		for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 			renderable->needMVPUpdate[i] = VK_TRUE;
+	}
 
-		if(params->sendMVPAsPushConstant)
+	if(params->sendMVPAsPushConstant)
+	{
+		if(renderable->instanceCount > 1)
 		{
-			if(renderable->instanceCount > 1)
-			{
-				logError("sendMVPAsPushConstant is not supported with multiple instances");
-				goto error;
-			}
-
-			renderable->sendMVPAsPushConstant = VK_TRUE;
-			renderable->compactMVP = VK_TRUE;
-			renderableAddPushConstant(renderable, sizeof(mat4), VK_SHADER_STAGE_VERTEX_BIT);
+			logError("sendMVPAsPushConstant is not supported with multiple instances");
+			goto error;
 		}
-		else if(params->sendMVPAsStorageBuffer)
-		{
-			renderable->useStorageBuffer = VK_TRUE;
-			renderable->sendMVPAsStorageBuffer = VK_TRUE;
 
-			if(renderable->compactMVP)
-				renderable->storageBufferSizePerFrameAndInstance = sizeof(mat4); // only one mvp matrix per instance
-			else
-				renderable->storageBufferSizePerFrameAndInstance = sizeof(mat4) * 3; // model, view, proj for each instance
+		renderable->sendMVPAsPushConstant = VK_TRUE;
+		renderable->compactMVP = VK_TRUE;
+		renderableAddPushConstant(renderable, sizeof(mat4), VK_SHADER_STAGE_VERTEX_BIT);
+	}
+	else if(params->sendMVPAsStorageBuffer)
+	{
+		renderable->useStorageBuffer = VK_TRUE;
+		renderable->sendMVPAsStorageBuffer = VK_TRUE;
 
-			renderable->storageBufferSizePerFrame = renderable->storageBufferSizePerFrameAndInstance * renderable->instanceCount;
-			renderable->storageBufferTotalSize = renderable->storageBufferSizePerFrame * MAX_FRAMES_IN_FLIGHT;
-		}
+		if(renderable->compactMVP)
+			renderable->storageBufferSizePerFrameAndInstance = sizeof(mat4); // only one mvp matrix per instance
 		else
-		{
-			if(renderable->instanceCount > 1)
-			{
-				logError("sending MVP as uniforms is not supported with multiple instances");
-				goto error;
-			}
+			renderable->storageBufferSizePerFrameAndInstance = sizeof(mat4) * 3; // model, view, proj for each instance
 
-			renderableAddUniformInternal(renderable, renderable->compactMVP ? sizeof(mat4) : sizeof(mat4) * 3);
+		renderable->storageBufferSizePerFrame = renderable->storageBufferSizePerFrameAndInstance * renderable->instanceCount;
+		renderable->storageBufferTotalSize = renderable->storageBufferSizePerFrame * MAX_FRAMES_IN_FLIGHT;
+	}
+	else if(params->sendMVP)
+	{
+		if(renderable->instanceCount > 1)
+		{
+			logError("sending MVP as uniforms is not supported with multiple instances");
+			goto error;
 		}
+
+		renderable->sendMVPAsUniform = VK_TRUE;
+		renderable->uniforms.mvpId = renderableAddUniformInternal(renderable, renderable->compactMVP ? sizeof(mat4) : sizeof(mat4) * 3);
 	}
 
 	if(params->pushConstantSize)
@@ -89,28 +92,28 @@ renderable renderableCreate(const renderableCreateParams *params, uint32_t insta
 			renderable->useTexture = VK_TRUE;
 	}
 
-	if(params->material)
+	if(params->sendLigths)
 	{
-		renderable->material = *params->material;
+		renderable->uniforms.dlightId = renderableAddUniformInternal(renderable, sizeof(dlight_t));
+		renderable->uniforms.plightId = renderableAddUniformInternal(renderable, sizeof engine.scene->plights);
+		renderable->sendLights = VK_TRUE;
+	}
+
+	if(params->material || params->sendLigths)
+	{
+		renderable->uniforms.materialId = renderableAddUniformInternal(renderable, sizeof(material_t));
 		renderable->sendMaterial = VK_TRUE;
 	}
+
+	if(params->material)
+		renderable->material = *params->material;
 	else
 	{
-		// default material
+		// default material if none provided
 		renderable->material.color.r = 1;
 		renderable->material.color.g = 1;
 		renderable->material.color.b = 1;
 		renderable->material.shininess = 100;
-	}
-
-	if(params->sendLigths)
-	{
-		renderableAddUniformInternal(renderable, sizeof(dlight_t));
-		renderableAddUniformInternal(renderable, sizeof engine.scene->plights);
-		renderable->sendLights = VK_TRUE;
-
-		renderableAddUniformInternal(renderable, sizeof(material_t));
-		renderable->sendMaterial = VK_TRUE;
 	}
 
 	if(	!renderableCreateDescriptorSetLayout(renderable) &&
@@ -757,6 +760,9 @@ void renderableSetMatrix(renderable renderable, mat4 matrix)
 
 void renderableUpdateMVP(renderable renderable, VkBool32 force)
 {
+	if(renderable->sendMVP == VK_FALSE)
+		return;
+
 	if(renderable->needMVPUpdate[engine.vulkanContext.currentFrame] == VK_FALSE && force == VK_FALSE)
 		return;
 
@@ -788,13 +794,13 @@ void renderableUpdateMVP(renderable renderable, VkBool32 force)
 			renderableUpdatePushConstantInternal(renderable, mvp, 0);
 		else if(renderable->sendMVPAsStorageBuffer)
 			renderableUpdateStorageBuffer(renderable, mvp, 0);
-		else // TODO: no more hardcoded uniform id
-			renderableUpdateUniformsBuffer(renderable, 0, mvp);
+		else if(renderable->sendMVPAsUniform)
+			renderableUpdateUniformsBuffer(renderable, renderable->uniforms.mvpId, mvp);
 	}
 	else if(renderable->sendMVPAsStorageBuffer)
 		renderableUpdateStorageBuffer(renderable, matrices, 0);
-	else // TODO: no more hardcoded uniform id
-		renderableUpdateUniformsBuffer(renderable, 0, matrices);
+	else if(renderable->sendMVPAsUniform)
+		renderableUpdateUniformsBuffer(renderable, renderable->uniforms.mvpId, matrices);
 
 	renderable->needMVPUpdate[engine.vulkanContext.currentFrame] = VK_FALSE;
 }
@@ -802,15 +808,14 @@ void renderableUpdateMVP(renderable renderable, VkBool32 force)
 
 void renderableUpdateLighting(renderable renderable)
 {
-	// TODO: no more hardcoded uniform id
 	if(renderable->sendLights)
 	{
-		renderableUpdateUniformsBuffer(renderable, 1, &engine.scene->dlight);
-		renderableUpdateUniformsBuffer(renderable, 2, engine.scene->plights);
+		renderableUpdateUniformsBuffer(renderable, renderable->uniforms.dlightId, &engine.scene->dlight);
+		renderableUpdateUniformsBuffer(renderable, renderable->uniforms.plightId, engine.scene->plights);
 	}
 
 	if(renderable->sendMaterial)
-		renderableUpdateUniformsBuffer(renderable, 3, &renderable->material);
+		renderableUpdateUniformsBuffer(renderable, renderable->uniforms.materialId, &renderable->material);
 }
 
 

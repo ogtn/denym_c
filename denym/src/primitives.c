@@ -155,7 +155,7 @@ static void createCubeData(float size, uint32_t subdivisions, vec3f **positions,
 }
 
 
-renderable primitiveCreateCube(float size, uint32_t subdivisions, renderableCreateParams *params, uint32_t instancesCount)
+renderable primitiveCreateCube(float size, uint32_t subdivisions, renderableCreateParams *params, uint32_t instancesCount, uint32_t useTexCoords, uint32_t useNormals)
 {
     vec3f *positions;
     vec2f *texCoords;
@@ -166,8 +166,12 @@ renderable primitiveCreateCube(float size, uint32_t subdivisions, renderableCrea
 
     geometryParams geometryParams = geometryCreateParameters(vertexCount, 0);
     geometryParamsAddAttribVec3(geometryParams, (void*)positions);
-    geometryParamsAddAttribVec2(geometryParams, (void*)texCoords);
-    geometryParamsAddAttribVec3(geometryParams, (void*)normals);
+
+    if(useTexCoords)
+        geometryParamsAddAttribVec2(geometryParams, (void*)texCoords);
+
+    if(useNormals)
+        geometryParamsAddAttribVec3(geometryParams, (void*)normals);
 
     params->geometry = geometryCreate(geometryParams);
 
@@ -179,7 +183,7 @@ renderable primitiveCreateCube(float size, uint32_t subdivisions, renderableCrea
 }
 
 
-renderable primitiveCreateSphere(float radius, uint32_t subdivisions, renderableCreateParams *params, uint32_t instancesCount)
+renderable primitiveCreateSphere(float radius, uint32_t subdivisions, renderableCreateParams *params, uint32_t instancesCount, uint32_t useTexCoords, uint32_t useNormals)
 {
     vec3f *positions;
     vec2f *texCoords;
@@ -197,8 +201,12 @@ renderable primitiveCreateSphere(float radius, uint32_t subdivisions, renderable
 
     geometryParams geometryParams = geometryCreateParameters(vertexCount, 0);
     geometryParamsAddAttribVec3(geometryParams, (void*)positions);
-    geometryParamsAddAttribVec2(geometryParams, (void*)texCoords);
-    geometryParamsAddAttribVec3(geometryParams, (void*)normals);
+
+    if(useTexCoords)
+        geometryParamsAddAttribVec2(geometryParams, (void*)texCoords);
+
+    if(useNormals)
+        geometryParamsAddAttribVec3(geometryParams, (void*)normals);
 
     params->geometry = geometryCreate(geometryParams);
 

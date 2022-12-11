@@ -66,12 +66,14 @@ int main(void)
 	params.vertShaderName = "gouraud.vert.spv";
 	params.fragShaderName = "gouraud.frag.spv";
 	params.sendLigths = 1;
-	renderable cube_gouraud = primitiveCreateCube(1.5f, 4, &params, 1);
-	renderable sphere_gouraud = primitiveCreateSphere(2, 4, &params, 1);
+	renderable cube_gouraud = primitiveCreateCube(1.5f, 4, &params, 1, 1, 1);
+	renderable sphere_gouraud = primitiveCreateSphere(2, 4, &params, 1, 1, 1);
 	params.vertShaderName = "blinn_phong.vert.spv";
 	params.fragShaderName = "blinn_phong.frag.spv";
-	renderable sphere_blinn = primitiveCreateSphere(2, 4, &params, 1);
+	renderable sphere_blinn = primitiveCreateSphere(2, 4, &params, 1, 1, 1);
 
+	dlight light = sceneAddDirectionalLight(denymGetScene());
+	light->intensity = 1;
 	primitiveCreateGrid(8, 3);
 
 	while (denymKeepRunning(&input))

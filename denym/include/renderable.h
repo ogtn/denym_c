@@ -31,6 +31,10 @@ typedef struct renderable_t
 		uint32_t count;
 		VkDeviceSize sizePerFrame[RENDERABLE_MAX_UNIFORMS];
 		void *cache[RENDERABLE_MAX_UNIFORMS];
+		uint32_t mvpId;
+		uint32_t materialId;
+		uint32_t dlightId;
+		uint32_t plightId;
 	} uniforms;
 
 	// storage buffer
@@ -64,9 +68,11 @@ typedef struct renderable_t
 	VkPolygonMode polygonMode;
 	VkPrimitiveTopology primitiveTopology;
 
+	VkBool32 sendMVP;
 	VkBool32 compactMVP;
 	VkBool32 sendMVPAsPushConstant;
 	VkBool32 sendMVPAsStorageBuffer;
+	VkBool32 sendMVPAsUniform;
 	VkBool32 sendLights;
 	VkBool32 sendMaterial;
 
