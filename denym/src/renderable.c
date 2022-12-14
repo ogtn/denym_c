@@ -15,6 +15,9 @@
 #include <stdio.h>
 
 
+static void renderableComputeModelMatrix(renderable renderable, mat4 matrix);
+
+
 renderable renderableCreate(const renderableCreateParams *params, uint32_t instanceCount)
 {
 	renderable renderable = calloc(1, sizeof(*renderable));
@@ -23,7 +26,8 @@ renderable renderableCreate(const renderableCreateParams *params, uint32_t insta
 	renderable->compactMVP = params->compactMVP;
 	renderable->instanceCount = instanceCount;
 
-	glm_mat4_identity(renderable->modelMatrix);
+	renderable->model.scale.x = renderable->model.scale.y = renderable->model.scale.z = 1;
+	glm_quat_identity(renderable->model.rotation);
 
 	if(params->sendMVPAsPushConstant || params->sendMVPAsStorageBuffer || params->sendMVP)
 	{
@@ -742,19 +746,139 @@ int renderableUpdatePushConstantInternal(renderable renderable, void *value, uin
 }
 
 
-void renderableSetMatrix(renderable renderable, mat4 matrix)
+int renderableUpdateModel(renderable renderable)
 {
 	if(renderable->instanceCount > 1)
 	{
-		logWarning("Renderable is instanciated, can't set matrix without specifying instance Id");
+		logWarning("Renderable is instanciated, change model without specifying instance Id");
 
-		return;
+		return -1;
 	}
-
-	glm_mat4_copy(matrix, renderable->modelMatrix);
 
 	for(uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		renderable->needMVPUpdate[i] = VK_TRUE;
+
+	renderable->model.cacheUpToDate = VK_FALSE;
+
+	return 0;
+}
+
+
+void renderableSetPosition(renderable renderable, float x, float y, float z)
+{
+	if(renderableUpdateModel(renderable))
+		return;
+
+	renderable->model.postion.x = x;
+	renderable->model.postion.y = y;
+	renderable->model.postion.z = z;
+}
+
+
+void renderableSetPositionV(renderable renderable, vec3f *position)
+{
+	if(renderableUpdateModel(renderable))
+		return;
+
+	renderable->model.postion = *position;
+}
+
+
+void renderableMoveV(renderable renderable, vec3f *move)
+{
+	if(renderableUpdateModel(renderable))
+		return;
+
+	glm_vec3_add(renderable->model.postion.v, move->v, renderable->model.postion.v);
+}
+
+
+void renderableRotateAxis(renderable renderable, float angle, vec3f *axis)
+{
+	if(renderableUpdateModel(renderable))
+		return;
+
+	versor q;
+
+	glm_quatv(q, glm_rad(angle), axis->v);
+
+	// TODO: changing the order makes the rotation on the local axis of the model
+	// this can be usefull too...
+	// Add renderableRotateAxisLocal() ???
+	//glm_quat_mul(renderable->model.rotation, q, renderable->model.rotation);
+	glm_quat_mul(q, renderable->model.rotation, renderable->model.rotation);
+
+}
+
+
+void renderableRotateX(renderable renderable, float angle)
+{
+	vec3f axis = { 1, 0, 0 };
+
+	renderableRotateAxis(renderable, angle, &axis);
+}
+
+
+void renderableRotateY(renderable renderable, float angle)
+{
+	vec3f axis = { 0, 1, 0 };
+
+	renderableRotateAxis(renderable, angle, &axis);
+}
+
+
+void renderableRotateZ(renderable renderable, float angle)
+{
+	vec3f axis = { 0, 0, 1 };
+
+	renderableRotateAxis(renderable, angle, &axis);
+}
+
+
+void renderableSetScale(renderable renderable, float x, float y, float z)
+{
+	if(renderableUpdateModel(renderable))
+		return;
+
+	renderable->model.scale.x = x;
+	renderable->model.scale.y = y;
+	renderable->model.scale.z = z;
+}
+
+
+void renderableSetScaleV(renderable renderable, vec3f *scale)
+{
+	if(renderableUpdateModel(renderable))
+		return;
+
+	renderable->model.scale = *scale;
+}
+
+
+void renderableScaleV(renderable renderable, vec3f *scale)
+{
+	if(renderableUpdateModel(renderable))
+		return;
+
+	glm_vec3_add(renderable->model.scale.v, scale->v, renderable->model.scale.v);
+}
+
+
+static void renderableComputeModelMatrix(renderable renderable, mat4 matrix)
+{
+	if(renderable->model.cacheUpToDate == VK_FALSE)
+	{
+		// TODO: just like in renderableRotateAxis() for the rotation, the scale
+		// can be based on local or world coordinates, maybe add worldScale te be able
+		// to handle both ?
+		glm_mat4_identity(renderable->model.matrixCache);
+		glm_translate(renderable->model.matrixCache, renderable->model.postion.v);
+		glm_quat_rotate(renderable->model.matrixCache, renderable->model.rotation, renderable->model.matrixCache);
+		glm_scale(renderable->model.matrixCache, renderable->model.scale.v);
+		renderable->model.cacheUpToDate = VK_TRUE;
+	}
+
+	glm_mat4_copy(renderable->model.matrixCache, matrix);
 }
 
 
@@ -766,11 +890,10 @@ void renderableUpdateMVP(renderable renderable, VkBool32 force)
 	if(renderable->needMVPUpdate[engine.vulkanContext.currentFrame] == VK_FALSE && force == VK_FALSE)
 		return;
 
+	camera camera = sceneGetCamera(engine.scene);
 	mat4 matrices[3];
 
-	glm_mat4_copy(renderable->modelMatrix, matrices[0]);
-
-	camera camera = sceneGetCamera(engine.scene);
+	renderableComputeModelMatrix(renderable, matrices[0]);
 
 	if(camera)
 	{

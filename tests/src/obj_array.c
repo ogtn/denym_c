@@ -27,11 +27,19 @@ int main(void)
 	};
 
 	float start = getUptime();
+	const float orig = -(float)(ARRAY_SIZE) + 1;
 
 	for(uint32_t i = 0; i < ARRAY_SIZE; i++)
+	{
 		for(uint32_t j = 0; j < ARRAY_SIZE; j++)
+		{
 			for(uint32_t k = 0; k < ARRAY_SIZE; k++)
+			{
 				objects[i][j][k] = modelLoad("sphere.obj", &params, 1, 1, 1, 0);
+				renderableSetPosition(objects[i][j][k], orig + i * 2, orig + j * 2, orig + k * 2);
+			}
+		}
+	}
 
 	printf("%d objects loaded in %.3fs\n",
 		ARRAY_SIZE * ARRAY_SIZE * ARRAY_SIZE,
@@ -46,29 +54,14 @@ int main(void)
 
 	while(denymKeepRunning(&input))
 	{
-		float elapsed_since_start = getUptime();
-		mat4 matrix;
-
-		updateCameraPerspective(&input, camera);
+		float angularSpeed = denymGetTimeSinceLastFrame() * 20;
 
 		for(uint32_t i = 0; i < ARRAY_SIZE; i++)
-        {
         	for(uint32_t j = 0; j < ARRAY_SIZE; j++)
-            {
 				for(uint32_t k = 0; k < ARRAY_SIZE; k++)
-				{
-					float start = -(float)(ARRAY_SIZE) + 1;
+					renderableRotateZ(objects[i][j][k], angularSpeed);
 
-					glm_mat4_identity(matrix);
-					glm_translate_x(matrix, start + i * 2);
-					glm_translate_y(matrix, start + j * 2);
-					glm_translate_z(matrix, start + k * 2);
-					glm_rotate_z(matrix, glm_rad(elapsed_since_start * 20), matrix);
-					renderableSetMatrix(objects[i][j][k], matrix);
-				}
-            }
-        }
-
+		updateCameraPerspective(&input, camera);
 		denymRender();
 		denymWaitForNextFrame();
 	}

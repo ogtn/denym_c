@@ -84,7 +84,25 @@ void renderableDestroy(renderable renderable);
 
 int renderableUpdatePushConstant(renderable renderable, void *value);
 
-void renderableSetMatrix(renderable renderable, mat4 matrix);
+void renderableSetPosition(renderable renderable, float x, float y, float z);
+
+void renderableSetPositionV(renderable renderable, vec3f *position);
+
+void renderableMoveV(renderable renderable, vec3f *move);
+
+void renderableRotateAxis(renderable renderable, float angle, vec3f *axis);
+
+void renderableRotateX(renderable renderable, float angle);
+
+void renderableRotateY(renderable renderable, float angle);
+
+void renderableRotateZ(renderable renderable, float angle);
+
+void renderableSetScale(renderable renderable, float x, float y, float z);
+
+void renderableSetScaleV(renderable renderable, vec3f *scale);
+
+void renderableScaleV(renderable renderable, vec3f *scale);
 
 void renderableSetMatrixInstance(renderable renderable, mat4 matrix, uint32_t instanceId);
 

@@ -77,7 +77,16 @@ typedef struct renderable_t
 	VkBool32 sendMaterial;
 
 	uint32_t instanceCount;
-	mat4 modelMatrix;
+
+	struct
+	{
+		vec3f postion;
+		versor rotation;
+		vec3f scale;
+		VkBool32 cacheUpToDate;
+		mat4 matrixCache;
+	} model;
+
 	material_t material;
 	VkBool32 needMVPUpdate[MAX_FRAMES_IN_FLIGHT];
 } renderable_t;
@@ -115,7 +124,27 @@ int renderableUpdatePushConstant(renderable renderable, void *value);
 
 int renderableUpdatePushConstantInternal(renderable renderable, void *value, uint32_t pushConstantNumber);
 
-void renderableSetMatrix(renderable renderable, mat4 matrix);
+int renderableUpdateModel(renderable renderable);
+
+void renderableSetPosition(renderable renderable, float x, float y, float z);
+
+void renderableSetPositionV(renderable renderable, vec3f *position);
+
+void renderableMoveV(renderable renderable, vec3f *move);
+
+void renderableRotateAxis(renderable renderable, float angle, vec3f *axis);
+
+void renderableRotateX(renderable renderable, float angle);
+
+void renderableRotateY(renderable renderable, float angle);
+
+void renderableRotateZ(renderable renderable, float angle);
+
+void renderableSetScale(renderable renderable, float x, float y, float z);
+
+void renderableSetScaleV(renderable renderable, vec3f *scale);
+
+void renderableScaleV(renderable renderable, vec3f *scale);
 
 void renderableUpdateMVP(renderable renderable, VkBool32 force);
 
@@ -124,5 +153,6 @@ void renderableUpdateLighting(renderable renderable);
 void renderableSetMatrixInstance(renderable renderable, mat4 matrix, uint32_t instanceId);
 
 int renderableAddPushConstant(renderable renderable, uint32_t size, VkShaderStageFlags shaderStage);
+
 
 #endif

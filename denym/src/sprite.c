@@ -69,12 +69,7 @@ void spriteSetSpriteCoordinates(sprite sprite, uint32_t u, uint32_t v)
 
 void spriteSetPosition(sprite sprite, float x, float y)
 {
-	mat4 matrix;
-	vec3 pos = { x, y, 0 };
-
-	glm_mat4_identity(matrix);
-	glm_translate(matrix, pos);
-	renderableSetMatrix(sprite->renderable, matrix);
+	renderableSetPosition(sprite->renderable, x, y, 0);
 }
 
 

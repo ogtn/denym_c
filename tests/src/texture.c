@@ -64,7 +64,7 @@ int main(void)
 
     renderable coloredSquare = makeSquare("mvp_ubo_position_color_attribute.vert.spv", "basic_color_interp.frag.spv");
     renderable texturedSquare = makeSquare("texture.vert.spv", "texture.frag.spv");
-	primitiveCreateGrid(8, 3);
+	renderableSetPosition(coloredSquare, 0, 0, -0.5f);
 
 	vec3 eye = {1, 1, 2};
 	vec3 center = { 0, 0, 0};
@@ -73,22 +73,16 @@ int main(void)
 	camera camera = cameraCreatePerspective(60, 0.01f, 1000.f);
 	cameraLookAt(camera, eye, center);
 	sceneSetCamera(denymGetScene(), camera);
+	primitiveCreateGrid(8, 3);
 
 	while(denymKeepRunning(&input))
 	{
-        float elapsed_since_start = getUptime();
-		mat4 matrix;
+        float angularSpeed = denymGetTimeSinceLastFrame() * 20;
+
+		renderableRotateZ(coloredSquare, angularSpeed);
+		renderableRotateZ(texturedSquare, angularSpeed);
 
 		updateCameraPerspective(&input, camera);
-	    glm_mat4_identity(matrix);
-		glm_translate_z(matrix, -0.5f);
-		glm_rotate_z(matrix, -glm_rad(elapsed_since_start * 100), matrix);
-        renderableSetMatrix(coloredSquare, matrix);
-
-		glm_mat4_identity(matrix);
-		glm_rotate_z(matrix, glm_rad(elapsed_since_start * 50), matrix);
-		renderableSetMatrix(texturedSquare, matrix);
-
 		denymRender();
 		denymWaitForNextFrame();
 	}

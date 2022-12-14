@@ -45,7 +45,7 @@ int main(void)
 		.sendMVP = 1
 	};
 	renderable square = renderableCreate(&renderableParams, 1);
-	primitiveCreateGrid(8, 3);
+	renderableSetPosition(square, 0, 0, 0.1f);
 
 	vec3 eye = {2, 2, 2};
 	vec3 center = { 0, 0, 0};
@@ -54,16 +54,13 @@ int main(void)
 	camera camera = cameraCreatePerspective(45, 0.01f, 1000.f);
 	cameraLookAt(camera, eye, center);
 	sceneSetCamera(denymGetScene(), camera);
+	primitiveCreateGrid(8, 3);
 
 	while(denymKeepRunning(&input))
 	{
-		float elapsed_since_start = getUptime();
-		mat4 matrix;
+		float angularSpeed = denymGetTimeSinceLastFrame() * 20;
 
-		updateCameraPerspective(&input, camera);
-	    glm_mat4_identity(matrix);
-		glm_rotate_z(matrix, glm_rad(elapsed_since_start * 100), matrix);
-		renderableSetMatrix(square, matrix);
+		renderableRotateZ(square, angularSpeed);
 
 		denymRender();
 		denymWaitForNextFrame();

@@ -28,13 +28,10 @@ static void initOrb(orb *orb, scene scene, color color)
 
 static void setOrbPosition(orb *orb, float x, float y, float z)
 {
-	mat4 matrix;
-	vec3 position = { x, y, z };
+	vec3f position = { x, y, z };
 
-	glm_mat4_identity(matrix);
-	glm_translate(matrix, position);
-	glm_vec3_copy(position, orb->light->position.v);
-	renderableSetMatrix(orb->renderable, matrix);
+	renderableSetPositionV(orb->renderable, &position);
+	glm_vec3_copy(position.v, orb->light->position.v);
 }
 
 
@@ -79,37 +76,24 @@ int main(void)
 
 	params.material = &shiny_white;
 	renderable floor_gouraud = primitiveCreateCube(10, 5, &params, 1, 0, 1);
-	glm_mat4_identity(matrix);
-	glm_translate_z(matrix, -0.5f);
-	vec3 v = {0.5, 1, 1.f / 10};
-	glm_scale(matrix, v);
-	glm_translate_x(matrix, 5);
-	renderableSetMatrix(floor_gouraud, matrix);
+	renderableSetScale(floor_gouraud, 0.5, 1, 1.f / 10);
+	renderableSetPosition(floor_gouraud, 2.5, 0, -0.5f);
 
 	params.material = &matte_white;
 	renderable sphere_gouraud = primitiveCreateSphere(1.5f, 5, &params, 1, 0, 1);
-	glm_mat4_identity(matrix);
-	glm_translate_x(matrix, 1);
-	glm_translate_z(matrix, 0.75f);
-	renderableSetMatrix(sphere_gouraud, matrix);
+	renderableSetPosition(sphere_gouraud, 1, 0, 0.75);
 
 	params.vertShaderName = "blinn_phong_plain.vert.spv",
 	params.fragShaderName = "blinn_phong_plain.frag.spv",
 
 	params.material = &shiny_white;
 	renderable floor_blinn = primitiveCreateCube(10, 5, &params, 1, 0, 1);
-	glm_mat4_identity(matrix);
-	glm_translate_z(matrix, -0.5f);
-	glm_scale(matrix, v);
-	glm_translate_x(matrix, -5);
-	renderableSetMatrix(floor_blinn, matrix);
+	renderableSetScale(floor_blinn, 0.5, 1, 1.f / 10);
+	renderableSetPosition(floor_blinn, -2.5, 0, -0.5f);
 
 	params.material = &matte_white;
 	renderable sphere_blinn = primitiveCreateSphere(1.5f, 5, &params, 1, 0, 1);
-	glm_mat4_identity(matrix);
-	glm_translate_x(matrix, -1);
-	glm_translate_z(matrix, 0.75);
-	renderableSetMatrix(sphere_blinn, matrix);
+	renderableSetPosition(sphere_blinn, -1, 0, 0.75);
 
 	orb orb1, orb2;
 	initOrb(&orb1, scene, blue);
